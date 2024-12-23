@@ -60,7 +60,6 @@ import java.util.Date;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Core;
-import org.opencv.core.Scalar;
 
 public class MapEditorActivity extends Activity {
 
@@ -680,7 +679,7 @@ public class MapEditorActivity extends Activity {
                     String strPgmFile = path_opt + fileTitle + ".pgm";
 
                     //Log.d(TAG, strPgmFile);
-                    lib_flag = false;
+                    lib_flag = true;
                     srcMapPgmFilePath = strPgmFile;
                     srcMapYamlFilePath = path_opt + fileTitle + ".yaml";
 
@@ -1030,6 +1029,16 @@ public class MapEditorActivity extends Activity {
 
             // 241222 최적화 라이브러리 읽을 경우 추가.
             if (lib_flag) {
+                // OpenCV 네이티브 라이브러리 로드
+                try {
+                    if (!OpenCVLoader.initDebug()) {
+                        Log.e("OpenCV", "Initialization failed.");
+                    } else {
+                        Log.d("OpenCV", "Initialization succeeded.");
+                    }
+                } catch (Exception e) {
+                    Log.e("OpenCV", "Exception while loading OpenCV", e);
+                }
                 original_image_height = (int)data.get("original_image_height");
                 // 추가: transformation_matrix 읽기
                 ArrayList<ArrayList<Double>> matrixList = (ArrayList<ArrayList<Double>>) data.get("transformation_matrix");
@@ -1053,13 +1062,13 @@ public class MapEditorActivity extends Activity {
                         transformationMatrix.put(i, j, value.doubleValue()); // Double로 변환하여 Mat에 추가
                     }
                 }
-                rotated_angle = (float) data.get("rotated_angle");
+                rotated_angle = (float) (double) data.get("rotated_angle");
                 Log.d(TAG,"rotated angle: " + rotated_angle);
             }
 
             return true;
         }
-        catch (IOException | NullPointerException | ClassCastException e) {
+        catch (IOException | NullPointerException e) {
             Log.e(TAG, "loadYaml Exception: " + e.getMessage());
             return false;
         }

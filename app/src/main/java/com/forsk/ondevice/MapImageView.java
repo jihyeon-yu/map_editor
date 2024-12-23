@@ -737,7 +737,7 @@ public class MapImageView extends View {
 //                deltaAngle += 360;
 
             m_RoiObjects.get(m_RoiCurIndex).setAngle(deltaAngle);
-            Log.d(TAG,"Delta Angle:" +  deltaAngle );
+            //Log.d(TAG,"Delta Angle:" +  deltaAngle );
        }
         else {
             // 정수로 변환
