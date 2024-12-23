@@ -12,6 +12,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -105,6 +106,35 @@ public class MapImageView extends View {
     // 공간 개수
     int roomNum = 0;
 
+    public int getCurrentSelectedIndex() {
+        return m_RoiCurIndex;
+    }
+
+    public Pair<Integer, Integer> getSelectedObjectPosition() {
+        if (m_RoiCurIndex != -1 && m_RoiCurIndex < m_RoiObjects.size()) {
+            int x;
+            int y;
+            if (m_RoiCurObject.roi_type.equals("roi_polygon")) {
+                Point mbr = m_RoiObjects.get(m_RoiCurIndex).GetMBRCenter();
+                x = (int) (mbr.x * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_x - 57);
+                y = (int) (mbr.y * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_y - 15);
+            } else if (m_RoiCurObject.roi_type.equals("roi_line")){
+                x = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.left * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_x);
+                y = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.top * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_y + 100);
+            } else {
+                x = (int) (((m_RoiObjects.get(m_RoiCurIndex).m_MBR.left + m_RoiObjects.get(m_RoiCurIndex).m_MBR.right) / 2)
+                        * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_x - 55);
+                y = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.top * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_y + 120);
+            }
+            return new Pair<>(x, y);
+        }
+        return null; // 선택된 객체가 없으면 null 반환
+    }
+
+    public void clearSelection() {
+        m_RoiCurIndex = -1;
+        invalidate(); // 화면을 다시 그리도록 요청
+    }
 
     public int CountRoomNum() {
         int count = 0;
@@ -343,6 +373,17 @@ public class MapImageView extends View {
             } else {
                 m_RoiCurObject.Draw(canvas, pt, bitmap, false, false);
             }
+            if (strMenu.equals("삭제")) {
+                // 삭제 메뉴일 때 토글바 처리
+                Pair<Integer, Integer> position = getSelectedObjectPosition();
+                if (position != null) {
+                    // Context를 MapEditorActivity로 캐스팅
+                    if (getContext() instanceof MapEditorActivity) {
+                        MapEditorActivity activity = (MapEditorActivity) getContext();
+                        activity.showDeleteToggleBar(position); // Activity의 메서드 호출
+                    }
+                }
+            }
             //m_RoiCurObject.SetLineColor(oldc);
         }
 
@@ -492,8 +533,7 @@ public class MapImageView extends View {
             }
             m_drawstart = false;
         } else if (str.equals("삭제")) {
-            roi_RemoveObject();
-            CObject_CurRoiCancelFunc();
+
         } else if (str.equals("핀 회전")) {
             // RotatePinIcon();
             // TODO 기능 구현 필요
@@ -571,6 +611,7 @@ public class MapImageView extends View {
 
 
         }
+
         //else if(strMode.equals("Roi Find & Move"))
         //{
         //    // 클릭한 곳의 객체를 찾아서 선택된 것으로 설정한다.
@@ -1482,7 +1523,7 @@ public class MapImageView extends View {
             m_RoiCurObject.MoveTo(pt1, pt2);
         }
 
-            if(m_RoiCurIndex > -1)
+        if(m_RoiCurIndex > -1)
         {
             //m_RoiObjects.get(m_RoiCurIndex) = m_RoiCurObject;
             m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);
@@ -1805,4 +1846,12 @@ public class MapImageView extends View {
 
         return angle;
     }
+
+    private void hideDeleteToggleBar() {
+        View deleteToggleBar = findViewById(R.id.delete_toggle_bar);
+        if (deleteToggleBar != null) {
+            deleteToggleBar.setVisibility(View.INVISIBLE);
+        }
+    }
+
 }

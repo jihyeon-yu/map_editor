@@ -42,7 +42,7 @@ public class CDrawObj {
     private Random random;    // 랜덤 생성기
 
     double m_zoom = 0.0;
-    
+
     private Drawable iconDrawable; // 핀 회전 아이콘
 
     private Drawable rotateDrawable;
@@ -97,7 +97,7 @@ public class CDrawObj {
         }
 
 
-            // 사각형 그리기
+        // 사각형 그리기
         //float left = 10; // 사각형의 왼쪽 X 좌표
         //float top = 10; // 사각형의 위쪽 Y 좌표
         //float right = 50; // 사각형의 오른쪽 X 좌표
@@ -318,7 +318,7 @@ public class CDrawObj {
                     else
                     {
                         try {
-                        drawMatchPoints(bitmap, canvas, fillPaint, bounds, pt_Start);
+                            drawMatchPoints(bitmap, canvas, fillPaint, bounds, pt_Start);
                         } catch (IllegalStateException | InterruptedException ie) {
                             Log.d(TAG,"Fail drawMatchPoints: " + ie.getLocalizedMessage());
                         }
@@ -857,18 +857,18 @@ public class CDrawObj {
             if(m_MBR_center.y < m_MBR.top) m_MBR_center.y = m_MBR.top;
             if(m_MBR_center.y > m_MBR.bottom) m_MBR_center.y = m_MBR.bottom;
 
-        //    m_Points.get(m_Points.size()-1).x += dx;
-        //    m_Points.get(m_Points.size()-1).y += dy;
-        //
-        //    // MBR 구하기
-        //    m_MBR = new Rect(10000, 10000, 0, 0);
-        //    for (int p=0; p<m_Points.size(); p++)
-        //    {
-        //        if (m_MBR.left > m_Points.get(p).x)    m_MBR.left   = m_Points.get(p).x;
-        //        if (m_MBR.right < m_Points.get(p).x)   m_MBR.right  = m_Points.get(p).x;
-        //       if (m_MBR.top > m_Points.get(p).y)     m_MBR.top    = m_Points.get(p).y;
-        //        if (m_MBR.bottom < m_Points.get(p).y)  m_MBR.bottom = m_Points.get(p).y;
-        //    }
+            //    m_Points.get(m_Points.size()-1).x += dx;
+            //    m_Points.get(m_Points.size()-1).y += dy;
+            //
+            //    // MBR 구하기
+            //    m_MBR = new Rect(10000, 10000, 0, 0);
+            //    for (int p=0; p<m_Points.size(); p++)
+            //    {
+            //        if (m_MBR.left > m_Points.get(p).x)    m_MBR.left   = m_Points.get(p).x;
+            //        if (m_MBR.right < m_Points.get(p).x)   m_MBR.right  = m_Points.get(p).x;
+            //       if (m_MBR.top > m_Points.get(p).y)     m_MBR.top    = m_Points.get(p).y;
+            //        if (m_MBR.bottom < m_Points.get(p).y)  m_MBR.bottom = m_Points.get(p).y;
+            //    }
         }
         else
         {

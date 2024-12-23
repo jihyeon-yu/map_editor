@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -158,12 +159,16 @@ public class MapEditorActivity extends Activity {
 
     private ConstraintLayout toggleBar;
     private ConstraintLayout toggleBar_CreateSpace;
-    private boolean lib_flag = false;
+    private boolean lib_flag = true;
 
     private Mat transformationMatrix = null;
 
     private float rotated_angle = 0f;
     int original_image_height = 0;
+
+    // 삭제 토글바 관련 변수
+    private View deleteToggleBar;
+    private ImageView deleteButton, cancelButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -187,6 +192,8 @@ public class MapEditorActivity extends Activity {
         // Toggle Bar 레이아웃 가져오기
         toggleBar = findViewById(R.id.toggle_bar);
         toggleBar_CreateSpace = findViewById(R.id.toggle_bar_createspace);
+
+
 
         // Toggle Bar 초기 상태 설정
         updateToggleBarVisibility();
@@ -232,6 +239,10 @@ public class MapEditorActivity extends Activity {
         View fabDeleteObjectClicked = findViewById(R.id.fabDeleteObjectClicked);
         View fabRenameObjectClicked = findViewById(R.id.fabRenameObjectClicked);
 
+        // 삭제 버튼 초기화 (onCreate 메서드에서)
+        deleteToggleBar = findViewById(R.id.delete_toggle_bar);
+        deleteButton = deleteToggleBar.findViewById(R.id.deleteButton);
+        cancelButton = deleteToggleBar.findViewById(R.id.cancelButton);
 
         // 241217 jihyeon
         // cancle 버튼과 goback 버튼 구분하여 구현 필요
@@ -366,6 +377,7 @@ public class MapEditorActivity extends Activity {
             updateButtonBackground(buttonSpaceCreation);
             updateToggleBarVisibility();
             updateModeDescription();
+            hideDeleteToggleBar();
             fabAddObjectClicked.setVisibility(View.GONE);
             fabSelectObjectClicked.setVisibility(View.GONE);
             fabMoveObjectClicked.setVisibility(View.GONE);
@@ -373,8 +385,6 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
-
-
         });
 
         buttonBlockWall.setOnClickListener(v -> {
@@ -384,6 +394,7 @@ public class MapEditorActivity extends Activity {
             updateButtonBackground(buttonBlockWall);
             updateToggleBarVisibility();
             updateModeDescription();
+            hideDeleteToggleBar();
             fabAddObjectClicked.setVisibility(View.GONE);
             fabSelectObjectClicked.setVisibility(View.GONE);
             fabMoveObjectClicked.setVisibility(View.GONE);
@@ -400,6 +411,7 @@ public class MapEditorActivity extends Activity {
             updateButtonBackground(buttonBlockArea);
             updateToggleBarVisibility();
             updateModeDescription();
+            hideDeleteToggleBar();
             fabAddObjectClicked.setVisibility(View.GONE);
             fabSelectObjectClicked.setVisibility(View.GONE);
             fabMoveObjectClicked.setVisibility(View.GONE);
@@ -485,6 +497,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
 
         fabMoveObject.setOnClickListener(v -> {
@@ -497,6 +510,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabSelectObject.setOnClickListener(v -> {
             //  Select Object
@@ -508,6 +522,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabDeleteObject.setOnClickListener(v -> {
             MapViewer.SetMenu("삭제");
@@ -518,6 +533,11 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.VISIBLE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            Log.d(TAG, "current index: " + MapViewer.getCurrentSelectedIndex());
+            if (MapViewer.getCurrentSelectedIndex() != -1) {
+                Pair<Integer, Integer> selectedObjectPosition = MapViewer.getSelectedObjectPosition();
+                showDeleteToggleBar(selectedObjectPosition);
+            }
         });
         fabMovePin.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 이동");
@@ -528,6 +548,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabRotatePin.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 회전");
@@ -538,6 +559,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.VISIBLE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
 
         // 241217 jihyeon
@@ -551,6 +573,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
 
         fabMoveObjectCS.setOnClickListener(v -> {
@@ -562,6 +585,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabSelectObjectCS.setOnClickListener(v -> {
             MapViewer.SetMenu("선택");
@@ -572,7 +596,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
-
+            hideDeleteToggleBar();
         });
         fabDeleteObjectCS.setOnClickListener(v -> {
             MapViewer.SetMenu("삭제");
@@ -583,6 +607,11 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.VISIBLE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            Log.d(TAG, "current index: " + MapViewer.getCurrentSelectedIndex());
+            if (MapViewer.getCurrentSelectedIndex() != -1) {
+                Pair<Integer, Integer> selectedObjectPosition = MapViewer.getSelectedObjectPosition();
+                showDeleteToggleBar(selectedObjectPosition);
+            }
         });
         fabMovePinCS.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 이동");
@@ -593,6 +622,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabRotatePinCS.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 회전");
@@ -603,6 +633,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.VISIBLE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
 
         fabRenameObjectCS.setOnClickListener(v -> {
@@ -621,6 +652,22 @@ public class MapEditorActivity extends Activity {
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             updateToggleBarVisibility();
+            hideDeleteToggleBar();
+        });
+
+
+        // 휴지통 버튼 클릭 이벤트
+        deleteButton.setOnClickListener(v -> {
+            MapViewer.roi_RemoveObject();
+            MapViewer.CObject_CurRoiCancelFunc();
+            MapViewer.clearSelection(); // 선택 초기화 메서드
+            hideDeleteToggleBar();
+        });
+
+        // X 버튼 클릭 이벤트
+        cancelButton.setOnClickListener(v -> {
+            MapViewer.clearSelection(); // 선택 초기화 메서드
+            hideDeleteToggleBar();
         });
 
         MapViewer = findViewById(R.id.imageView);
@@ -741,6 +788,19 @@ public class MapEditorActivity extends Activity {
 
     }
 
+    // 토글바 표시 함수
+    void showDeleteToggleBar(Pair<Integer, Integer> position) {
+        Log.d(TAG, "Toggle Bar Location: " + position.first + ", " + position.second);
+        deleteToggleBar.setVisibility(View.VISIBLE);
+        // 선택된 객체 위치에 토글바 배치
+        deleteToggleBar.setX(position.first);
+        deleteToggleBar.setY(position.second);
+    }
+
+    // 토글바 숨김 함수
+    private void hideDeleteToggleBar() {
+        deleteToggleBar.setVisibility(View.GONE);
+    }
 
     private void updateToggleBarVisibility() {
         if (currentMode == MODE_SPACE_CREATION) {
@@ -1507,7 +1567,7 @@ public class MapEditorActivity extends Activity {
         // 내부 저장소에서 파일 스트림 열기
         // InputStream 데이터를 문자열로 변환
         try (InputStream inputStream = new FileInputStream(filePath);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))){
+             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))){
 
             String line;
 
@@ -1624,8 +1684,8 @@ public class MapEditorActivity extends Activity {
             Log.d(TAG, "Read Json Success");
             return true;
         }  catch (FileNotFoundException fe) {
-        Log.e(TAG, "Read Json FileNotFoundException: " + filePath + " " + fe.getMessage());
-        return false;
+            Log.e(TAG, "Read Json FileNotFoundException: " + filePath + " " + fe.getMessage());
+            return false;
         } catch (JSONException | IOException e) {
             Log.e(TAG, "Read Json JSON, IO Exception: " + e.getMessage());
             return false;
@@ -1683,5 +1743,4 @@ public class MapEditorActivity extends Activity {
 
 
 }
-
 
