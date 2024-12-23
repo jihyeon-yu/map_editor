@@ -1,0 +1,25 @@
+<vector xmlns:aapt="http://schemas.android.com/aapt" xmlns:android="http://schemas.android.com/apk/res/android" android:height="52dp" android:viewportHeight="68" android:viewportWidth="68" android:width="52dp">
+      
+    <path android:fillColor="#002554" android:pathData="M34,26m-26,0a26,26 0,1 1,52 0a26,26 0,1 1,-52 0"/>
+      
+    <path android:fillAlpha="0.2" android:pathData="M34,26m-26,0a26,26 0,1 1,52 0a26,26 0,1 1,-52 0">
+            
+        <aapt:attr name="android:fillColor">
+                  
+            <gradient android:endX="34" android:endY="52" android:startX="34" android:startY="0" android:type="linear">
+                        
+                <item android:color="#FF5ADAC6" android:offset="0"/>
+                        
+                <item android:color="#005ADAC6" android:offset="1"/>
+                      
+            </gradient>
+                
+        </aapt:attr>
+          
+    </path>
+      
+    <path android:fillColor="#00000000" android:pathData="M30.124,15.436C27.607,16.307 25.472,18.036 24.083,20.303C22.694,22.57 22.131,25.255 22.497,27.899C22.864,30.542 24.13,32.971 26.099,34.781C28.054,36.596 30.579,37.669 33.243,37.813C35.899,37.975 38.54,37.199 40.699,35.629C42.857,34.059 44.396,31.786 45.073,29.214C45.746,26.628 45.502,23.897 44.377,21.481C43.265,19.061 41.336,17.1 38.934,15.939" android:strokeColor="#ffffff" android:strokeLineCap="round" android:strokeWidth="2.52"/>
+      
+    <path android:fillColor="#00000000" android:pathData="M24.035,12.941L31.097,14.343L29.695,21.406" android:strokeColor="#ffffff" android:strokeLineCap="round" android:strokeWidth="2.52"/>
+    
+</vector>

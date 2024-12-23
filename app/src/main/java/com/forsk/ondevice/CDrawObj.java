@@ -3,6 +3,7 @@ package com.forsk.ondevice;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
@@ -44,6 +45,7 @@ public class CDrawObj {
     
     private Drawable iconDrawable; // 핀 회전 아이콘
 
+    private Drawable rotateDrawable;
     float angle = 0.0f;
 
     public CDrawObj(String strType, int nLeft, int nTop, int nRight, int nBottom)
@@ -136,6 +138,22 @@ public class CDrawObj {
         this.angle = angle;
     }
 
+    public float getAngle(){
+        return this.angle;
+    }
+
+    public void setRotateDrawable(Drawable drawable) {
+        this.rotateDrawable = drawable;
+    }
+
+    // 241222 jihyeon 핀 회전 모드 아이콘 제거
+    public void clearRotateDrawable() {
+        this.rotateDrawable = null;
+    }
+
+    public Drawable getRotateDrawable() {
+        return this.rotateDrawable;
+    }
     public String getType()
     {
         return roi_type;
@@ -369,11 +387,34 @@ public class CDrawObj {
             int iconCenterX = (iconLeft + iconRight) / 2;
             int iconCenterY = (iconTop + iconBottom) / 2;
 
+            // 사각형 dashpoint
+            Paint dashedPaint = new Paint();
+            dashedPaint.setStyle(Paint.Style.STROKE);
+            dashedPaint.setPathEffect(new DashPathEffect(new float[]{10, 10}, 0));
+            dashedPaint.setColor(Color.WHITE);
+            dashedPaint.setStrokeWidth(5);
+            Rect rect = new Rect(iconLeft, iconTop, iconRight, iconBottom);
+
+            rotateDrawable.setBounds(iconRight-26,iconBottom-26,iconRight+26,iconBottom+26);
             iconDrawable.setBounds(iconLeft, iconTop, iconRight, iconBottom);
             // Canvas 회전 및 아이콘 그리기
             canvas.save(); // 현재 Canvas 상태 저장
-            canvas.rotate(angle, iconCenterX, iconCenterY); // 아이콘 중심 기준 회전
-            iconDrawable.draw(canvas); // 회전된 상태에서 그리기
+            // 반시계 + -> 시계 + 로 반전
+            // 0° ~ 360°로 변환 (음수 각도 처리)
+            float degrees = - (float) Math.toDegrees(angle);
+
+//            if (degrees < 0) {
+//                degrees += 360;
+//            }
+            //Log.d(TAG,"degrees: " + degrees);
+
+            canvas.rotate(degrees, iconCenterX, iconCenterY); // 아이콘 중심 기준 회전
+
+            // 회전된 상태에서 그리기
+            iconDrawable.draw(canvas);
+            canvas.drawRect(rect, dashedPaint);
+            rotateDrawable.draw(canvas);
+
             canvas.restore(); // Canvas 상태 복원
 
         }

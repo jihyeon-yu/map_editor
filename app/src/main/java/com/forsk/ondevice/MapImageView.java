@@ -105,10 +105,7 @@ public class MapImageView extends View {
     // 공간 개수
     int roomNum = 0;
 
-    private float previousX = 0f;
-    private float previousY = 0f;
-    private float totalAngle = 0f;
-    private float upAngle = 0f;
+
     public int CountRoomNum() {
         int count = 0;
 
@@ -439,6 +436,7 @@ public class MapImageView extends View {
         if (strMenu.equals("핀 회전")) {
             for (CDrawObj roiObject : m_RoiObjects) {
                 roiObject.clearIconDrawable();
+                roiObject.clearRotateDrawable();
             }
         }
         strMenu = "default";
@@ -507,11 +505,12 @@ public class MapImageView extends View {
 
     // 241222 jihyeon 핀 회전 모드 아이콘
     private void RotatePinIcon() {
-        Drawable newDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
-
+        Drawable iconDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
+        Drawable rotateDrawable = getResources().getDrawable(R.drawable.ic_rotate, null);
         // 모든 ROI 객체의 핀을 새로운 Drawable로 설정
         for (CDrawObj roiObject : m_RoiObjects) {
-            roiObject.setIconDrawable(newDrawable);
+            roiObject.setIconDrawable(iconDrawable);
+            roiObject.setRotateDrawable(rotateDrawable);
         }
 
         // 화면 갱신
@@ -569,6 +568,8 @@ public class MapImageView extends View {
 
             m_ptOld.x = (int) x;
             m_ptOld.y = (int) y;
+
+
         }
         //else if(strMode.equals("Roi Find & Move"))
         //{
@@ -723,17 +724,21 @@ public class MapImageView extends View {
             }
 
         }
-//        else if (strMenu.equals("핀 회전")){
-//            if (previousX != 0 && previousY != 0) {
-//                float deltaAngle = calculateAngle(previousX, previousY, x, y);
-//                totalAngle += deltaAngle; // 각도 변화 누적
-//            }
-//
-//            previousX = x;
-//            previousY = y;
-//
-//            //Log.d(TAG, "Total Angle: " + totalAngle);
-//        }
+        else if (strMenu.equals("핀 회전")){
+
+            float iconCenterX = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.x * zoom_rate + StartPos_x)); // +30 - 30 상쇄됨
+            float iconCenterY = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.y * zoom_rate + StartPos_y)); // +40 - 40 상쇄됨
+
+            float deltaAngle = calculateAngle(iconCenterX, iconCenterY, x, y);
+
+//            if(deltaAngle > 360)
+//                deltaAngle -= 360;
+//            else if(deltaAngle < -360)
+//                deltaAngle += 360;
+
+            m_RoiObjects.get(m_RoiCurIndex).setAngle(deltaAngle);
+            Log.d(TAG,"Delta Angle:" +  deltaAngle );
+       }
         else {
             // 정수로 변환
             int pt_x = (int) (x);
@@ -838,21 +843,21 @@ public class MapImageView extends View {
 
             //MoveMap(dx,dy);
         }
-        else if (strMenu.equals("핀 회전")){
-            // 실시간 각도 계산
-            float angle = calculateAngle(m_DnPoint.x, m_DnPoint.y, x, y);
-            upAngle = angle;
-            totalAngle = 0f;
-            Log.d(TAG,"Mouse UP X: " + x + ", y: " + y);
-            Log.d(TAG, "Current Angle: " + angle);
-            Log.d(TAG, "Curindex: " + m_RoiCurIndex + ", ojbselect: " +m_objSelect);
-            for (int i = 0; i < m_RoiObjects.size(); i++) {
-                if(i == m_RoiCurIndex && m_objSelect != -1){
-                    m_RoiObjects.get(i).setAngle(upAngle);
-                    Log.d(TAG, "ANgle : "+ upAngle);
-                }
-            }
-        }
+//        else if (strMenu.equals("핀 회전")){
+//            // 실시간 각도 계산
+//            float angle = calculateAngle(m_DnPoint.x, m_DnPoint.y, x, y);
+//            upAngle = angle;
+//            totalAngle = 0f;
+//            Log.d(TAG,"Mouse UP X: " + x + ", y: " + y);
+//            Log.d(TAG, "Current Angle: " + angle);
+//            Log.d(TAG, "Curindex: " + m_RoiCurIndex + ", ojbselect: " +m_objSelect);
+//            for (int i = 0; i < m_RoiObjects.size(); i++) {
+//                if(i == m_RoiCurIndex && m_objSelect != -1){
+//                    //m_RoiObjects.get(i).setAngle(upAngle);
+//                    Log.d(TAG, "ANgle : "+ upAngle);
+//                }
+//            }
+//        }
         //else if(strMode.equals("Roi Find & Move"))
         //{
         //
@@ -1796,9 +1801,8 @@ public class MapImageView extends View {
 
     private float calculateAngle(float x1, float y1, float x2, float y2) {
         // atan2로 각도 계산
-        float angle = (float) Math.toDegrees(Math.atan2(y2 - y1, x2 - x1));
+        float angle =  - (float) (Math.atan2(y2 - y1, x2 - x1));
 
-        // 반시계 + -> 시계 + 로 반전
-        return -angle;
+        return angle;
     }
 }

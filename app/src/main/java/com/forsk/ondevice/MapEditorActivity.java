@@ -163,6 +163,7 @@ public class MapEditorActivity extends Activity {
 
     private Mat transformationMatrix = null;
 
+    private float rotated_angle = 0f;
     int original_image_height = 0;
 
     @Override
@@ -676,13 +677,10 @@ public class MapEditorActivity extends Activity {
                     com.caselab.forsk.MapOptimization.lineOptimization(path_rot, path_opt, fileTitle);
                     Log.d("SKOnDeviceService", "Library-line Finish!");
 
-                    //String strPgmFile = PATH_FILE_MAP_ROT+NAME_FILE_MAP_ORG+".pgm";
-                    //String strPgmFile = PATH_FILE_MAP_ROT+PATH_FILE_MAP_OPT+".pgm";
-                    //String strPgmFile = path_rot + fileTitle + ".pgm";
                     String strPgmFile = path_opt + fileTitle + ".pgm";
 
-                    Log.d(TAG, strPgmFile);
-                    lib_flag = true;
+                    //Log.d(TAG, strPgmFile);
+                    lib_flag = false;
                     srcMapPgmFilePath = strPgmFile;
                     srcMapYamlFilePath = path_opt + fileTitle + ".yaml";
 
@@ -1031,7 +1029,7 @@ public class MapEditorActivity extends Activity {
             Log.d(TAG, "origin_angle : " + origin_angle);
 
             // 241222 최적화 라이브러리 읽을 경우 추가.
-            if (lib_flag){
+            if (lib_flag) {
                 original_image_height = (int)data.get("original_image_height");
                 // 추가: transformation_matrix 읽기
                 ArrayList<ArrayList<Double>> matrixList = (ArrayList<ArrayList<Double>>) data.get("transformation_matrix");
@@ -1043,12 +1041,7 @@ public class MapEditorActivity extends Activity {
                 // 행과 열 크기 설정
                 int rows = matrixList.size();
                 int cols = matrixList.get(0).size();
-                // OpenCV 네이티브 라이브러리 로드
-                if (!OpenCVLoader.initDebug()) {
-                    Log.e("OpenCV", "OpenCV initialization failed!");
-                } else {
-                    Log.d("OpenCV", "OpenCV initialized successfully!");
-                }
+
                 // OpenCV Mat 객체 생성
                 transformationMatrix = new Mat(rows, cols, CvType.CV_64F);
 
@@ -1060,6 +1053,8 @@ public class MapEditorActivity extends Activity {
                         transformationMatrix.put(i, j, value.doubleValue()); // Double로 변환하여 Mat에 추가
                     }
                 }
+                rotated_angle = (float) data.get("rotated_angle");
+                Log.d(TAG,"rotated angle: " + rotated_angle);
             }
 
             return true;
@@ -1176,7 +1171,6 @@ public class MapEditorActivity extends Activity {
                 strRoiJson += "]";
                 strRoiJson += ", \"robot_position\":{";
 
-
                 // Log.d(TAG, "xvw before : "+ xvw);
 
                 // MapViewer.m_RoiObjects.get(i).m_MBR;
@@ -1193,6 +1187,7 @@ public class MapEditorActivity extends Activity {
                 double yvh = coordinates[1];
                 strRoiJson += "\"x\":" + xvw;
                 strRoiJson += ", \"y\":" + yvh;
+                strRoiJson += ", \"theta\":" + (MapViewer.m_RoiObjects.get(i).getAngle() -  Math.toRadians(rotated_angle));
 
                 strRoiJson += "}";
 
@@ -1211,7 +1206,7 @@ public class MapEditorActivity extends Activity {
 
                 strRoiJson += "\"x\":" + (int) xvw_image;
                 strRoiJson += ", \"y\":" + (int) yvh_image;
-
+                strRoiJson += ", \"theta\":" + MapViewer.m_RoiObjects.get(i).getAngle();
                 strRoiJson += "}";
                 strRoiJson += "}";
             }
@@ -1558,6 +1553,10 @@ public class MapEditorActivity extends Activity {
                 MapViewer.m_RoiCurObject.m_MBR_center.x = mbr_x;
                 MapViewer.m_RoiCurObject.m_MBR_center.y = mbr_y;
                 MapViewer.SetLabel(name);
+                if (lib_flag) {
+                    float theta = (float)imagePosition.getDouble("theta");
+                    MapViewer.m_RoiCurObject.setAngle(theta);
+                }
             }
 
 
@@ -1619,7 +1618,7 @@ public class MapEditorActivity extends Activity {
         Log.e(TAG, "Read Json FileNotFoundException: " + filePath + " " + fe.getMessage());
         return false;
         } catch (JSONException | IOException e) {
-            Log.e(TAG, "Read Json FileNotFoundException: " + e.getMessage());
+            Log.e(TAG, "Read Json JSON, IO Exception: " + e.getMessage());
             return false;
         }
 
