@@ -1,0 +1,16 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <solid android:color="#FFFFFF33" /> <!-- 배경색 -->
+            <corners android:radius="22dp" /> <!-- 둥근 모서리 -->
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <stroke
+                android:width="3dp"
+                android:color="#FFFFFF33" /> <!-- 테두리 -->
+            <corners android:radius="22dp" />
+        </shape>
+    </item>
+</layer-list>
