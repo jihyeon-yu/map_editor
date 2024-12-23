@@ -640,16 +640,52 @@ public class MapEditorActivity extends Activity {
                 // 리스너 제거 (메모리 누수 방지)
                 MapViewer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
-
                 try {
-                    Log.d(TAG, "Run library-rotate!");
-                    MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
-                    Log.d(TAG, "Library-rotate Finish!");
 
-                    Log.d(TAG, "Run library-line opt!");
-                    MapOptimization.lineOptimization(PATH_FILE_MAP_ROT, PATH_FILE_MAP_OPT, NAME_FILE_MAP_ORG);
-                    Log.d(TAG, "Library-line Finish!");
+                    // File 객체 생성
+                    File file = new File(srcMapPgmFilePath);
+
+
+                    String path = file.getParent() + "/"; // 디렉터리 경로
+                    String filename = file.getName(); // 파일 이름
+                    String fileTitle = filename.substring(0, filename.lastIndexOf('.')); // 확장자를 제외한 파일 제목
+
+                    String path_rot = path + "rot/";
+                    File file_rot = new File(path_rot);
+                    // 폴더가 제대로 만들어졌는지 체크 ======
+                    if (!file_rot.mkdirs()) {
+
+                        Log.e("FILE", "Directory not created : "+path_rot);
+
+                    }
+                    Log.d("SKOnDeviceService", "Run library-rotate!");
+                    //com.caselab.forsk.MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
+                    com.caselab.forsk.MapOptimization.mapRotation(path, path_rot, fileTitle);
+                    Log.d("SKOnDeviceService", "Library-rotate Finish!");
+
+                    String path_opt = path + "opt/";
+                    File file_opt = new File(path_opt);
+                    // 폴더가 제대로 만들어졌는지 체크 ======
+                    if (!file_opt.mkdirs()) {
+
+                        Log.e("FILE", "Directory not created : "+path_opt);
+
+                    }
+                    Log.d("SKOnDeviceService", "Run library-line opt!");
+                    //MapOptimization.lineOptimization(PATH_FILE_MAP_ROT, PATH_FILE_MAP_OPT, NAME_FILE_MAP_ORG);
+                    com.caselab.forsk.MapOptimization.lineOptimization(path_rot, path_opt, fileTitle);
+                    Log.d("SKOnDeviceService", "Library-line Finish!");
+
+                    //String strPgmFile = PATH_FILE_MAP_ROT+NAME_FILE_MAP_ORG+".pgm";
+                    //String strPgmFile = PATH_FILE_MAP_ROT+PATH_FILE_MAP_OPT+".pgm";
+                    //String strPgmFile = path_rot + fileTitle + ".pgm";
+                    String strPgmFile = path_opt + fileTitle + ".pgm";
+
+                    Log.d(TAG, strPgmFile);
                     lib_flag = true;
+                    srcMapPgmFilePath = strPgmFile;
+                    srcMapYamlFilePath = path_opt + fileTitle + ".yaml";
+
                 }  catch (UnsatisfiedLinkError e) {
                     Log.e(TAG, "Native library not loaded or linked properly", e);
                 } catch (ExceptionInInitializerError e) {
@@ -659,10 +695,7 @@ public class MapEditorActivity extends Activity {
                 } catch (Throwable e) {
                     Log.e(TAG, "Unexpected error occurred", e);
                 }
-                if(lib_flag) {
-                    srcMapPgmFilePath = PATH_FILE_MAP_OPT + NAME_FILE_MAP_ORG + ".pgm";
-                    srcMapYamlFilePath = PATH_FILE_MAP_OPT + NAME_FILE_MAP_ORG + ".yaml";
-                }
+
                 try {
                     Bitmap bitmap = loadPGM(srcMapPgmFilePath);
                     if (bitmap != null) {
@@ -670,7 +703,7 @@ public class MapEditorActivity extends Activity {
 
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "IOException error occurred", e);
                 }
 
                 if (!loadYaml(srcMapYamlFilePath)) {

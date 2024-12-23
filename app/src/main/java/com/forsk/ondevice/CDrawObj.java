@@ -44,6 +44,7 @@ public class CDrawObj {
     
     private Drawable iconDrawable; // 핀 회전 아이콘
 
+    float angle = 0.0f;
 
     public CDrawObj(String strType, int nLeft, int nTop, int nRight, int nBottom)
     {
@@ -131,6 +132,9 @@ public class CDrawObj {
         return this.iconDrawable;
     }
 
+    public void setAngle(float angle){
+        this.angle = angle;
+    }
 
     public String getType()
     {
@@ -362,9 +366,16 @@ public class CDrawObj {
             int iconRight = (int) (iconLeft + iconWidth);
             int iconBottom = (int) (iconTop + iconHeight);
 
+            int iconCenterX = (iconLeft + iconRight) / 2;
+            int iconCenterY = (iconTop + iconBottom) / 2;
 
             iconDrawable.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-            iconDrawable.draw(canvas);
+            // Canvas 회전 및 아이콘 그리기
+            canvas.save(); // 현재 Canvas 상태 저장
+            canvas.rotate(angle, iconCenterX, iconCenterY); // 아이콘 중심 기준 회전
+            iconDrawable.draw(canvas); // 회전된 상태에서 그리기
+            canvas.restore(); // Canvas 상태 복원
+
         }
 
     }

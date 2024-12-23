@@ -722,17 +722,18 @@ public class MapImageView extends View {
                 invalidate(); // 화면을 다시 그리도록 요청
             }
 
-        } else if (strMenu.equals("핀 회전")){
-            if (previousX != 0 && previousY != 0) {
-                float deltaAngle = calculateAngle(previousX, previousY, x, y);
-                totalAngle += deltaAngle; // 각도 변화 누적
-            }
-
-            previousX = x;
-            previousY = y;
-
-            Log.d(TAG, "Total Angle: " + totalAngle);
         }
+//        else if (strMenu.equals("핀 회전")){
+//            if (previousX != 0 && previousY != 0) {
+//                float deltaAngle = calculateAngle(previousX, previousY, x, y);
+//                totalAngle += deltaAngle; // 각도 변화 누적
+//            }
+//
+//            previousX = x;
+//            previousY = y;
+//
+//            //Log.d(TAG, "Total Angle: " + totalAngle);
+//        }
         else {
             // 정수로 변환
             int pt_x = (int) (x);
@@ -844,6 +845,13 @@ public class MapImageView extends View {
             totalAngle = 0f;
             Log.d(TAG,"Mouse UP X: " + x + ", y: " + y);
             Log.d(TAG, "Current Angle: " + angle);
+            Log.d(TAG, "Curindex: " + m_RoiCurIndex + ", ojbselect: " +m_objSelect);
+            for (int i = 0; i < m_RoiObjects.size(); i++) {
+                if(i == m_RoiCurIndex && m_objSelect != -1){
+                    m_RoiObjects.get(i).setAngle(upAngle);
+                    Log.d(TAG, "ANgle : "+ upAngle);
+                }
+            }
         }
         //else if(strMode.equals("Roi Find & Move"))
         //{
