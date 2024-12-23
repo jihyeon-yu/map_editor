@@ -549,8 +549,10 @@ public class MapImageView extends View {
         Drawable rotateDrawable = getResources().getDrawable(R.drawable.ic_rotate, null);
         // 모든 ROI 객체의 핀을 새로운 Drawable로 설정
         for (CDrawObj roiObject : m_RoiObjects) {
-            roiObject.setIconDrawable(iconDrawable);
-            roiObject.setRotateDrawable(rotateDrawable);
+            if (roiObject.roi_type.equals("roi_polygon")) {
+                roiObject.setIconDrawable(iconDrawable);
+                roiObject.setRotateDrawable(rotateDrawable);
+            }
         }
 
         // 화면 갱신
