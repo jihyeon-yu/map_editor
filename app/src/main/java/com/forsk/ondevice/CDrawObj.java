@@ -3,6 +3,7 @@ package com.forsk.ondevice;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
@@ -41,9 +42,11 @@ public class CDrawObj {
     private Random random;    // 랜덤 생성기
 
     double m_zoom = 0.0;
-    
+
     private Drawable iconDrawable; // 핀 회전 아이콘
 
+    private Drawable rotateDrawable;
+    float angle = 0.0f;
 
     public CDrawObj(String strType, int nLeft, int nTop, int nRight, int nBottom)
     {
@@ -94,7 +97,7 @@ public class CDrawObj {
         }
 
 
-            // 사각형 그리기
+        // 사각형 그리기
         //float left = 10; // 사각형의 왼쪽 X 좌표
         //float top = 10; // 사각형의 위쪽 Y 좌표
         //float right = 50; // 사각형의 오른쪽 X 좌표
@@ -131,7 +134,26 @@ public class CDrawObj {
         return this.iconDrawable;
     }
 
+    public void setAngle(float angle){
+        this.angle = angle;
+    }
 
+    public float getAngle(){
+        return this.angle;
+    }
+
+    public void setRotateDrawable(Drawable drawable) {
+        this.rotateDrawable = drawable;
+    }
+
+    // 241222 jihyeon 핀 회전 모드 아이콘 제거
+    public void clearRotateDrawable() {
+        this.rotateDrawable = null;
+    }
+
+    public Drawable getRotateDrawable() {
+        return this.rotateDrawable;
+    }
     public String getType()
     {
         return roi_type;
@@ -296,7 +318,7 @@ public class CDrawObj {
                     else
                     {
                         try {
-                        drawMatchPoints(bitmap, canvas, fillPaint, bounds, pt_Start);
+                            drawMatchPoints(bitmap, canvas, fillPaint, bounds, pt_Start);
                         } catch (IllegalStateException | InterruptedException ie) {
                             Log.d(TAG,"Fail drawMatchPoints: " + ie.getLocalizedMessage());
                         }
@@ -362,9 +384,39 @@ public class CDrawObj {
             int iconRight = (int) (iconLeft + iconWidth);
             int iconBottom = (int) (iconTop + iconHeight);
 
+            int iconCenterX = (iconLeft + iconRight) / 2;
+            int iconCenterY = (iconTop + iconBottom) / 2;
 
+            // 사각형 dashpoint
+            Paint dashedPaint = new Paint();
+            dashedPaint.setStyle(Paint.Style.STROKE);
+            dashedPaint.setPathEffect(new DashPathEffect(new float[]{10, 10}, 0));
+            dashedPaint.setColor(Color.WHITE);
+            dashedPaint.setStrokeWidth(5);
+            Rect rect = new Rect(iconLeft, iconTop, iconRight, iconBottom);
+
+            rotateDrawable.setBounds(iconRight-26,iconBottom-26,iconRight+26,iconBottom+26);
             iconDrawable.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+            // Canvas 회전 및 아이콘 그리기
+            canvas.save(); // 현재 Canvas 상태 저장
+            // 반시계 + -> 시계 + 로 반전
+            // 0° ~ 360°로 변환 (음수 각도 처리)
+            float degrees = - (float) Math.toDegrees(angle);
+
+//            if (degrees < 0) {
+//                degrees += 360;
+//            }
+            //Log.d(TAG,"degrees: " + degrees);
+
+            canvas.rotate(degrees, iconCenterX, iconCenterY); // 아이콘 중심 기준 회전
+
+            // 회전된 상태에서 그리기
             iconDrawable.draw(canvas);
+            canvas.drawRect(rect, dashedPaint);
+            rotateDrawable.draw(canvas);
+
+            canvas.restore(); // Canvas 상태 복원
+
         }
 
     }
@@ -805,18 +857,18 @@ public class CDrawObj {
             if(m_MBR_center.y < m_MBR.top) m_MBR_center.y = m_MBR.top;
             if(m_MBR_center.y > m_MBR.bottom) m_MBR_center.y = m_MBR.bottom;
 
-        //    m_Points.get(m_Points.size()-1).x += dx;
-        //    m_Points.get(m_Points.size()-1).y += dy;
-        //
-        //    // MBR 구하기
-        //    m_MBR = new Rect(10000, 10000, 0, 0);
-        //    for (int p=0; p<m_Points.size(); p++)
-        //    {
-        //        if (m_MBR.left > m_Points.get(p).x)    m_MBR.left   = m_Points.get(p).x;
-        //        if (m_MBR.right < m_Points.get(p).x)   m_MBR.right  = m_Points.get(p).x;
-        //       if (m_MBR.top > m_Points.get(p).y)     m_MBR.top    = m_Points.get(p).y;
-        //        if (m_MBR.bottom < m_Points.get(p).y)  m_MBR.bottom = m_Points.get(p).y;
-        //    }
+            //    m_Points.get(m_Points.size()-1).x += dx;
+            //    m_Points.get(m_Points.size()-1).y += dy;
+            //
+            //    // MBR 구하기
+            //    m_MBR = new Rect(10000, 10000, 0, 0);
+            //    for (int p=0; p<m_Points.size(); p++)
+            //    {
+            //        if (m_MBR.left > m_Points.get(p).x)    m_MBR.left   = m_Points.get(p).x;
+            //        if (m_MBR.right < m_Points.get(p).x)   m_MBR.right  = m_Points.get(p).x;
+            //       if (m_MBR.top > m_Points.get(p).y)     m_MBR.top    = m_Points.get(p).y;
+            //        if (m_MBR.bottom < m_Points.get(p).y)  m_MBR.bottom = m_Points.get(p).y;
+            //    }
         }
         else
         {

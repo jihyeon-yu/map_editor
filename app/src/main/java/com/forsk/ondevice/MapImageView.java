@@ -12,6 +12,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -105,10 +106,36 @@ public class MapImageView extends View {
     // 공간 개수
     int roomNum = 0;
 
-    private float previousX = 0f;
-    private float previousY = 0f;
-    private float totalAngle = 0f;
-    private float upAngle = 0f;
+    public int getCurrentSelectedIndex() {
+        return m_RoiCurIndex;
+    }
+
+    public Pair<Integer, Integer> getSelectedObjectPosition() {
+        if (m_RoiCurIndex != -1 && m_RoiCurIndex < m_RoiObjects.size()) {
+            int x;
+            int y;
+            if (m_RoiCurObject.roi_type.equals("roi_polygon")) {
+                Point mbr = m_RoiObjects.get(m_RoiCurIndex).GetMBRCenter();
+                x = (int) (mbr.x * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_x - 57);
+                y = (int) (mbr.y * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_y - 15);
+            } else if (m_RoiCurObject.roi_type.equals("roi_line")){
+                x = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.left * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_x);
+                y = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.top * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_y + 100);
+            } else {
+                x = (int) (((m_RoiObjects.get(m_RoiCurIndex).m_MBR.left + m_RoiObjects.get(m_RoiCurIndex).m_MBR.right) / 2)
+                        * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_x - 55);
+                y = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.top * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_y + 120);
+            }
+            return new Pair<>(x, y);
+        }
+        return null; // 선택된 객체가 없으면 null 반환
+    }
+
+    public void clearSelection() {
+        m_RoiCurIndex = -1;
+        invalidate(); // 화면을 다시 그리도록 요청
+    }
+
     public int CountRoomNum() {
         int count = 0;
 
@@ -346,6 +373,17 @@ public class MapImageView extends View {
             } else {
                 m_RoiCurObject.Draw(canvas, pt, bitmap, false, false);
             }
+            if (strMenu.equals("삭제")) {
+                // 삭제 메뉴일 때 토글바 처리
+                Pair<Integer, Integer> position = getSelectedObjectPosition();
+                if (position != null) {
+                    // Context를 MapEditorActivity로 캐스팅
+                    if (getContext() instanceof MapEditorActivity) {
+                        MapEditorActivity activity = (MapEditorActivity) getContext();
+                        activity.showDeleteToggleBar(position); // Activity의 메서드 호출
+                    }
+                }
+            }
             //m_RoiCurObject.SetLineColor(oldc);
         }
 
@@ -439,6 +477,7 @@ public class MapImageView extends View {
         if (strMenu.equals("핀 회전")) {
             for (CDrawObj roiObject : m_RoiObjects) {
                 roiObject.clearIconDrawable();
+                roiObject.clearRotateDrawable();
             }
         }
         strMenu = "default";
@@ -494,8 +533,7 @@ public class MapImageView extends View {
             }
             m_drawstart = false;
         } else if (str.equals("삭제")) {
-            roi_RemoveObject();
-            CObject_CurRoiCancelFunc();
+
         } else if (str.equals("핀 회전")) {
             // RotatePinIcon();
             // TODO 기능 구현 필요
@@ -507,11 +545,12 @@ public class MapImageView extends View {
 
     // 241222 jihyeon 핀 회전 모드 아이콘
     private void RotatePinIcon() {
-        Drawable newDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
-
+        Drawable iconDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
+        Drawable rotateDrawable = getResources().getDrawable(R.drawable.ic_rotate, null);
         // 모든 ROI 객체의 핀을 새로운 Drawable로 설정
         for (CDrawObj roiObject : m_RoiObjects) {
-            roiObject.setIconDrawable(newDrawable);
+            roiObject.setIconDrawable(iconDrawable);
+            roiObject.setRotateDrawable(rotateDrawable);
         }
 
         // 화면 갱신
@@ -570,6 +609,7 @@ public class MapImageView extends View {
             m_ptOld.x = (int) x;
             m_ptOld.y = (int) y;
         }
+
         //else if(strMode.equals("Roi Find & Move"))
         //{
         //    // 클릭한 곳의 객체를 찾아서 선택된 것으로 설정한다.
@@ -722,16 +762,21 @@ public class MapImageView extends View {
                 invalidate(); // 화면을 다시 그리도록 요청
             }
 
-        } else if (strMenu.equals("핀 회전")){
-            if (previousX != 0 && previousY != 0) {
-                float deltaAngle = calculateAngle(previousX, previousY, x, y);
-                totalAngle += deltaAngle; // 각도 변화 누적
-            }
+        }
+        else if (strMenu.equals("핀 회전")){
 
-            previousX = x;
-            previousY = y;
+            float iconCenterX = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.x * zoom_rate + StartPos_x)); // +30 - 30 상쇄됨
+            float iconCenterY = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.y * zoom_rate + StartPos_y)); // +40 - 40 상쇄됨
 
-            Log.d(TAG, "Total Angle: " + totalAngle);
+            float deltaAngle = calculateAngle(iconCenterX, iconCenterY, x, y);
+
+//            if(deltaAngle > 360)
+//                deltaAngle -= 360;
+//            else if(deltaAngle < -360)
+//                deltaAngle += 360;
+
+            m_RoiObjects.get(m_RoiCurIndex).setAngle(deltaAngle);
+            Log.d(TAG,"Delta Angle:" +  deltaAngle );
         }
         else {
             // 정수로 변환
@@ -837,14 +882,21 @@ public class MapImageView extends View {
 
             //MoveMap(dx,dy);
         }
-        else if (strMenu.equals("핀 회전")){
-            // 실시간 각도 계산
-            float angle = calculateAngle(m_DnPoint.x, m_DnPoint.y, x, y);
-            upAngle = angle;
-            totalAngle = 0f;
-            Log.d(TAG,"Mouse UP X: " + x + ", y: " + y);
-            Log.d(TAG, "Current Angle: " + angle);
-        }
+//        else if (strMenu.equals("핀 회전")){
+//            // 실시간 각도 계산
+//            float angle = calculateAngle(m_DnPoint.x, m_DnPoint.y, x, y);
+//            upAngle = angle;
+//            totalAngle = 0f;
+//            Log.d(TAG,"Mouse UP X: " + x + ", y: " + y);
+//            Log.d(TAG, "Current Angle: " + angle);
+//            Log.d(TAG, "Curindex: " + m_RoiCurIndex + ", ojbselect: " +m_objSelect);
+//            for (int i = 0; i < m_RoiObjects.size(); i++) {
+//                if(i == m_RoiCurIndex && m_objSelect != -1){
+//                    //m_RoiObjects.get(i).setAngle(upAngle);
+//                    Log.d(TAG, "ANgle : "+ upAngle);
+//                }
+//            }
+//        }
         //else if(strMode.equals("Roi Find & Move"))
         //{
         //
@@ -1469,7 +1521,7 @@ public class MapImageView extends View {
             m_RoiCurObject.MoveTo(pt1, pt2);
         }
 
-            if(m_RoiCurIndex > -1)
+        if(m_RoiCurIndex > -1)
         {
             //m_RoiObjects.get(m_RoiCurIndex) = m_RoiCurObject;
             m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);
@@ -1788,9 +1840,16 @@ public class MapImageView extends View {
 
     private float calculateAngle(float x1, float y1, float x2, float y2) {
         // atan2로 각도 계산
-        float angle = (float) Math.toDegrees(Math.atan2(y2 - y1, x2 - x1));
+        float angle =  - (float) (Math.atan2(y2 - y1, x2 - x1));
 
-        // 반시계 + -> 시계 + 로 반전
-        return -angle;
+        return angle;
     }
+
+    private void hideDeleteToggleBar() {
+        View deleteToggleBar = findViewById(R.id.delete_toggle_bar);
+        if (deleteToggleBar != null) {
+            deleteToggleBar.setVisibility(View.INVISIBLE);
+        }
+    }
+
 }

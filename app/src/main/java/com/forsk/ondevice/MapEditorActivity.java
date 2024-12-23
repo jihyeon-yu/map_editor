@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -159,11 +160,16 @@ public class MapEditorActivity extends Activity {
 
     private ConstraintLayout toggleBar;
     private ConstraintLayout toggleBar_CreateSpace;
-    private boolean lib_flag = false;
+    private boolean lib_flag = true;
 
     private Mat transformationMatrix = null;
 
+    private float rotated_angle = 0f;
     int original_image_height = 0;
+
+    // 삭제 토글바 관련 변수
+    private View deleteToggleBar;
+    private ImageView deleteButton, cancelButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -187,6 +193,8 @@ public class MapEditorActivity extends Activity {
         // Toggle Bar 레이아웃 가져오기
         toggleBar = findViewById(R.id.toggle_bar);
         toggleBar_CreateSpace = findViewById(R.id.toggle_bar_createspace);
+
+
 
         // Toggle Bar 초기 상태 설정
         updateToggleBarVisibility();
@@ -232,6 +240,10 @@ public class MapEditorActivity extends Activity {
         View fabDeleteObjectClicked = findViewById(R.id.fabDeleteObjectClicked);
         View fabRenameObjectClicked = findViewById(R.id.fabRenameObjectClicked);
 
+        // 삭제 버튼 초기화 (onCreate 메서드에서)
+        deleteToggleBar = findViewById(R.id.delete_toggle_bar);
+        deleteButton = deleteToggleBar.findViewById(R.id.deleteButton);
+        cancelButton = deleteToggleBar.findViewById(R.id.cancelButton);
 
         // 241217 jihyeon
         // cancle 버튼과 goback 버튼 구분하여 구현 필요
@@ -366,6 +378,7 @@ public class MapEditorActivity extends Activity {
             updateButtonBackground(buttonSpaceCreation);
             updateToggleBarVisibility();
             updateModeDescription();
+            hideDeleteToggleBar();
             fabAddObjectClicked.setVisibility(View.GONE);
             fabSelectObjectClicked.setVisibility(View.GONE);
             fabMoveObjectClicked.setVisibility(View.GONE);
@@ -373,8 +386,6 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
-
-
         });
 
         buttonBlockWall.setOnClickListener(v -> {
@@ -384,6 +395,7 @@ public class MapEditorActivity extends Activity {
             updateButtonBackground(buttonBlockWall);
             updateToggleBarVisibility();
             updateModeDescription();
+            hideDeleteToggleBar();
             fabAddObjectClicked.setVisibility(View.GONE);
             fabSelectObjectClicked.setVisibility(View.GONE);
             fabMoveObjectClicked.setVisibility(View.GONE);
@@ -400,6 +412,7 @@ public class MapEditorActivity extends Activity {
             updateButtonBackground(buttonBlockArea);
             updateToggleBarVisibility();
             updateModeDescription();
+            hideDeleteToggleBar();
             fabAddObjectClicked.setVisibility(View.GONE);
             fabSelectObjectClicked.setVisibility(View.GONE);
             fabMoveObjectClicked.setVisibility(View.GONE);
@@ -485,6 +498,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
 
         fabMoveObject.setOnClickListener(v -> {
@@ -497,6 +511,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabSelectObject.setOnClickListener(v -> {
             //  Select Object
@@ -508,6 +523,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabDeleteObject.setOnClickListener(v -> {
             MapViewer.SetMenu("삭제");
@@ -518,6 +534,11 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.VISIBLE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            Log.d(TAG, "current index: " + MapViewer.getCurrentSelectedIndex());
+            if (MapViewer.getCurrentSelectedIndex() != -1) {
+                Pair<Integer, Integer> selectedObjectPosition = MapViewer.getSelectedObjectPosition();
+                showDeleteToggleBar(selectedObjectPosition);
+            }
         });
         fabMovePin.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 이동");
@@ -528,6 +549,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabRotatePin.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 회전");
@@ -538,6 +560,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.VISIBLE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
 
         // 241217 jihyeon
@@ -551,6 +574,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
 
         fabMoveObjectCS.setOnClickListener(v -> {
@@ -562,6 +586,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabSelectObjectCS.setOnClickListener(v -> {
             MapViewer.SetMenu("선택");
@@ -572,7 +597,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
-
+            hideDeleteToggleBar();
         });
         fabDeleteObjectCS.setOnClickListener(v -> {
             MapViewer.SetMenu("삭제");
@@ -583,6 +608,11 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.VISIBLE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            Log.d(TAG, "current index: " + MapViewer.getCurrentSelectedIndex());
+            if (MapViewer.getCurrentSelectedIndex() != -1) {
+                Pair<Integer, Integer> selectedObjectPosition = MapViewer.getSelectedObjectPosition();
+                showDeleteToggleBar(selectedObjectPosition);
+            }
         });
         fabMovePinCS.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 이동");
@@ -593,6 +623,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
         fabRotatePinCS.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 회전");
@@ -603,6 +634,7 @@ public class MapEditorActivity extends Activity {
             fabRotatePinClicked.setVisibility(View.VISIBLE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
+            hideDeleteToggleBar();
         });
 
         fabRenameObjectCS.setOnClickListener(v -> {
@@ -621,6 +653,22 @@ public class MapEditorActivity extends Activity {
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             updateToggleBarVisibility();
+            hideDeleteToggleBar();
+        });
+
+
+        // 휴지통 버튼 클릭 이벤트
+        deleteButton.setOnClickListener(v -> {
+            MapViewer.roi_RemoveObject();
+            MapViewer.CObject_CurRoiCancelFunc();
+            MapViewer.clearSelection(); // 선택 초기화 메서드
+            hideDeleteToggleBar();
+        });
+
+        // X 버튼 클릭 이벤트
+        cancelButton.setOnClickListener(v -> {
+            MapViewer.clearSelection(); // 선택 초기화 메서드
+            hideDeleteToggleBar();
         });
 
         MapViewer = findViewById(R.id.imageView);
@@ -640,16 +688,49 @@ public class MapEditorActivity extends Activity {
                 // 리스너 제거 (메모리 누수 방지)
                 MapViewer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
-
                 try {
-                    Log.d(TAG, "Run library-rotate!");
-                    MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
-                    Log.d(TAG, "Library-rotate Finish!");
 
-                    Log.d(TAG, "Run library-line opt!");
-                    MapOptimization.lineOptimization(PATH_FILE_MAP_ROT, PATH_FILE_MAP_OPT, NAME_FILE_MAP_ORG);
-                    Log.d(TAG, "Library-line Finish!");
-                    lib_flag = true;
+                    // File 객체 생성
+                    File file = new File(srcMapPgmFilePath);
+
+
+                    String path = file.getParent() + "/"; // 디렉터리 경로
+                    String filename = file.getName(); // 파일 이름
+                    String fileTitle = filename.substring(0, filename.lastIndexOf('.')); // 확장자를 제외한 파일 제목
+
+                    String path_rot = path + "rot/";
+                    File file_rot = new File(path_rot);
+                    // 폴더가 제대로 만들어졌는지 체크 ======
+                    if (!file_rot.mkdirs()) {
+
+                        Log.e("FILE", "Directory not created : "+path_rot);
+
+                    }
+                    Log.d("SKOnDeviceService", "Run library-rotate!");
+                    //com.caselab.forsk.MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
+                    com.caselab.forsk.MapOptimization.mapRotation(path, path_rot, fileTitle);
+                    Log.d("SKOnDeviceService", "Library-rotate Finish!");
+
+                    String path_opt = path + "opt/";
+                    File file_opt = new File(path_opt);
+                    // 폴더가 제대로 만들어졌는지 체크 ======
+                    if (!file_opt.mkdirs()) {
+
+                        Log.e("FILE", "Directory not created : "+path_opt);
+
+                    }
+                    Log.d("SKOnDeviceService", "Run library-line opt!");
+                    //MapOptimization.lineOptimization(PATH_FILE_MAP_ROT, PATH_FILE_MAP_OPT, NAME_FILE_MAP_ORG);
+                    com.caselab.forsk.MapOptimization.lineOptimization(path_rot, path_opt, fileTitle);
+                    Log.d("SKOnDeviceService", "Library-line Finish!");
+
+                    String strPgmFile = path_opt + fileTitle + ".pgm";
+
+                    //Log.d(TAG, strPgmFile);
+                    lib_flag = false;
+                    srcMapPgmFilePath = strPgmFile;
+                    srcMapYamlFilePath = path_opt + fileTitle + ".yaml";
+
                 }  catch (UnsatisfiedLinkError e) {
                     Log.e(TAG, "Native library not loaded or linked properly", e);
                 } catch (ExceptionInInitializerError e) {
@@ -659,10 +740,7 @@ public class MapEditorActivity extends Activity {
                 } catch (Throwable e) {
                     Log.e(TAG, "Unexpected error occurred", e);
                 }
-                if(lib_flag) {
-                    srcMapPgmFilePath = PATH_FILE_MAP_OPT + NAME_FILE_MAP_ORG + ".pgm";
-                    srcMapYamlFilePath = PATH_FILE_MAP_OPT + NAME_FILE_MAP_ORG + ".yaml";
-                }
+
                 try {
                     Bitmap bitmap = loadPGM(srcMapPgmFilePath);
                     if (bitmap != null) {
@@ -670,7 +748,7 @@ public class MapEditorActivity extends Activity {
 
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "IOException error occurred", e);
                 }
 
                 if (!loadYaml(srcMapYamlFilePath)) {
@@ -711,6 +789,19 @@ public class MapEditorActivity extends Activity {
 
     }
 
+    // 토글바 표시 함수
+    void showDeleteToggleBar(Pair<Integer, Integer> position) {
+        Log.d(TAG, "Toggle Bar Location: " + position.first + ", " + position.second);
+        deleteToggleBar.setVisibility(View.VISIBLE);
+        // 선택된 객체 위치에 토글바 배치
+        deleteToggleBar.setX(position.first);
+        deleteToggleBar.setY(position.second);
+    }
+
+    // 토글바 숨김 함수
+    private void hideDeleteToggleBar() {
+        deleteToggleBar.setVisibility(View.GONE);
+    }
 
     private void updateToggleBarVisibility() {
         if (currentMode == MODE_SPACE_CREATION) {
@@ -998,7 +1089,7 @@ public class MapEditorActivity extends Activity {
             Log.d(TAG, "origin_angle : " + origin_angle);
 
             // 241222 최적화 라이브러리 읽을 경우 추가.
-            if (lib_flag){
+            if (lib_flag) {
                 original_image_height = (int)data.get("original_image_height");
                 // 추가: transformation_matrix 읽기
                 ArrayList<ArrayList<Double>> matrixList = (ArrayList<ArrayList<Double>>) data.get("transformation_matrix");
@@ -1010,12 +1101,7 @@ public class MapEditorActivity extends Activity {
                 // 행과 열 크기 설정
                 int rows = matrixList.size();
                 int cols = matrixList.get(0).size();
-                // OpenCV 네이티브 라이브러리 로드
-                if (!OpenCVLoader.initDebug()) {
-                    Log.e("OpenCV", "OpenCV initialization failed!");
-                } else {
-                    Log.d("OpenCV", "OpenCV initialized successfully!");
-                }
+
                 // OpenCV Mat 객체 생성
                 transformationMatrix = new Mat(rows, cols, CvType.CV_64F);
 
@@ -1027,6 +1113,8 @@ public class MapEditorActivity extends Activity {
                         transformationMatrix.put(i, j, value.doubleValue()); // Double로 변환하여 Mat에 추가
                     }
                 }
+                rotated_angle = (float) data.get("rotated_angle");
+                Log.d(TAG,"rotated angle: " + rotated_angle);
             }
 
             return true;
@@ -1143,7 +1231,6 @@ public class MapEditorActivity extends Activity {
                 strRoiJson += "]";
                 strRoiJson += ", \"robot_position\":{";
 
-
                 // Log.d(TAG, "xvw before : "+ xvw);
 
                 // MapViewer.m_RoiObjects.get(i).m_MBR;
@@ -1160,6 +1247,7 @@ public class MapEditorActivity extends Activity {
                 double yvh = coordinates[1];
                 strRoiJson += "\"x\":" + xvw;
                 strRoiJson += ", \"y\":" + yvh;
+                strRoiJson += ", \"theta\":" + (MapViewer.m_RoiObjects.get(i).getAngle() -  Math.toRadians(rotated_angle));
 
                 strRoiJson += "}";
 
@@ -1178,7 +1266,7 @@ public class MapEditorActivity extends Activity {
 
                 strRoiJson += "\"x\":" + (int) xvw_image;
                 strRoiJson += ", \"y\":" + (int) yvh_image;
-
+                strRoiJson += ", \"theta\":" + MapViewer.m_RoiObjects.get(i).getAngle();
                 strRoiJson += "}";
                 strRoiJson += "}";
             }
@@ -1470,7 +1558,7 @@ public class MapEditorActivity extends Activity {
         // 내부 저장소에서 파일 스트림 열기
         // InputStream 데이터를 문자열로 변환
         try (InputStream inputStream = new FileInputStream(filePath);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))){
+             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))){
 
             String line;
 
@@ -1525,6 +1613,10 @@ public class MapEditorActivity extends Activity {
                 MapViewer.m_RoiCurObject.m_MBR_center.x = mbr_x;
                 MapViewer.m_RoiCurObject.m_MBR_center.y = mbr_y;
                 MapViewer.SetLabel(name);
+                if (lib_flag) {
+                    float theta = (float)imagePosition.getDouble("theta");
+                    MapViewer.m_RoiCurObject.setAngle(theta);
+                }
             }
 
 
@@ -1583,10 +1675,10 @@ public class MapEditorActivity extends Activity {
             Log.d(TAG, "Read Json Success");
             return true;
         }  catch (FileNotFoundException fe) {
-        Log.e(TAG, "Read Json FileNotFoundException: " + filePath + " " + fe.getMessage());
-        return false;
+            Log.e(TAG, "Read Json FileNotFoundException: " + filePath + " " + fe.getMessage());
+            return false;
         } catch (JSONException | IOException e) {
-            Log.e(TAG, "Read Json FileNotFoundException: " + e.getMessage());
+            Log.e(TAG, "Read Json JSON, IO Exception: " + e.getMessage());
             return false;
         }
 
@@ -1642,5 +1734,4 @@ public class MapEditorActivity extends Activity {
 
 
 }
-
 
