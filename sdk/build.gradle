@@ -106,7 +106,9 @@ android {
 
         versionCode openCVersionCode
         versionName openCVersionName
-
+        ndk {
+            abiFilters.addAll(["armeabi-v7a", "arm64-v8a"]) // `.addAll()`로 설정
+        }
         externalNativeBuild {
             cmake {
                 arguments "-DANDROID_STL=c++_shared"
@@ -123,12 +125,31 @@ android {
     buildTypes {
         debug {
             packagingOptions {
-                doNotStrip '**/*.so'  // controlled by OpenCV CMake scripts
+                exclude "lib/armeabi-v7a/libOpenCV_test_calib3d.so" // 제외할 라이브러리 파일
+                exclude "lib/armeabi-v7a/libOpenCV_test_dnn.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_features2d.so"
+                exclude "lib/armeabi-v7a/libOpenCV_test_flann.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_gapi.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_highgui.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_ml.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_photo.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_video.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_videoio.so"    // 필요 없는 경우 추가            }
             }
         }
+
         release {
             packagingOptions {
-                doNotStrip '**/*.so'  // controlled by OpenCV CMake scripts
+                exclude "lib/armeabi-v7a/libOpenCV_test_calib3d.so" // 제외할 라이브러리 파일
+                exclude "lib/armeabi-v7a/libOpenCV_test_dnn.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_features2d.so"
+                exclude "lib/armeabi-v7a/libOpenCV_test_flann.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_gapi.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_highgui.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_ml.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_photo.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_video.so"    // 필요 없는 경우 추가            }
+                exclude "lib/armeabi-v7a/libOpenCV_test_videoio.so"    // 필요 없는 경우 추가            }
             }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'

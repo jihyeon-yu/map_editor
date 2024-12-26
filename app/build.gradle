@@ -12,9 +12,19 @@ android {
         targetSdk 34
         versionCode 2
         versionName "0.0.9"
-
+        ndk {
+            abiFilters.addAll(["armeabi-v7a", "arm64-v8a"]) // `.addAll()`로 설정
+        }
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+//    splits {
+//        abi {
+//            enable true
+//            reset()
+//            include 'armeabi-v7a', 'arm64-v8a' // 필요한 ABI만 포함
+//            universalApk false // Universal APK를 생성하지 않음
+//        }
+//    }
     signingConfigs {
 
         release {
@@ -39,6 +49,15 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+    packagingOptions {
+        exclude "lib/x86/*"
+        exclude "lib/x86_64/*"
     }
 }
 

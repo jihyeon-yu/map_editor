@@ -25,3 +25,19 @@
 -dontwarn java.beans.IntrospectionException
 -dontwarn java.beans.Introspector
 -dontwarn java.beans.PropertyDescriptor
+
+
+# Keep all OpenCV classes
+-keep class org.opencv.** { *; }
+
+# Keep all native methods
+-keepclassmembers class * {
+    native <methods>;
+}
+
+# Keep Mat and CvType from being optimized
+-keep class org.opencv.core.Mat { *; }
+-keep class org.opencv.core.CvType { *; }
+
+# Keep specific OpenCV utilities (optional, depending on your usage)
+-keep class org.opencv.utils.** { *; }

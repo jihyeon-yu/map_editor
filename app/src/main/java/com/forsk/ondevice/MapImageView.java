@@ -17,6 +17,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -293,11 +294,35 @@ public class MapImageView extends View {
 
         //Log.d(TAG, "m_RoiObjects.size() : " + (int)(m_RoiObjects.size()));
 
+
+        int i;
+
+        Drawable iconDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
+        Drawable rotateDrawable = getResources().getDrawable(R.drawable.ic_rotate, null);
+
         // 시작위치 만큼 + 해줘야 일치한다.
         Point pt = new Point(StartPos_x, StartPos_y);
-        int i;
         int x, y;
         for (i = 0; i < m_RoiObjects.size(); i++) {
+
+            if (strMenu.equals("핀 회전")) {
+                if (m_RoiObjects.get(i).roi_type.equals("roi_polygon")) {
+                    // 선택된 것만 회전한다.
+                    if (i == m_RoiCurIndex) {
+                        m_RoiObjects.get(i).setIconDrawable(iconDrawable);
+                        m_RoiObjects.get(i).setRotateDrawable(rotateDrawable);
+                    } else {
+                        m_RoiObjects.get(i).setIconDrawable(iconDrawable);
+                        m_RoiObjects.get(i).setRotateDrawable(null);
+                    }
+                }
+            }
+            else
+            {
+                m_RoiObjects.get(i).setIconDrawable(null);
+            }
+
+
             m_RoiObjects.get(i).SetZoom(zoom_rate);
             if (strMenu.equals("수정")) {
                 if (m_CurType.equals(m_RoiObjects.get(i).roi_type)) {
@@ -306,12 +331,20 @@ public class MapImageView extends View {
                     m_RoiObjects.get(i).Draw(canvas, pt, bitmap, false, false);
                 }
             } else {
-                m_RoiObjects.get(i).Draw(canvas, pt, bitmap, false, false);
+                if(i == m_RoiCurIndex)
+                {
+                    m_RoiObjects.get(i).Draw(canvas, pt, bitmap, true, false);
+                }
+                else {
+                    m_RoiObjects.get(i).Draw(canvas, pt, bitmap, false, false);
+                }
             }
             //m_RoiObjects.get(i).DrawLabel(canvas);
             // 241222 jihyeon 핀 회전일 때 아이콘 변경
             if (strMenu.equals("핀 회전")) {
-                RotatePinIcon();
+
+                //RotatePinIcon();
+
             } else if (m_RoiObjects.get(i).roi_type.equals("roi_polygon")) {
 
                 Point mbr = m_RoiObjects.get(i).GetMBRCenter();
@@ -558,6 +591,18 @@ public class MapImageView extends View {
         // 화면 갱신
         invalidate();
     }
+    private void RotatePinIcon(int nIndex) {
+        if(nIndex > (m_RoiObjects.size()-1)) return ;
+        CDrawObj roiObject = m_RoiObjects.get(nIndex);
+
+        Drawable iconDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
+        Drawable rotateDrawable = getResources().getDrawable(R.drawable.ic_rotate, null);
+        if (roiObject.roi_type.equals("roi_polygon")) {
+            roiObject.setIconDrawable(iconDrawable);
+            roiObject.setRotateDrawable(rotateDrawable);
+        }
+
+    }
 
     public String GetMenu() {
         return this.strMenu;
@@ -598,19 +643,20 @@ public class MapImageView extends View {
     }
 
     public void MouseDown(float x, float y) {
+        Log.d(TAG, "mouseDown("+x+","+y+")");
 
         nTouchUpPosX = nTouchDownPosX = (int) (x * zoom_rate);
         nTouchUpPosY = nTouchDownPosY = (int) (y * zoom_rate);
 
         //241218 성웅 strMode 맵탐색에서 strMenu 이동으로 변경
         // TODO 추후 정리 필요
-        if (strMenu.equals("이동") || strMenu.equals("핀 회전")) {
+        if (strMenu.equals("이동") ) {
+        //if (strMenu.equals("이동") || strMenu.equals("핀 회전")) {
             m_DnPoint.x = (int) x;
             m_DnPoint.y = (int) y;
 
             m_ptOld.x = (int) x;
             m_ptOld.y = (int) y;
-
 
         }
 
@@ -629,13 +675,13 @@ public class MapImageView extends View {
 
             Point point = new Point(pt_x, pt_y);
 
-            //Log.d(TAG, "----------------------------------");
-            //Log.d(TAG, "m_isCapture : " + m_isCapture);
-            //Log.d(TAG, "m_drawing : " + m_drawing);
-            //Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
-            //Log.d(TAG, "m_CurType : " + m_CurType);
-            //Log.d(TAG, "m_objSelect : " + m_objSelect);
-            //Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
+            Log.d(TAG, "----------------------------------");
+            Log.d(TAG, "m_isCapture : " + m_isCapture);
+            Log.d(TAG, "m_drawing : " + m_drawing);
+            Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
+            Log.d(TAG, "m_CurType : " + m_CurType);
+            Log.d(TAG, "m_objSelect : " + m_objSelect);
+            Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
 
             // 그리기 상태
             if (m_drawstart == true) {
@@ -730,7 +776,6 @@ public class MapImageView extends View {
     public void MouseMove(float x, float y) {
         //Log.d(TAG, "MouseMove( "+x+","+y+" )");
 
-
         if (strMenu.equals("이동"))
         //if(strMode.equals("맵 탐색") )
         {
@@ -768,19 +813,23 @@ public class MapImageView extends View {
 
         }
         else if (strMenu.equals("핀 회전")){
+            if(m_RoiCurIndex != -1) {
+                float iconCenterX = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.x * zoom_rate + StartPos_x)); // +30 - 30 상쇄됨
+                float iconCenterY = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.y * zoom_rate + StartPos_y)); // +40 - 40 상쇄됨
 
-            float iconCenterX = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.x * zoom_rate + StartPos_x)); // +30 - 30 상쇄됨
-            float iconCenterY = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.y * zoom_rate + StartPos_y)); // +40 - 40 상쇄됨
+                float deltaAngle = calculateAngle(iconCenterX, iconCenterY, x, y);
 
-            float deltaAngle = calculateAngle(iconCenterX, iconCenterY, x, y);
+                //            if(deltaAngle > 360)
+                //                deltaAngle -= 360;
+                //            else if(deltaAngle < -360)
+                //                deltaAngle += 360;
 
-//            if(deltaAngle > 360)
-//                deltaAngle -= 360;
-//            else if(deltaAngle < -360)
-//                deltaAngle += 360;
+                m_RoiObjects.get(m_RoiCurIndex).setAngle(deltaAngle);
+                //Log.d(TAG,"Delta Angle:" +  deltaAngle );
 
-            m_RoiObjects.get(m_RoiCurIndex).setAngle(deltaAngle);
-            //Log.d(TAG,"Delta Angle:" +  deltaAngle );
+                // 화면을 갱신해준다.
+                invalidate();
+            }
        }
         else {
             // 정수로 변환
@@ -875,7 +924,7 @@ public class MapImageView extends View {
     }
 
     public void MouseUp(float x, float y) {
-        //Log.d(TAG, "MouseUp( "+x+","+y+" )");
+        Log.d(TAG, "MouseUp( "+x+","+y+" )");
 
         nTouchUpPosX = (int) (x * zoom_rate);
         nTouchUpPosY = (int) (y * zoom_rate);
@@ -915,14 +964,14 @@ public class MapImageView extends View {
             Point point = new Point(pt_x, pt_y);
             m_bIsMouseDown = false;
 
-            //Log.d(TAG, "----------------------------------");
-            //Log.d(TAG, "m_isCapture : " + m_isCapture);
-            //Log.d(TAG, "m_drawing : " + m_drawing);
-            //Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
-            //Log.d(TAG, "m_CurType : " + m_CurType);
-            //Log.d(TAG, "m_objSelect : " + m_objSelect);
-            //Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
-            //Log.d(TAG, "point : (" + point.x + "," + point.y+")");
+            Log.d(TAG, "----------------------------------");
+            Log.d(TAG, "m_isCapture : " + m_isCapture);
+            Log.d(TAG, "m_drawing : " + m_drawing);
+            Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
+            Log.d(TAG, "m_CurType : " + m_CurType);
+            Log.d(TAG, "m_objSelect : " + m_objSelect);
+            Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
+            Log.d(TAG, "point : (" + point.x + "," + point.y+")");
 
             if (m_isCapture) // 누른 상태에서 마우스 이동중
             {

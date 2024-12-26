@@ -37,6 +37,7 @@ public class CDrawObj {
     Paint labelpaint;   // 라벨 글자 색상
     Paint Rectpaint;    // roi 색상
 
+
     private Path path;        // 폴리곤 경로
     Paint fillPaint;   // 채우기 색상
     private Random random;    // 랜덤 생성기
@@ -47,6 +48,10 @@ public class CDrawObj {
 
     private Drawable rotateDrawable;
     float angle = 0.0f;
+
+    Paint RectDashpaint;
+    ArrayList<Point> m_DashPoints;
+    boolean bDashViewflag = true;
 
     public CDrawObj(String strType, int nLeft, int nTop, int nRight, int nBottom)
     {
@@ -72,8 +77,8 @@ public class CDrawObj {
         {
             Rectpaint.setColor(Color.RED);
         }
-
         Rectpaint.setStyle(Paint.Style.STROKE); // 사각형 내부를 없음
+
 
         // 랜덤 생성기 초기화
         random = new Random();
@@ -96,13 +101,19 @@ public class CDrawObj {
             fillPaint.setColor(Color.argb(178, 255, 70, 80));
         }
 
+        RectDashpaint = new Paint();
+        RectDashpaint.setColor(Color.WHITE); // 반투명 파란색 (#80FF0000)
+        RectDashpaint.setStrokeWidth(5);
+        RectDashpaint.setStyle(Paint.Style.STROKE); // 사각형 내부를 없음
+        RectDashpaint.setPathEffect(new DashPathEffect(new float[]{10, 10}, 0));
 
-        // 사각형 그리기
-        //float left = 10; // 사각형의 왼쪽 X 좌표
-        //float top = 10; // 사각형의 위쪽 Y 좌표
-        //float right = 50; // 사각형의 오른쪽 X 좌표
-        //float bottom = 50; // 사각형의 아래쪽 Y 좌표
-        //canvas.drawRect(left, top, right, bottom, Rectpaint);
+        m_DashPoints = new ArrayList<Point>();
+        int i=0;
+        for(i=0;i<4;i++)
+        {
+            Point pt = new Point(0,0);
+            m_DashPoints.add(pt);
+        }
     }
 
     // 랜덤 색상 생성 함수
@@ -204,6 +215,11 @@ public class CDrawObj {
 
     public int GetLineColor(){ return Rectpaint.getColor(); }
 
+    public void SetDashLineColor(int color) { RectDashpaint.setColor(color); }
+
+    public int GetDashLineColor(){ return RectDashpaint.getColor(); }
+
+
     public void SetFillColor(int color)
     {
         fillPaint.setColor(color);
@@ -255,6 +271,54 @@ public class CDrawObj {
                 if(bSelected || bEdit) {
                     canvas.drawCircle((int) ((float) m_MBR.right * m_zoom + pt_Start.x), (int) ((float) m_MBR.bottom * m_zoom + pt_Start.y), 5, Rectpaint);
                 }
+
+                if(bDashViewflag && bSelected) {
+                    int lengthExtension = 5;
+                    int x1 = (int) (m_MBR.left * m_zoom + pt_Start.x);
+                    int y1 = (int) (m_MBR.top * m_zoom + pt_Start.y);
+                    int x2 = (int) (m_MBR.right * m_zoom + pt_Start.x);
+                    int y2 = (int) (m_MBR.bottom * m_zoom + pt_Start.y);
+
+                    // 두 점 간의 각도 계산
+                    double lineAngle = Math.atan2(y2 - y1, x2 - x1);
+                    //Log.d(TAG, "lineAngle : " + lineAngle);
+
+                    // 두 점 길이를 구한다.
+                    int dx = x2 - x1;
+                    int dy = y2 - y1;
+                    double lineDistance = Math.sqrt(dx * dx + dy * dy);
+                    Log.d(TAG, "lineDistance : " + lineDistance);
+
+                    // 두 점의 중앙에서 직각으로 50px 점을 각각 구한다.
+                    // 메모리 누스를 피하기 위해서 new를 사용하지 않는다.
+
+                    // 중심에서 수직으로 떨어진 두 점 계산
+                    float distance = 50;
+                    float offsetX1 = ((x1 + x2) / 2.0f) + distance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f);
+                    float offsetY1 = ((y1 + y2) / 2.0f) + distance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f);
+
+                    float offsetX2 = ((x1 + x2) / 2.0f) + distance * (float) Math.cos(lineAngle - (float) Math.PI / 2.0f);
+                    float offsetY2 = ((y1 + y2) / 2.0f) + distance * (float) Math.sin(lineAngle - (float) Math.PI / 2.0f);
+
+                    //canvas.drawCircle(offsetX1, offsetY1, 10, Rectpaint); // 첫 번째 선의 중심점
+                    //canvas.drawCircle(offsetX2, offsetY2, 10, Rectpaint); // 두 번째 선의 중심점
+
+                    // 줌심에서 수직으로 떨어진 두 점에서 두 점의 기울기를 이용해서 두 점의 거리보다 distance 만큼 더 긴 곳의 두 점을 각각 구한다.
+                    double newlineHalfDistance = (lineDistance / 2.0) + distance;
+                    m_DashPoints.get(0).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                    m_DashPoints.get(0).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                    m_DashPoints.get(1).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                    m_DashPoints.get(1).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+                    m_DashPoints.get(3).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                    m_DashPoints.get(3).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                    m_DashPoints.get(2).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                    m_DashPoints.get(2).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+
+                    int i=0;
+                    for(i=0;i<4;i++) {
+                        canvas.drawLine((int) m_DashPoints.get(i%4).x, (int) m_DashPoints.get(i%4).y, (int) m_DashPoints.get((i+1)%4).x, (int) m_DashPoints.get((i+1)%4).y, RectDashpaint);
+                    }
+                }
                 break;
 
             case "roi_rect":
@@ -268,6 +332,38 @@ public class CDrawObj {
                     canvas.drawCircle((int)((float)m_MBR.left*m_zoom + pt_Start.x), (int)((float)m_MBR.bottom*m_zoom + pt_Start.y), 5, Rectpaint);
                     canvas.drawCircle((int)((float)m_MBR.right*m_zoom + pt_Start.x), (int)((float)m_MBR.bottom*m_zoom+pt_Start.y), 5, Rectpaint);
                     canvas.drawCircle((int)((float)m_MBR.right*m_zoom + pt_Start.x), (int)((float)m_MBR.top*m_zoom+pt_Start.y), 5, Rectpaint);
+                }
+                if(bDashViewflag && bSelected)
+                {
+                    float distance = 50;
+
+                    // normalize rect
+                    int nTemp = 0;
+                    if(m_MBR.left > m_MBR.right)
+                    {
+                        nTemp = m_MBR.left;
+                        m_MBR.left = m_MBR.right;
+                        m_MBR.right = nTemp;
+                    }
+                    if(m_MBR.top > m_MBR.bottom)
+                    {
+                        nTemp = m_MBR.bottom;
+                        m_MBR.bottom = m_MBR.left;
+                        m_MBR.left = nTemp;
+                    }
+                    m_DashPoints.get(0).x = (int)( ((float)m_MBR.left*m_zoom + pt_Start.x) - distance );
+                    m_DashPoints.get(0).y = (int)( ((float)m_MBR.top*m_zoom + pt_Start.y) - distance );
+                    m_DashPoints.get(1).x = (int)( ((float)m_MBR.right*m_zoom + pt_Start.x) + distance );
+                    m_DashPoints.get(1).y = (int)( ((float)m_MBR.top*m_zoom + pt_Start.y) - distance );
+                    m_DashPoints.get(2).x = (int)( ((float)m_MBR.right*m_zoom + pt_Start.x) + distance );
+                    m_DashPoints.get(2).y = (int)( ((float)m_MBR.bottom*m_zoom + pt_Start.y) + distance );
+                    m_DashPoints.get(3).x = (int)( ((float)m_MBR.left*m_zoom + pt_Start.x) - distance );
+                    m_DashPoints.get(3).y = (int)( ((float)m_MBR.bottom*m_zoom + pt_Start.y) + distance );
+
+                    int i=0;
+                    for(i=0;i<4;i++) {
+                        canvas.drawLine((int) m_DashPoints.get(i%4).x, (int) m_DashPoints.get(i%4).y, (int) m_DashPoints.get((i+1)%4).x, (int) m_DashPoints.get((i+1)%4).y, RectDashpaint);
+                    }
                 }
 
                 break;
@@ -395,7 +491,9 @@ public class CDrawObj {
             dashedPaint.setStrokeWidth(5);
             Rect rect = new Rect(iconLeft, iconTop, iconRight, iconBottom);
 
-            rotateDrawable.setBounds(iconRight-26,iconBottom-26,iconRight+26,iconBottom+26);
+            if(rotateDrawable != null) {
+                rotateDrawable.setBounds(iconRight - 26, iconBottom - 26, iconRight + 26, iconBottom + 26);
+            }
             iconDrawable.setBounds(iconLeft, iconTop, iconRight, iconBottom);
             // Canvas 회전 및 아이콘 그리기
             canvas.save(); // 현재 Canvas 상태 저장
@@ -412,8 +510,12 @@ public class CDrawObj {
 
             // 회전된 상태에서 그리기
             iconDrawable.draw(canvas);
-            canvas.drawRect(rect, dashedPaint);
-            rotateDrawable.draw(canvas);
+
+            if(rotateDrawable != null) {
+                canvas.drawRect(rect, dashedPaint);
+                rotateDrawable.draw(canvas);
+
+            }
 
             canvas.restore(); // Canvas 상태 복원
 
