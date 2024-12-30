@@ -824,8 +824,11 @@ public class MapImageView extends View {
                 //            else if(deltaAngle < -360)
                 //                deltaAngle += 360;
 
+                //Log.d(TAG,"Delta Angle:" +  Math.toDegrees(deltaAngle));
                 m_RoiObjects.get(m_RoiCurIndex).setAngle(deltaAngle);
-                //Log.d(TAG,"Delta Angle:" +  deltaAngle );
+//                double anglef = deltaAngle - Math.toRadians(-60.9810);
+//              Log.d(TAG,"Raddain:" +  Math.toDegrees(anglef));
+//                m_RoiObjects.get(m_RoiCurIndex).setAngle((float)anglef);
 
                 // 화면을 갱신해준다.
                 invalidate();
@@ -964,14 +967,14 @@ public class MapImageView extends View {
             Point point = new Point(pt_x, pt_y);
             m_bIsMouseDown = false;
 
-            Log.d(TAG, "----------------------------------");
-            Log.d(TAG, "m_isCapture : " + m_isCapture);
-            Log.d(TAG, "m_drawing : " + m_drawing);
-            Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
-            Log.d(TAG, "m_CurType : " + m_CurType);
-            Log.d(TAG, "m_objSelect : " + m_objSelect);
-            Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
-            Log.d(TAG, "point : (" + point.x + "," + point.y+")");
+//            Log.d(TAG, "----------------------------------");
+//            Log.d(TAG, "m_isCapture : " + m_isCapture);
+//            Log.d(TAG, "m_drawing : " + m_drawing);
+//            Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
+//            Log.d(TAG, "m_CurType : " + m_CurType);
+//            Log.d(TAG, "m_objSelect : " + m_objSelect);
+//            Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
+//            Log.d(TAG, "point : (" + point.x + "," + point.y+")");
 
             if (m_isCapture) // 누른 상태에서 마우스 이동중
             {

@@ -74,8 +74,10 @@ public class MapEditorActivity extends Activity {
         try {
             System.loadLibrary(NAME_LIBRARY_CASELAB_OPT);
             Log.d("SKOnDeviceService", "SO library load success!");
-        } catch(Exception e) {
-            Log.d("SKOnDeviceService", "SO library load error : " + e.toString());
+        }  catch (UnsatisfiedLinkError e) {
+            Log.e("SKOnDeviceService", "SO library load error (UnsatisfiedLinkError): " + e.toString());
+        } catch (SecurityException e) {
+            Log.e("SKOnDeviceService", "SO library load error (SecurityException): " + e.toString());
         }
     }
     /*
@@ -1096,8 +1098,12 @@ public class MapEditorActivity extends Activity {
                     } else {
                         Log.d("OpenCV", "Initialization succeeded.");
                     }
-                } catch (Exception e) {
-                    Log.e("OpenCV", "Exception while loading OpenCV", e);
+                } catch (UnsatisfiedLinkError e) {
+                    Log.e("OpenCV", "Native library not found or incompatible ABI: " + e.toString());
+                } catch (SecurityException e) {
+                    Log.e("OpenCV", "Security exception while loading OpenCV: " + e.toString());
+                } catch (RuntimeException e) {
+                    Log.e("OpenCV", "Runtime exception during OpenCV initialization: " + e.toString());
                 }
                 original_image_height = (int)data.get("original_image_height");
                 // 추가: transformation_matrix 읽기
@@ -1256,7 +1262,17 @@ public class MapEditorActivity extends Activity {
                 double yvh = coordinates[1];
                 strRoiJson += "\"x\":" + xvw;
                 strRoiJson += ", \"y\":" + yvh;
-                strRoiJson += ", \"theta\":" + (MapViewer.m_RoiObjects.get(i).getAngle() -  Math.toRadians(rotated_angle));
+                double angle = MapViewer.m_RoiObjects.get(i).getAngle() -  Math.toRadians(rotated_angle);
+
+                // -pi ~ +pi 범위 검사
+//                if(angle > Math.PI)
+//                {
+//                    angle = -(2*Math.PI - angle);
+//                }else if (angle < - Math.PI){
+//                    angle = Math.PI*2 + angle;
+//                }
+                angle = ((angle + Math.PI) % (2 * Math.PI)) - Math.PI;
+                strRoiJson += ", \"theta\":" + angle;
 
                 strRoiJson += "}";
 
@@ -1567,7 +1583,8 @@ public class MapEditorActivity extends Activity {
         // 내부 저장소에서 파일 스트림 열기
         // InputStream 데이터를 문자열로 변환
         try (InputStream inputStream = new FileInputStream(filePath);
-             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))){
+             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)){
 
             String line;
 
@@ -1689,6 +1706,9 @@ public class MapEditorActivity extends Activity {
         } catch (JSONException | IOException e) {
             Log.e(TAG, "Read Json JSON, IO Exception: " + e.getMessage());
             return false;
+        } finally {
+            // 자원이 자동으로 닫히는지 확인할 필요가 없지만 명시적으로 로깅 가능
+            Log.d(TAG, "loadjson end");
         }
 
     }
