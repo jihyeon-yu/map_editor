@@ -71,7 +71,7 @@ public class CDrawObj {
 
 
         Rectpaint = new Paint();
-        Rectpaint.setColor(Color.BLUE); // 반투명 파란색 (#80FF0000)
+        Rectpaint.setColor(Color.RED); // 반투명 파란색 (#80FF0000)
         Rectpaint.setStrokeWidth(10);
         if(roi_type.equals("roi_rect"))
         {
