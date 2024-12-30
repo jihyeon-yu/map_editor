@@ -1883,9 +1883,9 @@ public class MapImageView extends View {
 
 
         // 왼쪽 하단이 원점(0,0)이다.
-        m_RoiCurObject.m_MBR.left = point1.x;
+        m_RoiCurObject.m_MBR.right = point1.x;
         m_RoiCurObject.m_MBR.bottom = point1.y;
-        m_RoiCurObject.m_MBR.right = point2.x;
+        m_RoiCurObject.m_MBR.left = point2.x;
         m_RoiCurObject.m_MBR.top = point2.y;
         if (m_RoiCurIndex > -1) {
             m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);

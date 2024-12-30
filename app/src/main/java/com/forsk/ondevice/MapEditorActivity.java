@@ -1392,50 +1392,40 @@ public class MapEditorActivity extends Activity {
                     strRoiJson += ", ";
                 }
 
-                count_id_line++; // 고유 id
+                Log.d(TAG, "image_height: " + image_height + ", " + "image width: " + image_width);
 
+                count_id_line++;
+                CDrawObj roi = MapViewer.m_RoiObjects.get(i);
 
-                strRoiJson += "{";
-                strRoiJson += "\"image_path\":[";
-                strRoiJson += "{";
+                strRoiJson += "{\"image_path\":[";
 
-                //left bottom
-                strRoiJson += "\"x\":" + (int) (MapViewer.m_RoiObjects.get(i).m_MBR.left);
-                strRoiJson += ", \"y\":" + (int) (MapViewer.m_RoiObjects.get(i).m_MBR.top);
+                // Add start point
+                strRoiJson += "{\"x\":" + (int) roi.m_MBR.left +
+                        ", \"y\":" + (int) (roi.m_MBR.top) + "}, ";
 
-                // right top
-                strRoiJson += "}, {\"x\":" + (int) (MapViewer.m_RoiObjects.get(i).m_MBR.right);
-                strRoiJson += ", \"y\":" + (int) (MapViewer.m_RoiObjects.get(i).m_MBR.bottom);
+                // Add end point
+                strRoiJson += "{\"x\":" + (int) roi.m_MBR.right +
+                        ", \"y\":" + (int) (roi.m_MBR.bottom) + "}], ";
 
-                strRoiJson += "}";
-                strRoiJson += "]";
-                strRoiJson += ", \"robot_path\":[";
+                strRoiJson += "\"robot_path\":[";
 
+                // Convert image coordinates to robot coordinates
+                double[] startCoordinates = calculateCoordinate(roi.m_MBR.left, roi.m_MBR.top, image_height);
+                double[] endCoordinates = calculateCoordinate(roi.m_MBR.right, roi.m_MBR.bottom, image_height);
 
-                strRoiJson += "{";
+                // Add start robot path
+                strRoiJson += "{\"x\":" + startCoordinates[0] +
+                        ", \"y\":" + startCoordinates[1] + "}, ";
 
-                //left bottom
-                double[] coordinates = calculateCoordinate(MapViewer.m_RoiObjects.get(i).m_MBR.left, MapViewer.m_RoiObjects.get(i).m_MBR.top, image_height);
-                double line_x = coordinates[0];
-                double line_y = coordinates[1];
+                // Add end robot path
+                strRoiJson += "{\"x\":" + endCoordinates[0] +
+                        ", \"y\":" + endCoordinates[1] + "}], ";
 
-                strRoiJson += "\"x\":" + line_x;
-                strRoiJson += ", \"y\":" + line_y;
-
-                // right top
-                coordinates = calculateCoordinate(MapViewer.m_RoiObjects.get(i).m_MBR.right, MapViewer.m_RoiObjects.get(i).m_MBR.bottom, image_height);
-                line_x = coordinates[0];
-                line_y = coordinates[1];
-
-                strRoiJson += "}, {\"x\":" + line_x;
-                strRoiJson += ", \"y\":" + line_y;
-
-                strRoiJson += "}";
-
-                strRoiJson += "]";
-                strRoiJson += ", \"id\": \"d4f940b8-81cf-4b46-82d6-8f10f4e03038" + (int) (Math.random() * 255) + (int) (Math.random() * 255) + "\"";
-                strRoiJson += "}";
+                // Add unique ID
+                strRoiJson += "\"id\":\"d4f940b8-81cf-4b46-82d6-8f10f4e03038" +
+                        (int) (Math.random() * 255) + "\"}";
             }
+
 
         }
         strRoiJson += "]";
@@ -1510,6 +1500,7 @@ public class MapEditorActivity extends Activity {
 
         return false;
     }
+
 
     public boolean roi_saveToEmptyFile(String strPath, String strFileName) {
 
