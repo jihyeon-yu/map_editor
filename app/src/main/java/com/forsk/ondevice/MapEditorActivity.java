@@ -1689,6 +1689,9 @@ public class MapEditorActivity extends Activity {
                 MapViewer.CObject_LoadRect(pt1, pt2);
                 MapViewer.roi_AddObject();
             }
+
+            MapViewer.m_RoiCurIndex = -1;
+            MapViewer.m_RoiCurObject = null;
             Log.d(TAG, "Read Json Success");
             return true;
         }  catch (FileNotFoundException fe) {

@@ -147,6 +147,8 @@ public class MapImageView extends View {
     }
 
     public MapImageView(Context context, AttributeSet attrs) {
+
+        
         super(context, attrs);
 
         paint = new Paint();
@@ -163,6 +165,10 @@ public class MapImageView extends View {
 
         // ScaleGestureDetector 초기화
         scaleGestureDetector = new ScaleGestureDetector(context, new ScaleListener());
+
+        // 선택 객체 초기화
+        m_RoiCurIndex = -1;
+        m_RoiCurObject = null;
 
     }
 
@@ -325,13 +331,13 @@ public class MapImageView extends View {
 
             m_RoiObjects.get(i).SetZoom(zoom_rate);
             if (strMenu.equals("수정")) {
-                if (m_CurType.equals(m_RoiObjects.get(i).roi_type)) {
+                if (m_CurType.equals(m_RoiObjects.get(i).roi_type) && i == m_RoiCurIndex) {
                     m_RoiObjects.get(i).Draw(canvas, pt, bitmap, true, true);
                 } else {
                     m_RoiObjects.get(i).Draw(canvas, pt, bitmap, false, false);
                 }
             } else {
-                if(i == m_RoiCurIndex)
+                if (i == m_RoiCurIndex)
                 {
                     m_RoiObjects.get(i).Draw(canvas, pt, bitmap, true, false);
                 }
