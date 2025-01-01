@@ -1072,22 +1072,58 @@ public class MapEditorActivity extends Activity {
             // YAML 파싱
             Map<String, Object> data = yaml.load(inputStream);
 
-            nResolution = (double) data.get("resolution");
-            Log.d(TAG, "resolution : " + nResolution);
+            // nResolution = (double) data.get("resolution");
+            // nResolution 처리
+            //Log.d(TAG, "resolution : " + nResolution);
+            Object resolutionValue = data.get("resolution");
+            if (resolutionValue instanceof Number) {
+                nResolution = ((Number) resolutionValue).doubleValue();
+                Log.d(TAG, "resolution : " + nResolution);
+            } else {
+                Log.d(TAG, "Resolution is not a valid number.");
+            }
 
-            ArrayList<Double> origin = (ArrayList<Double>) data.get("origin");
+            //ArrayList<Double> origin = (ArrayList<Double>) data.get("origin");
+            ArrayList<?> origin = (ArrayList<?>) data.get("origin");
+            if (origin != null && origin.size() >= 3) {
+                Object originX = origin.get(0);
+                Object originY = origin.get(1);
+                Object originAngle = origin.get(2);
 
-            Log.d(TAG, "origin.get(0) : " + origin.get(0));
+                if (originX instanceof Number) {
+                    origin_x = ((Number) originX).doubleValue();
+                    Log.d(TAG, "origin_x : " + origin_x);
+                } else {
+                    Log.d(TAG, "origin_x is not a valid number.");
+                }
 
-            //origin_x = (double)Double.parseDouble(data.get(0).toString());
-            origin_x = (double) origin.get(0);
+                if (originY instanceof Number) {
+                    origin_y = ((Number) originY).doubleValue();
+                    Log.d(TAG, "origin_y : " + origin_y);
+                } else {
+                    Log.d(TAG, "origin_y is not a valid number.");
+                }
 
-            Log.d(TAG, "origin_x : " + origin_x);
-
-            origin_y = (double) origin.get(1);
-            origin_angle = (double) origin.get(2);
-            Log.d(TAG, "origin_y : " + origin_y);
-            Log.d(TAG, "origin_angle : " + origin_angle);
+                if (originAngle instanceof Number) {
+                    origin_angle = ((Number) originAngle).doubleValue();
+                    Log.d(TAG, "origin_angle : " + origin_angle);
+                } else {
+                    Log.d(TAG, "origin_angle is not a valid number.");
+                }
+            } else {
+                Log.d(TAG, "Origin data is incomplete or invalid.");
+            }
+//            Log.d(TAG, "origin.get(0) : " + origin.get(0));
+//
+//            //origin_x = (double)Double.parseDouble(data.get(0).toString());
+//            origin_x = (double) origin.get(0);
+//
+//            Log.d(TAG, "origin_x : " + origin_x);
+//
+//            origin_y = (double) origin.get(1);
+//            origin_angle = (double) origin.get(2);
+//            Log.d(TAG, "origin_y : " + origin_y);
+//            Log.d(TAG, "origin_angle : " + origin_angle);
 
             // 241222 최적화 라이브러리 읽을 경우 추가.
             if (lib_flag) {
@@ -1105,31 +1141,68 @@ public class MapEditorActivity extends Activity {
                 } catch (RuntimeException e) {
                     Log.e("OpenCV", "Runtime exception during OpenCV initialization: " + e.toString());
                 }
-                original_image_height = (int)data.get("original_image_height");
+                //original_image_height = (int)data.get("original_image_height");
+                Object originalImageHeightValue = data.get("original_image_height");
+                if (originalImageHeightValue instanceof Number) {
+                    original_image_height = ((Number) originalImageHeightValue).intValue();
+                    Log.d(TAG, "original_image_height: " + original_image_height);
+                } else {
+                    Log.d(TAG, "original_image_height is not a valid number.");
+                }
+
                 // 추가: transformation_matrix 읽기
-                ArrayList<ArrayList<Double>> matrixList = (ArrayList<ArrayList<Double>>) data.get("transformation_matrix");
-                for (int i = 0; i < matrixList.size(); i++) {
-                    ArrayList<Double> row = matrixList.get(i);
-                    Log.d(TAG, "transformation_matrix row " + i + " : " + row);
+                //ArrayList<ArrayList<Double>> matrixList = (ArrayList<ArrayList<Double>>) data.get("transformation_matrix");
+                //for (int i = 0; i < matrixList.size(); i++) {
+                //    ArrayList<Double> row = matrixList.get(i);
+                //    Log.d(TAG, "transformation_matrix row " + i + " : " + row);
+                //}
+                ArrayList<ArrayList<?>> matrixList = (ArrayList<ArrayList<?>>) data.get("transformation_matrix");
+                if (matrixList != null && !matrixList.isEmpty()) {
+                    int rows = matrixList.size();
+                    int cols = matrixList.get(0).size();
+
+                    transformationMatrix = new Mat(rows, cols, CvType.CV_64F);
+
+                    for (int i = 0; i < rows; i++) {
+                        ArrayList<?> row = matrixList.get(i);
+                        for (int j = 0; j < cols; j++) {
+                            Object cellValue = row.get(j);
+                            if (cellValue instanceof Number) {
+                                transformationMatrix.put(i, j, ((Number) cellValue).doubleValue());
+                                Log.d(TAG, "transformation_matrix row " + i + " , " + j +" : " + ((Number) cellValue).doubleValue());
+                            } else {
+                                Log.d(TAG, "Invalid value in transformation_matrix at (" + i + ", " + j + ").");
+                            }
+                        }
+                    }
+                } else {
+                    Log.d(TAG, "Transformation matrix data is invalid.");
                 }
 
                 // 행과 열 크기 설정
-                int rows = matrixList.size();
-                int cols = matrixList.get(0).size();
+                //int rows = matrixList.size();
+                //int cols = matrixList.get(0).size();
 
                 // OpenCV Mat 객체 생성
-                transformationMatrix = new Mat(rows, cols, CvType.CV_64F);
+                //transformationMatrix = new Mat(rows, cols, CvType.CV_64F);
 
                 // 데이터 복사
-                for (int i = 0; i < rows; i++) {
-                    ArrayList<?> row = matrixList.get(i); // 데이터를 제네릭으로 읽음
-                    for (int j = 0; j < cols; j++) {
-                        Number value = (Number) row.get(j); // Number로 캐스팅
-                        transformationMatrix.put(i, j, value.doubleValue()); // Double로 변환하여 Mat에 추가
-                    }
+//                for (int i = 0; i < rows; i++) {
+//                    ArrayList<?> row = matrixList.get(i); // 데이터를 제네릭으로 읽음
+//                    for (int j = 0; j < cols; j++) {
+//                        Number value = (Number) row.get(j); // Number로 캐스팅
+//                        transformationMatrix.put(i, j, value.doubleValue()); // Double로 변환하여 Mat에 추가
+//                    }
+//                }
+                Object rotatedAngleValue = data.get("rotated_angle");
+                if (rotatedAngleValue instanceof Number) {
+                    rotated_angle = ((Number) rotatedAngleValue).floatValue();
+                    Log.d(TAG, "Converted to float: " + rotated_angle);
+                } else {
+                    Log.d(TAG, "rotated_angle is not a valid number.");
                 }
-                rotated_angle = (float) (double) data.get("rotated_angle");
-                Log.d(TAG,"rotated angle: " + rotated_angle);
+                //rotated_angle = (float) (double) data.get("rotated_angle");
+                //Log.d(TAG,"rotated angle: " + rotated_angle);
             }
 
             return true;
