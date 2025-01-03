@@ -172,6 +172,10 @@ public class MapEditorActivity extends Activity {
     private View deleteToggleBar;
     private ImageView deleteButton, cancelButton;
 
+    // roi complete 토글바 관련 변수
+    private View roiCompleteToggleBar;
+    private ImageView roiCompleteButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         androidx.core.splashscreen.SplashScreen.installSplashScreen(this);
@@ -284,7 +288,16 @@ public class MapEditorActivity extends Activity {
             } catch (InterruptedException ie) {
                 Log.e(TAG, "Cancle Button InterruptedExtception: " + ie.getMessage());
             }
+        });
 
+        // roi complete 버튼 초기화 (onCreate 메서드에서)
+        roiCompleteToggleBar = findViewById(R.id.roi_complete_toggle_bar);
+        roiCompleteButton = roiCompleteToggleBar.findViewById(R.id.roiCompleteButton);
+        hideRoiCompleteToggleBar(); // 초기에는 안 보이는 것으로 설정
+
+        roiCompleteButton.setOnClickListener(v -> {
+            // 완료 버튼이 클릭되면 roi 생성완료
+            hideRoiCompleteToggleBar();
         });
 
         gobackButton.setOnClickListener(v -> {
@@ -771,6 +784,103 @@ public class MapEditorActivity extends Activity {
             }
         });
 
+        // MapImageView에서 Rio가 선택되면 수신
+        MapViewer.setRoiSelectedListener(new MapImageView.OnRoiSelectedListener() {
+            @Override
+            public void onRoiSelected(int indexSelected) {
+                // ROI가 선택된 경우
+                Log.d(TAG, "onRoiSelected("+indexSelected+")");
+
+                // 필요한 버튼을 선택된 ROI 객체에 Dash 역역에 보여준다.
+                if( (indexSelected > -1) && ( indexSelected < MapViewer.m_RoiObjects.size()))
+                {
+                    //    [0]=====[1]
+                    //    ||      ||
+                    //    ||      ||
+                    //    [3]=====[2]
+
+                    int nLef = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x;
+                    int nTop = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y;
+                    int nRight = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x;
+                    int nBottom = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y;
+
+                    Log.d(TAG, "nLef : "+nLef);
+                    Log.d(TAG, "nTop : "+nTop);
+                    Log.d(TAG, "nRight : "+nRight);
+                    Log.d(TAG, "nBottom : "+nBottom);
+
+                    showRoiCompleteToggleBar(nLef,nTop);
+                }
+                else
+                {
+                    // 선택된 것이 없음.
+                    hideRoiCompleteToggleBar();
+                }
+            }
+        });
+
+        // MapImageView에서 Rio(m_RoiCurObject)가 새로 생성되어 저장되기 전까지 수신
+        MapViewer.setRoiCreateListener(new MapImageView.OnRoiCreateListener(){
+            @Override
+            public void onRoiCreate() {
+                // ROI 새롭게 만든 경우
+                Log.d(TAG, "setRoiCreateListener.onRoiCreate()");
+
+                // 필요한 버튼을 선택된 ROI 객체에 Dash 역역에 보여준다.
+                if( MapViewer.m_RoiCurObject != null)
+                {
+                    //    [0]=====[1]
+                    //    ||      ||
+                    //    ||      ||
+                    //    [3]=====[2]
+
+                    int nLef = MapViewer.m_RoiCurObject.m_DashPoints.get(0).x;
+                    int nTop = MapViewer.m_RoiCurObject.m_DashPoints.get(0).y;
+                    int nRight = MapViewer.m_RoiCurObject.m_DashPoints.get(2).x;
+                    int nBottom = MapViewer.m_RoiCurObject.m_DashPoints.get(2).y;
+
+                    Log.d(TAG, "nLef : "+nLef);
+                    Log.d(TAG, "nTop : "+nTop);
+                    Log.d(TAG, "nRight : "+nRight);
+                    Log.d(TAG, "nBottom : "+nBottom);
+
+                    showRoiCompleteToggleBar(nLef,nTop);
+                }
+                else
+                {
+                    hideRoiCompleteToggleBar();
+                }
+            }
+        });
+
+        // MapImageView에서 Rio가 선택된 것의 변형, 이동시 수신
+        MapViewer.setRoiChangedListener(new MapImageView.OnRoiChangedListener(){
+            @Override
+            public void onRoiChanged(int indexSelected) {
+                // ROI 수정한 경우
+                Log.d(TAG, "onRoiChanged("+indexSelected+")");
+
+                // 필요한 버튼을 선택된 ROI 객체에 Dash 역역에 보여준다.
+                if( (indexSelected > -1) && ( indexSelected < MapViewer.m_RoiObjects.size()))
+                {
+                    //    [0]=====[1]
+                    //    ||      ||
+                    //    ||      ||
+                    //    [3]=====[2]
+
+                    int nLef = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x;
+                    int nTop = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y;
+                    int nRight = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x;
+                    int nBottom = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y;
+
+                    Log.d(TAG, "nLef : "+nLef);
+                    Log.d(TAG, "nTop : "+nTop);
+                    Log.d(TAG, "nRight : "+nRight);
+                    Log.d(TAG, "nBottom : "+nBottom);
+                }
+            }
+        });
+
         srcMapPgmFilePath = getIntent().getStringExtra("srcMapPgmFilePath");
         if (srcMapPgmFilePath == null) {
             //srcMapPgmFilePath = "/storage/emulated/0/Download/caffe_map.pgm";   // for test
@@ -788,6 +898,7 @@ public class MapEditorActivity extends Activity {
             destMappingFilePath = "/sdcard/Download/map_meta_sample.json";    // for test
         }
 
+
     }
 
     // 토글바 표시 함수
@@ -802,6 +913,29 @@ public class MapEditorActivity extends Activity {
     // 토글바 숨김 함수
     private void hideDeleteToggleBar() {
         deleteToggleBar.setVisibility(View.GONE);
+    }
+
+    // 토글바 표시 함수
+    void showRoiCompleteToggleBar(int x, int y) {
+        Log.d(TAG, "showRoiCompleteToggleBar(" + x + ", " + y+")");
+        roiCompleteToggleBar.setVisibility(View.VISIBLE);
+
+        // MapViewer의 시작위치를 가져온다.
+        int[] location = new int[2];
+        MapViewer.getLocationOnScreen(location);
+
+        //int x0 = location[0]; // X 좌표
+        //int y0 = location[1]; // Y 좌표
+        //Log.d(TAG, "location : ("+x0+","+y0+")");
+
+        // 선택된 객체 위치에 토글바 배치
+        roiCompleteToggleBar.setX(x + location[0]);
+        roiCompleteToggleBar.setY(y + location[1]);
+    }
+
+    // 토글바 숨김 함수
+    private void hideRoiCompleteToggleBar() {
+        roiCompleteToggleBar.setVisibility(View.GONE);
     }
 
     private void updateToggleBarVisibility() {

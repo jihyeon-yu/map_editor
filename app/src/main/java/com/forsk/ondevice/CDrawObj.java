@@ -522,6 +522,99 @@ public class CDrawObj {
         }
 
     }
+    public void MakeTracker(int start_x, int start_y)
+    {
+        float distance = 50;
+        switch (this.roi_type) {
+            case "roi_point":
+
+                m_DashPoints.get(0).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(0).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(1).x = (int)( ((float)m_MBR.left*m_zoom + start_x) + distance );
+                m_DashPoints.get(1).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(2).x = (int)( ((float)m_MBR.left*m_zoom + start_x) + distance );
+                m_DashPoints.get(2).y = (int)( ((float)m_MBR.top*m_zoom + start_y) + distance );
+                m_DashPoints.get(3).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(3).y = (int)( ((float)m_MBR.top*m_zoom + start_y) + distance );
+
+                break;
+
+            case "roi_line":
+                int lengthExtension = 5;
+                int x1 = (int) (m_MBR.left * m_zoom + start_x);
+                int y1 = (int) (m_MBR.top * m_zoom + start_y);
+                int x2 = (int) (m_MBR.right * m_zoom + start_x);
+                int y2 = (int) (m_MBR.bottom * m_zoom + start_y);
+
+                // 두 점 간의 각도 계산
+                double lineAngle = Math.atan2(y2 - y1, x2 - x1);
+                //Log.d(TAG, "lineAngle : " + lineAngle);
+
+                // 두 점 길이를 구한다.
+                int dx = x2 - x1;
+                int dy = y2 - y1;
+                double lineDistance = Math.sqrt(dx * dx + dy * dy);
+                Log.d(TAG, "lineDistance : " + lineDistance);
+
+                // 두 점의 중앙에서 직각으로 50px 점을 각각 구한다.
+                // 메모리 누스를 피하기 위해서 new를 사용하지 않는다.
+
+                // 중심에서 수직으로 떨어진 두 점 계산
+
+                float offsetX1 = ((x1 + x2) / 2.0f) + distance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f);
+                float offsetY1 = ((y1 + y2) / 2.0f) + distance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f);
+
+                float offsetX2 = ((x1 + x2) / 2.0f) + distance * (float) Math.cos(lineAngle - (float) Math.PI / 2.0f);
+                float offsetY2 = ((y1 + y2) / 2.0f) + distance * (float) Math.sin(lineAngle - (float) Math.PI / 2.0f);
+
+                //canvas.drawCircle(offsetX1, offsetY1, 10, Rectpaint); // 첫 번째 선의 중심점
+                //canvas.drawCircle(offsetX2, offsetY2, 10, Rectpaint); // 두 번째 선의 중심점
+
+                // 줌심에서 수직으로 떨어진 두 점에서 두 점의 기울기를 이용해서 두 점의 거리보다 distance 만큼 더 긴 곳의 두 점을 각각 구한다.
+                double newlineHalfDistance = (lineDistance / 2.0) + distance;
+                m_DashPoints.get(0).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                m_DashPoints.get(0).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                m_DashPoints.get(1).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                m_DashPoints.get(1).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+                m_DashPoints.get(3).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                m_DashPoints.get(3).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                m_DashPoints.get(2).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                m_DashPoints.get(2).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+
+                break;
+
+            case "roi_rect":
+
+                // normalize rect
+                int nTemp = 0;
+                if(m_MBR.left > m_MBR.right)
+                {
+                    nTemp = m_MBR.left;
+                    m_MBR.left = m_MBR.right;
+                    m_MBR.right = nTemp;
+                }
+                if(m_MBR.top > m_MBR.bottom)
+                {
+                    nTemp = m_MBR.bottom;
+                    m_MBR.bottom = m_MBR.left;
+                    m_MBR.left = nTemp;
+                }
+
+                m_DashPoints.get(0).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(0).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(1).x = (int)( ((float)m_MBR.right*m_zoom + start_x) + distance );
+                m_DashPoints.get(1).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(2).x = (int)( ((float)m_MBR.right*m_zoom + start_x) + distance );
+                m_DashPoints.get(2).y = (int)( ((float)m_MBR.bottom*m_zoom + start_y) + distance );
+                m_DashPoints.get(3).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(3).y = (int)( ((float)m_MBR.bottom*m_zoom + start_y) + distance );
+
+                break;
+
+            case "roi_polygon":
+                break;
+        }
+    }
 
     public void AddPoint(Point point)
     {

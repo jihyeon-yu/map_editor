@@ -209,6 +209,13 @@
         android:layout_height="wrap_content"
         android:visibility="invisible"/>
 
+    <!-- roi complete 토글바 -->
+    <include
+        android:id="@+id/roi_complete_toggle_bar"
+        layout="@layout/roi_complete_toggle_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"/>
 
     <!-- 토글바 클릭 버튼 레이아웃 -->
     <LinearLayout

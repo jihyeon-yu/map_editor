@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import android.graphics.Matrix;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 public class MapImageView extends View {
@@ -107,12 +108,16 @@ public class MapImageView extends View {
     // 공간 개수
     int roomNum = 0;
 
+    private OnRoiSelectedListener RoiSelectedListener;
+    private OnRoiCreateListener RoiCreateListener;
+    private OnRoiChangedListener RoiChangedListener;
+
     public int getCurrentSelectedIndex() {
         return m_RoiCurIndex;
     }
 
     public Pair<Integer, Integer> getSelectedObjectPosition() {
-        if (m_RoiCurIndex != -1 && m_RoiCurIndex < m_RoiObjects.size()) {
+        if ( (m_RoiCurIndex != -1) && (m_RoiCurIndex < m_RoiObjects.size()) ) {
             int x;
             int y;
             if (m_RoiCurObject.roi_type.equals("roi_polygon")) {
@@ -134,6 +139,8 @@ public class MapImageView extends View {
 
     public void clearSelection() {
         m_RoiCurIndex = -1;
+        // 선택 안된 것을 activity에 전달
+        RoiSelectedListener.onRoiSelected(m_RoiCurIndex);
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
@@ -735,6 +742,15 @@ public class MapImageView extends View {
                     m_DnPoint.x = point.x;
                     m_DnPoint.y = point.y;
 
+
+                    if(m_RoiCurObject != null)
+                    {
+                        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+
+                        // 현재 그려지는 객체의 위치가 변경되었다는 것을 통보해준다.
+                        RoiCreateListener.onRoiCreate();
+                    }
                     invalidate(); // 화면을 다시 그리도록 요청
                 }
             }
@@ -773,6 +789,14 @@ public class MapImageView extends View {
                     //CObject_Draw();
 
                 }
+                if(this.m_RoiCurIndex > -1)
+                {
+                    // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                    m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                    // 변경된 것을 Activity에 전달해준다.
+                    RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                }
+
                 invalidate(); // 화면을 다시 그리도록 요청
             }
         }
@@ -814,6 +838,14 @@ public class MapImageView extends View {
                 matrix.postTranslate((float) dx, (float) dy);
                 //Log.d(TAG,"check mouse move: ");
 
+                if(this.m_RoiCurIndex > -1)
+                {
+                    // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                    m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                    // 변경된 것을 Activity에 전달해준다.
+                    RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                }
+
                 invalidate(); // 화면을 다시 그리도록 요청
             }
 
@@ -832,9 +864,7 @@ public class MapImageView extends View {
 
                 //Log.d(TAG,"Delta Angle:" +  Math.toDegrees(deltaAngle));
                 m_RoiObjects.get(m_RoiCurIndex).setAngle(deltaAngle);
-//                double anglef = deltaAngle - Math.toRadians(-60.9810);
-//              Log.d(TAG,"Raddain:" +  Math.toDegrees(anglef));
-//                m_RoiObjects.get(m_RoiCurIndex).setAngle((float)anglef);
+
 
                 // 화면을 갱신해준다.
                 invalidate();
@@ -864,6 +894,13 @@ public class MapImageView extends View {
                 if (m_drawing == true) {
                     if (m_CurType.equals("roi_line") || m_CurType.equals("roi_rect")) {
                         CObject_MoveToRect(m_DnPoint, point);
+
+                        if(m_RoiCurObject != null) {
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                            // 현재 그리고 있는 것이 변경되었다고 알려준다.
+                            RoiCreateListener.onRoiCreate();
+                        }
                     }
                 } else {
                     if (m_objSelect == 0) {
@@ -890,6 +927,10 @@ public class MapImageView extends View {
 
                             CObject_MoveToRect(m_DnPoint, point);
 
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                            // 변경된 것을 Activity에 전달해준다.
+                            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
 
                             invalidate(); // 화면을 다시 그리도록 요청
                         }
@@ -923,6 +964,20 @@ public class MapImageView extends View {
                         CObject_MoveTo(m_DnPoint, point);
                         //CObject_MoveToRect(m_DnPoint, point);
                         m_DnPoint = point;
+                        if(m_RoiCurIndex > -1)
+                        {
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                            // 변경된 것을 Activity에 전달해준다.
+                            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                        }
+                        if(m_RoiCurObject != null)
+                        {
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                            // 변경된 것을 Activity에 전달해준다.
+                            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                        }
 
                         invalidate(); // 화면을 다시 그리도록 요청
                     }
@@ -1049,6 +1104,20 @@ public class MapImageView extends View {
 
                     //map_image_draw();
                     //CObject_Draw();
+                    if(m_RoiCurIndex > -1)
+                    {
+                        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                        m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                        // 선택된 것을 Activity에 전달해준다.
+                        RoiSelectedListener.onRoiSelected(m_RoiCurIndex);
+                    }
+                    if(this.m_RoiCurObject != null)
+                    {
+                        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                        // 선택된 것을 Activity에 전달해준다.
+                        RoiCreateListener.onRoiCreate();
+                    }
                     invalidate(); // 화면을 다시 그리도록 요청
 
                     SetCursorType();
@@ -1060,6 +1129,13 @@ public class MapImageView extends View {
                     m_isselected = true;
 
                     //map_image_draw();
+                    if(m_RoiCurIndex > -1)
+                    {
+                        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                        m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                        // 변경된 것을 Activity에 전달해준다.
+                        RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                    }
                     invalidate();
                     //CObject_Draw();
 
@@ -1090,7 +1166,13 @@ public class MapImageView extends View {
             StartPos_y = (int) ((viewHeight - imageH * zoom_rate) / 2);
         }
 
-
+        if(this.m_RoiCurIndex > -1)
+        {
+            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+            // 변경된 것을 Activity에 전달해준다.
+            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+        }
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
@@ -1154,6 +1236,11 @@ public class MapImageView extends View {
             m_isCapture = false;
             m_isselected = true;
 
+            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+            // 추가된 것을 Activity에 전달해준다.
+            RoiCreateListener.onRoiCreate();
+
             invalidate();
 
             return;
@@ -1171,6 +1258,11 @@ public class MapImageView extends View {
             m_RoiCurObject.m_endroiflag = true;
             m_isCapture = false;
             m_isselected = true;
+
+            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+            // 추가된 것을 Activity에 전달해준다.
+            RoiCreateListener.onRoiCreate();
 
             invalidate();
 
@@ -1202,12 +1294,24 @@ public class MapImageView extends View {
                     m_isCapture = false;
                     m_isselected = true;
 
+                    // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                    m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                    // 추가된 것을 Activity에 전달해준다.
+                    RoiCreateListener.onRoiCreate();
+
                     invalidate();
 
                     return;
 
                 }
             }
+            if(m_RoiCurObject != null) {
+                // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                // 추가된 것을 Activity에 전달해준다.
+                RoiCreateListener.onRoiCreate();
+            }
+
             invalidate();
             SetCursorType();
         }
@@ -1218,6 +1322,8 @@ public class MapImageView extends View {
         if (!m_drawstart && !m_drawing) {
             if (CObject_DelCurObject()) {
                 //roomNum = CountRoomNum(); 공간 이름을 갱신할 것인가?
+                // 변경된 것을 Activity에 전달해준다.
+                RoiChangedListener.onRoiChanged(m_RoiCurIndex);
                 invalidate();
             }
         }
@@ -1366,6 +1472,8 @@ public class MapImageView extends View {
         m_RoiCurIndex = -1;
 
         //map_image_draw();
+        // 변경된 것을 Activity에 전달해준다.
+        RoiChangedListener.onRoiChanged(m_RoiCurIndex);
         invalidate(); // 화면을 다시 그리도록 요청
         //CObject_Draw();
 
@@ -1387,6 +1495,8 @@ public class MapImageView extends View {
             m_isselected = false;
 
             //map_image_draw();
+            // 변경된 것을 Activity에 전달해준다.
+            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
             invalidate(); // 화면을 다시 그리도록 요청
             //CObject_Draw();
         } else if (m_drawstart) {
@@ -1434,6 +1544,11 @@ public class MapImageView extends View {
         }
 
         //map_image_draw();
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
+
         invalidate(); // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
@@ -1468,6 +1583,10 @@ public class MapImageView extends View {
         }
 
         //map_image_draw();
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate(); // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
@@ -1508,6 +1627,10 @@ public class MapImageView extends View {
 
 
         //map_image_draw();
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate(); // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
@@ -1535,6 +1658,10 @@ public class MapImageView extends View {
         if (m_RoiCurIndex > -1) {
             m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);
         }
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
@@ -1583,15 +1710,29 @@ public class MapImageView extends View {
             m_RoiCurObject.MoveTo(pt1, pt2);
         }
 
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+
         if(m_RoiCurIndex > -1)
         {
             //m_RoiObjects.get(m_RoiCurIndex) = m_RoiCurObject;
             m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);
             //m_RoiObjects[m_RoiCurIndex].MoveTo(point, point_dn);
             //m_RoiCurObject = m_RoiObjects[m_RoiCurIndex];
+            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+
+            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+            // 변경된 것을 Activity에 전달해준다.
+            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
         }
 
         //map_image_draw();
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate();   // 화면갱신
         //CObject_Draw();
     }
@@ -1816,6 +1957,10 @@ public class MapImageView extends View {
 
         // 중복이 아니면 라벨 설정
         m_RoiCurObject.m_label = newLabel;
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate();
     }
 
@@ -1897,6 +2042,10 @@ public class MapImageView extends View {
             m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);
         }
 
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
@@ -1912,6 +2061,36 @@ public class MapImageView extends View {
         if (deleteToggleBar != null) {
             deleteToggleBar.setVisibility(View.INVISIBLE);
         }
+    }
+
+    // 인터페이스 정의
+    public interface OnRoiSelectedListener {
+        void onRoiSelected(int indexSelected);
+    }
+
+    // Activity에서 인터페이스를 설정할 수 있는 메서드
+    public void setRoiSelectedListener(OnRoiSelectedListener listener) {
+        RoiSelectedListener = listener;
+    }
+
+    // 인터페이스 정의
+    public interface OnRoiCreateListener {
+        void onRoiCreate();
+    }
+
+    // Activity에서 인터페이스를 설정할 수 있는 메서드
+    public void setRoiCreateListener(OnRoiCreateListener listener) {
+        RoiCreateListener = listener;
+    }
+
+    // 인터페이스 정의
+    public interface OnRoiChangedListener {
+        void onRoiChanged(int indexSelected);
+    }
+
+    // Activity에서 인터페이스를 설정할 수 있는 메서드
+    public void setRoiChangedListener(OnRoiChangedListener listener) {
+        RoiChangedListener = listener;
     }
 
 }
