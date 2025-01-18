@@ -11,7 +11,7 @@ android {
         minSdk 24
         targetSdk 34
         versionCode 2
-        versionName "0.0.10"
+        versionName "0.0.11"
         ndk {
             abiFilters.addAll(["armeabi-v7a", "arm64-v8a"]) // `.addAll()`로 설정
         }

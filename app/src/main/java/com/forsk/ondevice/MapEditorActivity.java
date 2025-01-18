@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -68,8 +69,9 @@ public class MapEditorActivity extends Activity {
 
     private static final String NAME_LIBRARY_CASELAB_OPT    =
 //                                                              "mapoptimizationV2";
-            "mapoptimization241217v11";
-
+            //"mapoptimization241217v11";
+            //0118 외각선 라이브러리 추가.
+            "mapoptimization_arm_v2_240117";
     static {
         try {
             System.loadLibrary(NAME_LIBRARY_CASELAB_OPT);
@@ -130,6 +132,7 @@ public class MapEditorActivity extends Activity {
     String strMode = "Zoom";
 
     String srcMapPgmFilePath = "";
+    String srcMapPngFilePath = "";
     String srcMapYamlFilePath = "";
     //String srcMappingFilePath = "";
     String destMappingFilePath = "";
@@ -187,6 +190,14 @@ public class MapEditorActivity extends Activity {
 
 
         setContentView(R.layout.activity_mapeditor);
+
+        Log.d(TAG, "send broadcast appStatus start... ");
+        Intent statusIntent = new Intent("sk.action.airbot.map.responseMapping");
+        //intent.setPackage("com.sk.airbot.skmlauncher"); // 2024.12.04 이전
+        statusIntent.setPackage("com.sk.airbot.iotagent");
+        statusIntent.putExtra("appStatus", "start");
+        sendBroadcast(statusIntent);
+        Log.d(TAG, "sent broadcast. ");
 
         // Mode-specific TextView 초기화
         modeDescription = findViewById(R.id.mode_description);
@@ -272,6 +283,7 @@ public class MapEditorActivity extends Activity {
                 intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
                 //intent.putExtra("destMappingFilePath", strPath+File.separator+strFileName);
                 intent.putExtra("resultCode", "MRC_000");
+                intent.putExtra("appStatus", "stop");
 
                 sendBroadcast(intent);
                 Log.d(TAG, "sent broadcast. ");
@@ -309,6 +321,7 @@ public class MapEditorActivity extends Activity {
                 intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
                 //intent.putExtra("destMappingFilePath", strPath+File.separator+strFileName);
                 intent.putExtra("resultCode", "MRC_000");
+                intent.putExtra("appStatus", "stop");
 
                 sendBroadcast(intent);
                 Log.d(TAG, "sent broadcast. ");
@@ -347,6 +360,7 @@ public class MapEditorActivity extends Activity {
                     intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
                     //intent.putExtra("destMappingFilePath", strPath+File.separator+strFileName);
                     intent.putExtra("resultCode", "MRC_000");
+                    intent.putExtra("appStatus", "stop");
 
                     sendBroadcast(intent);
                     Log.d(TAG, "sent broadcast. ");
@@ -726,10 +740,12 @@ public class MapEditorActivity extends Activity {
                     Log.d("SKOnDeviceService", "Library-line Finish!");
 
                     String strPgmFile = path_opt + fileTitle + ".pgm";
+                    String strPngFile = path_opt + fileTitle + ".png";
 
                     //Log.d(TAG, strPgmFile);
                     lib_flag = true;
                     srcMapPgmFilePath = strPgmFile;
+                    srcMapPngFilePath = strPngFile;
                     srcMapYamlFilePath = path_opt + fileTitle + ".yaml";
 
                 }  catch (UnsatisfiedLinkError e) {
@@ -743,7 +759,10 @@ public class MapEditorActivity extends Activity {
                 }
 
                 try {
-                    Bitmap bitmap = loadPGM(srcMapPgmFilePath);
+                    //v2_240117.so
+                    Bitmap bitmap = loadPNG(srcMapPngFilePath);
+                    // 241217v11.so
+                    // Bitmap bitmap = loadPGM(srcMapPgmFilePath);
                     if (bitmap != null) {
                         MapViewer.setBitmap(bitmap);
 
@@ -1050,6 +1069,60 @@ public class MapEditorActivity extends Activity {
         }
         return null;
 
+    }
+
+    private Bitmap loadPNG(String filePath) throws IOException {
+        Log.d(TAG, "loadPNG(\"" + filePath + "\")");
+
+        // 파일 이름 로깅(필수는 아님)
+        String[] paths = filePath.split("/");
+        String fileName = paths[paths.length - 1];
+        Log.d(TAG, "fileName : " + fileName);
+
+        File file = new File(filePath);
+        if (!file.exists()) {
+            throw new IOException("File not found: " + filePath);
+        }
+
+        // PNG 디코딩
+        Bitmap originalBitmap = BitmapFactory.decodeFile(filePath);
+        if (originalBitmap == null) {
+            throw new IOException("Failed to decode PNG file: " + filePath);
+        }
+
+        int width = originalBitmap.getWidth();
+        int height = originalBitmap.getHeight();
+
+        // 결과를 담을 Bitmap
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+
+        // 각 픽셀을 순회하며 R 값만 확인
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int pixel = originalBitmap.getPixel(x, y);
+
+                // R 값 추출
+                int r = Color.red(pixel);
+                // r 값 기준으로 흰색/검은색/회색 매핑
+                int newGray;
+                if (r == 255) {
+                    // 흰색
+                    newGray = 150;
+                } else if (r == 0) {
+                    // 검은색
+                    newGray = 0;
+                } else {
+                    // 회색
+                    newGray = 51;
+                }
+
+                // 새 픽셀 값
+                int newPixel = Color.rgb(newGray, newGray, newGray);
+                bitmap.setPixel(x, y, newPixel);
+            }
+        }
+
+        return bitmap;
     }
 
     private static String readToken(InputStream is) throws IOException {

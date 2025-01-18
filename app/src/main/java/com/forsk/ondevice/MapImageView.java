@@ -649,7 +649,7 @@ public class MapImageView extends View {
     }
 
     public void MouseDown(float x, float y) {
-        Log.d(TAG, "mouseDown("+x+","+y+")");
+        //Log.d(TAG, "mouseDown("+x+","+y+")");
 
         nTouchUpPosX = nTouchDownPosX = (int) (x * zoom_rate);
         nTouchUpPosY = nTouchDownPosY = (int) (y * zoom_rate);
@@ -933,7 +933,7 @@ public class MapImageView extends View {
     }
 
     public void MouseUp(float x, float y) {
-        Log.d(TAG, "MouseUp( "+x+","+y+" )");
+        //Log.d(TAG, "MouseUp( "+x+","+y+" )");
 
         nTouchUpPosX = (int) (x * zoom_rate);
         nTouchUpPosY = (int) (y * zoom_rate);
