@@ -212,4 +212,5 @@ publishing {
 }
 
 dependencies {
+implementation libs.core.ktx
 }

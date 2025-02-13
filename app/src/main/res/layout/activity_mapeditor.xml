@@ -116,7 +116,7 @@
             android:layout_marginTop="10dp">
 
             <com.forsk.ondevice.MapImageView
-                android:id="@+id/imageView"
+                android:id="@+id/mapViewer"
                 android:layout_width="wrap_content"
                 android:layout_height="250dp" />
         </LinearLayout>
@@ -129,7 +129,7 @@
 
             <!-- 공간 생성 -->
             <Button
-                android:id="@+id/button_space_creation"
+                android:id="@+id/space_creation_button"
                 android:layout_width="90dp"
                 android:layout_height="47dp"
                 android:layout_marginStart="16dp"
