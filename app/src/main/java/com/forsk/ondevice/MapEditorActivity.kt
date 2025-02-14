@@ -23,18 +23,21 @@ import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import com.caselab.forsk.MapOptimization
 import com.forsk.ondevice.databinding.ActivityMapeditorBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
 import org.opencv.android.OpenCVLoader
@@ -55,7 +58,7 @@ import java.util.Date
 import java.util.Objects
 
 // opencv 추가
-class MapEditorActivity : Activity() {
+class MapEditorActivity : AppCompatActivity() {
     var _binding: ActivityMapeditorBinding? = null
     val binding get() = _binding!!
 
@@ -102,8 +105,11 @@ class MapEditorActivity : Activity() {
         super.onCreate(savedInstanceState)
         installSplashScreen()
         setTheme(R.style.Theme_OnDevice)
+
         _binding = ActivityMapeditorBinding.inflate(layoutInflater)
+
         setContentView(binding.root)
+
         sendBroadcast()
 
 //        // 추가된 TextView 참조
@@ -182,7 +188,7 @@ class MapEditorActivity : Activity() {
         }
     }
 
-    fun setUI() {
+    private fun setUI() {
         // 상태 바 제거
         window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -201,276 +207,47 @@ class MapEditorActivity : Activity() {
             // cancle: 종료 확인 팝업 노출 후 확인 선택 시 홈화면 이동
             // goback: 맵그리기 <자동/수동> 선택화면으로 복귀
 
-            cancelButton.setOnClickListener { v: View? ->
-                cancelButtonClickFunc()
-            }
-
-            gobackButton.setOnClickListener { v: View? ->
-                goBackButtonClickFunc()
-            }
-
-            finishButton.setOnClickListener { v: View? ->
-                finishButtonClickFunc()
-            }
-
-            spaceCreationButton.setOnClickListener { v: View? ->
-                spaceCreationButtonClickFunc()
-            }
-
-            buttonBlockWall.setOnClickListener { v: View? ->
-                blockWallClickEvent()
-            }
-
-            buttonBlockArea.setOnClickListener { v: View? ->
-                blockAreaButtonClickEvent()
-            }
-
+            cancelButton.setOnClickListener { cancelButtonClickFunc() }
+            gobackButton.setOnClickListener { goBackButtonClickFunc() }
+            finishButton.setOnClickListener { finishButtonClickFunc() }
+            spaceCreationButton.setOnClickListener { spaceCreationButtonClickFunc() }
+            buttonBlockWall.setOnClickListener { blockWallClickEvent() }
+            buttonBlockArea.setOnClickListener { blockAreaButtonClickEvent() }
             // 열기 버튼 클릭 시 toggle_bar 보이기
-            fabMain.setOnClickListener { v: View? ->
-                if (currentMode == MODE_SPACE_CREATION) {
-                    toggleBarCreatespace.root.visibility = View.VISIBLE // toggle_bar 보이기
-                    fabMain.visibility = View.INVISIBLE // 열기 버튼 숨기기
-                    toggleBarCreatespace.fabMainBackCS.visibility = View.VISIBLE // 닫기 버튼 보이기
-                } else if (currentMode == MODE_BLOCK_WALL || currentMode == MODE_BLOCK_AREA) {
-                    toggleBar.root.visibility = View.VISIBLE // toggle_bar 보이기
-                    fabMain.visibility = View.INVISIBLE // 열기 버튼 숨기기
-                    toggleBar.fabMainBack.visibility = View.VISIBLE // 닫기 버튼 보이기
-                }
-            }
-
+            fabMain.setOnClickListener { fabMainClickEvent() }
             // 닫기 버튼 클릭 시 toggle_bar 숨기기
-            toggleBar.fabMainBack.setOnClickListener { v: View? ->
-                toggleBar.root.visibility = View.GONE // toggle_bar 숨기기
-                fabMain.visibility = View.VISIBLE // 열기 버튼 보이기
-                toggleBar.fabMainBack.visibility = View.INVISIBLE // 닫기 버튼 숨기기
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-            }
-
-            toggleBarCreatespace.fabMainBackCS.setOnClickListener { v: View? ->
-                toggleBarCreatespace.root.visibility = View.GONE // toggle_bar 숨기기
-                fabMain.visibility = View.VISIBLE // 열기 버튼 보이기
-                toggleBarCreatespace.fabMainBackCS.visibility = View.INVISIBLE // 닫기 버튼 숨기기
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-            }
-
-            fabMoveMap.setOnClickListener { v: View? ->
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                if (mapViewer.strMenu === "이동") {
-                    mapViewer.SetMenu("이동")
-                    //strMode = "Move";
-                } else {
-                    mapViewer.SetMenu("이동")
-                    //strMode = "Move";
-                }
-            }
+            toggleBar.fabMainBack.setOnClickListener { fabMainBackClickEvent() }
+            toggleBarCreatespace.fabMainBackCS.setOnClickListener { fabMainBackClickEvent() }
+            fabMoveMap.setOnClickListener { fabMoveMapClickEvent() }
 
             //        fabZoom.setOnClickListener(v -> {
 //            MapViewer.SetMenu("줌");
 //            strMode = "Zoom";
 //        });
-            toggleBar.fabAddObject.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("추가")
-                fabAddObjectClicked.visibility = View.VISIBLE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
-            }
 
-            toggleBar.fabMoveObject.setOnClickListener { v: View? ->
-                //  move Object
-                mapViewer.SetMenu("수정")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.VISIBLE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
-            }
-            toggleBar.fabSelectObject.setOnClickListener { v: View? ->
-                //  Select Object
-                mapViewer.SetMenu("선택")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.VISIBLE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
-            }
-            toggleBar.fabDeleteObject.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("삭제")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.VISIBLE
-                fabRenameObjectClicked.visibility = View.GONE
-                Log.d(
-                    TAG,
-                    "current index: " + mapViewer.currentSelectedIndex
-                )
-                if (mapViewer.currentSelectedIndex != -1) {
-                    val selectedObjectPosition = mapViewer.selectedObjectPosition
-                    showDeleteToggleBar(selectedObjectPosition!!)
-                }
-            }
-            toggleBar.fabMovePin.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("핀 이동")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.VISIBLE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
-            }
-            toggleBar.fabRotatePin.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("핀 회전")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.VISIBLE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
+            toggleBar.apply {
+                fabAddObject.setOnClickListener { fabAddObjectClickEvent() }
+                fabMoveObject.setOnClickListener { fabMoveObjectClickEvent() }//  move Object
+                fabSelectObject.setOnClickListener { fabSelectObjectClickEvent() }//  Select Object
+                fabDeleteObject.setOnClickListener { toggleBarCreateSpaceClickEvent() }
+                fabMovePin.setOnClickListener { fabMovePinCSClickEvent() }
+                fabRotatePin.setOnClickListener { fabRotatePinCSClickEvent() }
             }
 
             // 241217 jihyeon
             // 공간 생성 모드일 때 토글 버튼 설정
-            toggleBarCreatespace.fabAddObjectCS.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("추가")
-                fabAddObjectClicked.visibility = View.VISIBLE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
+            toggleBarCreatespace.apply {
+                fabAddObjectCS.setOnClickListener { fabAddObjectClickEvent() }
+                fabMoveObjectCS.setOnClickListener { fabMoveObjectClickEvent() }
+                fabSelectObjectCS.setOnClickListener { fabSelectObjectClickEvent() }
+                fabDeleteObjectCS.setOnClickListener { toggleBarCreateSpaceClickEvent() }
+                fabMovePinCS.setOnClickListener { fabMovePinCSClickEvent() }
+                fabRotatePinCS.setOnClickListener { fabRotatePinCSClickEvent() }
+                fabRenameObjectCS.setOnClickListener { fabRenameObjectCSClickEvent() }
             }
-
-            toggleBarCreatespace.fabMoveObjectCS.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("수정")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.VISIBLE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
-            }
-            toggleBarCreatespace.fabSelectObjectCS.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("선택")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.VISIBLE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
-            }
-            toggleBarCreatespace.fabDeleteObjectCS.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("삭제")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.VISIBLE
-                fabRenameObjectClicked.visibility = View.GONE
-                Log.d(
-                    TAG,
-                    "current index: " + mapViewer.currentSelectedIndex
-                )
-                if (mapViewer.currentSelectedIndex != -1) {
-                    val selectedObjectPosition = mapViewer.selectedObjectPosition
-                    showDeleteToggleBar(selectedObjectPosition!!)
-                }
-            }
-            toggleBarCreatespace.fabMovePinCS.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("핀 이동")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.VISIBLE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
-            }
-
-            toggleBarCreatespace.fabRotatePinCS.setOnClickListener { v: View? ->
-                mapViewer.SetMenu("핀 회전")
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.VISIBLE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                hideDeleteToggleBar()
-            }
-
-            toggleBarCreatespace.fabRenameObjectCS.setOnClickListener { v: View? ->
-                strMode = "None"
-                val oldPinName = PinName
-                showCustomDialog(object : DialogCallback {
-                    override fun onConfirm(selectedText: String?) {
-                        if ((mapViewer.m_RoiCurObject != null)) {
-                            mapViewer.SetLabel(PinName)
-                        }
-                    }
-                })
-
-                fabAddObjectClicked.visibility = View.GONE
-                fabSelectObjectClicked.visibility = View.GONE
-                fabMoveObjectClicked.visibility = View.GONE
-                fabMovePinClicked.visibility = View.GONE
-                fabRotatePinClicked.visibility = View.GONE
-                fabDeleteObjectClicked.visibility = View.GONE
-                fabRenameObjectClicked.visibility = View.GONE
-                updateToggleBarVisibility()
-                hideDeleteToggleBar()
-            }
-
 
             // 휴지통 버튼 클릭 이벤트
-            deleteToggleBar.deleteButton.setOnClickListener { v: View? ->
-                mapViewer.roi_RemoveObject()
-                mapViewer.CObject_CurRoiCancelFunc()
-                mapViewer.clearSelection() // 선택 초기화 메서드
-                hideDeleteToggleBar()
-            }
+            deleteToggleBar.deleteButton.setOnClickListener { deleteButtonClickEvent() }
 
             // X 버튼 클릭 이벤트
             this.cancelButton.setOnClickListener { v: View? ->
@@ -478,102 +255,99 @@ class MapEditorActivity : Activity() {
                 hideDeleteToggleBar()
             }
 
-
             // 방법 1: ViewTreeObserver를 사용
-            binding.mapViewer.let {
-                it.getViewTreeObserver()
-                    ?.addOnGlobalLayoutListener(object : OnGlobalLayoutListener {
+            binding.mapViewer.apply {
+                getViewTreeObserver()?.addOnGlobalLayoutListener(object : OnGlobalLayoutListener {
                         override fun onGlobalLayout() {
                             // 가로와 세로 크기 얻기
-                            val width = it.getWidth()
-                            val height = it.getHeight()
-
                             Log.d("ViewSize", "Width: $width, Height: $height")
 
-                            it.ScreenWidth = it.getWidth()
-                            it.ScreenHeight = it.getHeight()
+                            screenWidth = width
+                            screenHeight = height
 
                             // 리스너 제거 (메모리 누수 방지)
-                            it.getViewTreeObserver().removeOnGlobalLayoutListener(this)
+                            getViewTreeObserver().removeOnGlobalLayoutListener(this)
 
-                            try {
-                                // File 객체 생성
+                            lifecycleScope.launch(IO) {
+                                try {
+                                    // File 객체 생성
+                                    val file = File(srcMapPgmFilePath)
 
-                                val file = File(srcMapPgmFilePath)
+                                    val path = file.parent + "/" // 디렉터리 경로
+                                    val filename = file.name // 파일 이름
+                                    val fileTitle =
+                                        filename.substring(
+                                            0,
+                                            filename.lastIndexOf('.')
+                                        ) // 확장자를 제외한 파일 제목
 
+                                    val path_rot = path + "rot/"
+                                    val file_rot = File(path_rot)
+                                    // 폴더가 제대로 만들어졌는지 체크 ======
+                                    if (!file_rot.mkdirs()) {
+                                        Log.e("FILE", "Directory not created : $path_rot")
+                                    }
+                                    Log.d("SKOnDeviceService", "Run library-rotate!")
+                                    //com.caselab.forsk.MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
+                                    MapOptimization.mapRotation(path, path_rot, fileTitle)
+                                    Log.d("SKOnDeviceService", "Library-rotate Finish!")
 
-                                val path = file.parent + "/" // 디렉터리 경로
-                                val filename = file.name // 파일 이름
-                                val fileTitle =
-                                    filename.substring(
-                                        0,
-                                        filename.lastIndexOf('.')
-                                    ) // 확장자를 제외한 파일 제목
+                                    val path_opt = path + "opt/"
+                                    val file_opt = File(path_opt)
+                                    // 폴더가 제대로 만들어졌는지 체크 ======
+                                    if (!file_opt.mkdirs()) {
+                                        Log.e("FILE", "Directory not created : $path_opt")
+                                    }
+                                    Log.d("SKOnDeviceService", "Run library-line opt!")
+                                    //MapOptimization.lineOptimization(PATH_FILE_MAP_ROT, PATH_FILE_MAP_OPT, NAME_FILE_MAP_ORG);
+                                    MapOptimization.lineOptimization(path_rot, path_opt, fileTitle)
+                                    Log.d("SKOnDeviceService", "Library-line Finish!")
 
-                                val path_rot = path + "rot/"
-                                val file_rot = File(path_rot)
-                                // 폴더가 제대로 만들어졌는지 체크 ======
-                                if (!file_rot.mkdirs()) {
-                                    Log.e("FILE", "Directory not created : $path_rot")
+                                    val strPgmFile = "$path_opt$fileTitle.pgm"
+                                    val strPngFile = "$path_opt$fileTitle.png"
+
+                                    //Log.d(TAG, strPgmFile);
+                                    lib_flag = true
+                                    srcMapPgmFilePath = strPgmFile
+                                    srcMapPngFilePath = strPngFile
+                                    srcMapYamlFilePath = "$path_opt$fileTitle.yaml"
+                                } catch (e: UnsatisfiedLinkError) {
+                                    Log.e(TAG, "Native library not loaded or linked properly", e)
+                                } catch (e: ExceptionInInitializerError) {
+                                    Log.e(TAG, "Initialization error in native method", e)
+                                } catch (e: RuntimeException) {
+                                    Log.e(TAG, "Runtime exception occurred", e)
+                                } catch (e: Throwable) {
+                                    Log.e(TAG, "Unexpected error occurred", e)
                                 }
-                                Log.d("SKOnDeviceService", "Run library-rotate!")
-                                //com.caselab.forsk.MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
-                                MapOptimization.mapRotation(path, path_rot, fileTitle)
-                                Log.d("SKOnDeviceService", "Library-rotate Finish!")
-
-                                val path_opt = path + "opt/"
-                                val file_opt = File(path_opt)
-                                // 폴더가 제대로 만들어졌는지 체크 ======
-                                if (!file_opt.mkdirs()) {
-                                    Log.e("FILE", "Directory not created : $path_opt")
-                                }
-                                Log.d("SKOnDeviceService", "Run library-line opt!")
-                                //MapOptimization.lineOptimization(PATH_FILE_MAP_ROT, PATH_FILE_MAP_OPT, NAME_FILE_MAP_ORG);
-                                MapOptimization.lineOptimization(path_rot, path_opt, fileTitle)
-                                Log.d("SKOnDeviceService", "Library-line Finish!")
-
-                                val strPgmFile = "$path_opt$fileTitle.pgm"
-                                val strPngFile = "$path_opt$fileTitle.png"
-
-                                //Log.d(TAG, strPgmFile);
-                                lib_flag = true
-                                srcMapPgmFilePath = strPgmFile
-                                srcMapPngFilePath = strPngFile
-                                srcMapYamlFilePath = "$path_opt$fileTitle.yaml"
-                            } catch (e: UnsatisfiedLinkError) {
-                                Log.e(TAG, "Native library not loaded or linked properly", e)
-                            } catch (e: ExceptionInInitializerError) {
-                                Log.e(TAG, "Initialization error in native method", e)
-                            } catch (e: RuntimeException) {
-                                Log.e(TAG, "Runtime exception occurred", e)
-                            } catch (e: Throwable) {
-                                Log.e(TAG, "Unexpected error occurred", e)
                             }
 
-                            try {
-                                //v2_240117.so
-                                val bitmap = loadPNG(srcMapPngFilePath)
-                                // 241217v11.so
-                                // Bitmap bitmap = loadPGM(srcMapPgmFilePath);
-                                if (bitmap != null) {
-                                    it.setBitmap(bitmap)
+                            lifecycleScope.launch(IO) {
+                                try {
+                                    //v2_240117.so
+                                    val bitmap = loadPNG(srcMapPngFilePath)
+                                    // 241217v11.so
+                                    // Bitmap bitmap = loadPGM(srcMapPgmFilePath);
+                                    if (bitmap != null) {
+                                        setBitmap(bitmap)
+                                    }
+                                } catch (e: IOException) {
+                                    Log.e(TAG, "IOException error occurred", e)
                                 }
-                            } catch (e: IOException) {
-                                Log.e(TAG, "IOException error occurred", e)
-                            }
 
-                            if (!loadYaml(srcMapYamlFilePath)) {
-                                Log.d(
-                                    TAG,
-                                    "con not read $srcMapYamlFilePath"
-                                )
-                            }
-                            // 241218 성웅 맵 불러오기
-                            if (!loadJson(destMappingFilePath)) {
-                                Log.d(
-                                    TAG,
-                                    "con not read $destMappingFilePath"
-                                )
+                                if (!loadYaml(srcMapYamlFilePath)) {
+                                    Log.d(
+                                        TAG,
+                                        "con not read $srcMapYamlFilePath"
+                                    )
+                                }
+                                // 241218 성웅 맵 불러오기
+                                if (!loadJson(destMappingFilePath)) {
+                                    Log.d(
+                                        TAG,
+                                        "con not read $destMappingFilePath"
+                                    )
+                                }
                             }
                             /*
                             for (int it = 0; it < MapViewer.m_RoiObjects.size(); it++) {
@@ -586,6 +360,179 @@ class MapEditorActivity : Activity() {
                             */
                         }
                     })
+            }
+        }
+    }
+
+    private fun deleteButtonClickEvent() {
+        binding.apply {
+            mapViewer.roi_RemoveObject()
+            mapViewer.CObject_CurRoiCancelFunc()
+            mapViewer.clearSelection() // 선택 초기화 메서드
+        }
+        hideDeleteToggleBar()
+    }
+
+    private fun fabRenameObjectCSClickEvent() {
+        strMode = "None"
+        val oldPinName = PinName
+        binding.apply {
+            showCustomDialog(object : DialogCallback {
+                override fun onConfirm(selectedText: String?) {
+                    if ((mapViewer.roiCurObject != null)) {
+                        mapViewer.SetLabel(PinName)
+                    }
+                }
+            })
+
+            fabAddObjectClicked.visibility = View.GONE
+            fabSelectObjectClicked.visibility = View.GONE
+            fabMoveObjectClicked.visibility = View.GONE
+            fabMovePinClicked.visibility = View.GONE
+            fabRotatePinClicked.visibility = View.GONE
+            fabDeleteObjectClicked.visibility = View.GONE
+            fabRenameObjectClicked.visibility = View.GONE
+        }
+
+        updateToggleBarVisibility()
+        hideDeleteToggleBar()
+    }
+
+    private fun fabRotatePinCSClickEvent() {
+        binding.apply {
+            mapViewer.SetMenu("핀 회전")
+            fabAddObjectClicked.visibility = View.GONE
+            fabSelectObjectClicked.visibility = View.GONE
+            fabMoveObjectClicked.visibility = View.GONE
+            fabMovePinClicked.visibility = View.GONE
+            fabRotatePinClicked.visibility = View.VISIBLE
+            fabDeleteObjectClicked.visibility = View.GONE
+            fabRenameObjectClicked.visibility = View.GONE
+            hideDeleteToggleBar()
+        }
+    }
+
+    private fun fabMovePinCSClickEvent() {
+        binding.apply {
+            mapViewer.SetMenu("핀 이동")
+            fabAddObjectClicked.visibility = View.GONE
+            fabSelectObjectClicked.visibility = View.GONE
+            fabMoveObjectClicked.visibility = View.GONE
+            fabMovePinClicked.visibility = View.VISIBLE
+            fabRotatePinClicked.visibility = View.GONE
+            fabDeleteObjectClicked.visibility = View.GONE
+            fabRenameObjectClicked.visibility = View.GONE
+            hideDeleteToggleBar()
+        }
+    }
+
+    private fun toggleBarCreateSpaceClickEvent() {
+        binding.apply {
+            mapViewer.SetMenu("삭제")
+            fabAddObjectClicked.visibility = View.GONE
+            fabSelectObjectClicked.visibility = View.GONE
+            fabMoveObjectClicked.visibility = View.GONE
+            fabMovePinClicked.visibility = View.GONE
+            fabRotatePinClicked.visibility = View.GONE
+            fabDeleteObjectClicked.visibility = View.VISIBLE
+            fabRenameObjectClicked.visibility = View.GONE
+            Log.d(
+                TAG,
+                "current index: " + mapViewer.currentSelectedIndex
+            )
+            if (mapViewer.currentSelectedIndex != -1) {
+                val selectedObjectPosition = mapViewer.selectedObjectPosition
+                showDeleteToggleBar(selectedObjectPosition!!)
+            }
+        }
+    }
+
+    private fun fabSelectObjectClickEvent() {
+        binding.apply {
+            mapViewer.SetMenu("선택")
+            fabAddObjectClicked.visibility = View.GONE
+            fabSelectObjectClicked.visibility = View.VISIBLE
+            fabMoveObjectClicked.visibility = View.GONE
+            fabMovePinClicked.visibility = View.GONE
+            fabRotatePinClicked.visibility = View.GONE
+            fabDeleteObjectClicked.visibility = View.GONE
+            fabRenameObjectClicked.visibility = View.GONE
+            hideDeleteToggleBar()
+        }
+    }
+
+    private fun fabMoveObjectClickEvent() {
+        binding.apply {
+            mapViewer.SetMenu("수정")
+            fabAddObjectClicked.visibility = View.GONE
+            fabSelectObjectClicked.visibility = View.GONE
+            fabMoveObjectClicked.visibility = View.VISIBLE
+            fabMovePinClicked.visibility = View.GONE
+            fabRotatePinClicked.visibility = View.GONE
+            fabDeleteObjectClicked.visibility = View.GONE
+            fabRenameObjectClicked.visibility = View.GONE
+            hideDeleteToggleBar()
+        }
+    }
+
+    private fun fabAddObjectClickEvent() {
+        binding.apply {
+            mapViewer.SetMenu("추가")
+            fabAddObjectClicked.visibility = View.VISIBLE
+            fabSelectObjectClicked.visibility = View.GONE
+            fabMoveObjectClicked.visibility = View.GONE
+            fabMovePinClicked.visibility = View.GONE
+            fabRotatePinClicked.visibility = View.GONE
+            fabDeleteObjectClicked.visibility = View.GONE
+            fabRenameObjectClicked.visibility = View.GONE
+            hideDeleteToggleBar()
+        }
+    }
+
+    private fun fabMoveMapClickEvent() {
+        binding.apply {
+            fabAddObjectClicked.visibility = View.GONE
+            fabSelectObjectClicked.visibility = View.GONE
+            fabMoveObjectClicked.visibility = View.GONE
+            fabMovePinClicked.visibility = View.GONE
+            fabRotatePinClicked.visibility = View.GONE
+            fabDeleteObjectClicked.visibility = View.GONE
+            fabRenameObjectClicked.visibility = View.GONE
+            if (mapViewer.strMenu === "이동") {
+                mapViewer.SetMenu("이동")
+                //strMode = "Move";
+            } else {
+                mapViewer.SetMenu("이동")
+                //strMode = "Move";
+            }
+        }
+    }
+
+    private fun fabMainBackClickEvent() {
+        binding.apply {
+            toggleBar.root.visibility = View.GONE // toggle_bar 숨기기
+            fabMain.visibility = View.VISIBLE // 열기 버튼 보이기
+            toggleBar.fabMainBack.visibility = View.INVISIBLE // 닫기 버튼 숨기기
+            fabAddObjectClicked.visibility = View.GONE
+            fabSelectObjectClicked.visibility = View.GONE
+            fabMoveObjectClicked.visibility = View.GONE
+            fabMovePinClicked.visibility = View.GONE
+            fabRotatePinClicked.visibility = View.GONE
+            fabDeleteObjectClicked.visibility = View.GONE
+            fabRenameObjectClicked.visibility = View.GONE
+        }
+    }
+
+    private fun fabMainClickEvent() {
+        binding.apply {
+            if (currentMode == MODE_SPACE_CREATION) {
+                toggleBarCreatespace.root.visibility = View.VISIBLE // toggle_bar 보이기
+                fabMain.visibility = View.INVISIBLE // 열기 버튼 숨기기
+                toggleBarCreatespace.fabMainBackCS.visibility = View.VISIBLE // 닫기 버튼 보이기
+            } else if (currentMode == MODE_BLOCK_WALL || currentMode == MODE_BLOCK_AREA) {
+                toggleBar.root.visibility = View.VISIBLE // toggle_bar 보이기
+                fabMain.visibility = View.INVISIBLE // 열기 버튼 숨기기
+                toggleBar.fabMainBack.visibility = View.VISIBLE // 닫기 버튼 보이기
             }
         }
     }
@@ -890,7 +837,7 @@ class MapEditorActivity : Activity() {
         // List to manage all RadioButtons
         val allRadioButtons = ArrayList<RadioButton>()
         // 선택된 라디오 버튼의 텍스트를 추적하기 위한 변수
-        val selectedText = arrayOf<String>()
+        val selectedText = arrayOf<String>("")
         // Dynamically add rows
         for (row in layout) {
             // Create a horizontal LinearLayout for each row
@@ -1318,7 +1265,7 @@ class MapEditorActivity : Activity() {
         strRoiJson += "\"$formattedDate\"}"
         strRoiJson += ", \"room_list\":["
 
-        Log.d(TAG, "MapViewer.m_RoiObjects.size() : " + mapViewer.m_RoiObjects.size)
+        Log.d(TAG, "MapViewer.m_RoiObjects.size() : " + mapViewer.roiObjects.size)
 
         /* for test - hard cording
         strRoiJson += "{";
@@ -1344,8 +1291,8 @@ class MapEditorActivity : Activity() {
         strRoiJson += "}";
         */
         var i = 0
-        while (i < mapViewer.m_RoiObjects.size) {
-            if (mapViewer.m_RoiObjects[i].roi_type == "roi_polygon") {
+        while (i < mapViewer.roiObjects.size) {
+            if (mapViewer.roiObjects[i].roi_type == "roi_polygon") {
                 if (count_id > 0) {
                     strRoiJson += ", "
                 }
@@ -1355,13 +1302,13 @@ class MapEditorActivity : Activity() {
 
                 strRoiJson += "{"
                 strRoiJson += "\"id\": \"$count_id\""
-                strRoiJson += ", \"name\": \"" + mapViewer.m_RoiObjects[i].m_label + "\""
+                strRoiJson += ", \"name\": \"" + mapViewer.roiObjects[i].m_label + "\""
                 strRoiJson += ", \"color\":\"#47910f\", \"desc\":\"\""
                 strRoiJson += ", \"robot_path\":["
 
                 //strRoiJson += "{\"x\":-2.97,\"y\":7.15},{\"x\":-3.02,\"y\":7.1000004},{\"x\":-3.17,\"y\":7.1000004},{\"x\":-3.22,\"y\":7.05},{\"x\":-3.22,\"y\":6.9},{\"x\":-3.27,\"y\":6.8500004},{\"x\":-3.27,\"y\":4},{\"x\":-3.22,\"y\":3.95},{\"x\":-2.47,\"y\":3.95},{\"x\":-2.42,\"y\":4},{\"x\":-2.22,\"y\":4},{\"x\":-2.17,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.1},{\"x\":-1.67,\"y\":4.15},{\"x\":-1.67,\"y\":4.25},{\"x\":-1.62,\"y\":4.3},{\"x\":-1.62,\"y\":4.35},{\"x\":-1.5699999,\"y\":4.4},{\"x\":-1.5699999,\"y\":4.4500003},{\"x\":-1.52,\"y\":4.5},{\"x\":-1.52,\"y\":4.6},{\"x\":-1.4699999,\"y\":4.65},{\"x\":-1.4699999,\"y\":4.7000003},{\"x\":-1.42,\"y\":4.75},{\"x\":-1.42,\"y\":4.8500004},{\"x\":-1.37,\"y\":4.9},{\"x\":-1.37,\"y\":4.9500003},{\"x\":-1.3199999,\"y\":5},{\"x\":-1.3199999,\"y\":5.05},{\"x\":-1.27,\"y\":5.1000004},{\"x\":-1.27,\"y\":5.2000003},{\"x\":-1.2199999,\"y\":5.25},{\"x\":-1.2199999,\"y\":5.3},{\"x\":-1.17,\"y\":5.3500004},{\"x\":-1.17,\"y\":5.4500003},{\"x\":-1.12,\"y\":5.5},{\"x\":-1.12,\"y\":5.55},{\"x\":-1.0699999,\"y\":5.6000004},{\"x\":-1.0699999,\"y\":5.65},{\"x\":-1.02,\"y\":5.7000003},{\"x\":-1.02,\"y\":5.8},{\"x\":-0.96999997,\"y\":5.8500004},{\"x\":-0.96999997,\"y\":5.9},{\"x\":-0.91999996,\"y\":5.9500003},{\"x\":-0.91999996,\"y\":6.05},{\"x\":-0.86999995,\"y\":6.1000004},{\"x\":-0.86999995,\"y\":6.15},{\"x\":-0.81999993,\"y\":6.2000003},{\"x\":-0.81999993,\"y\":6.3},{\"x\":-0.77,\"y\":6.3500004},{\"x\":-0.77,\"y\":6.4},{\"x\":-1.27,\"y\":6.4},{\"x\":-1.37,\"y\":6.5},{\"x\":-1.37,\"y\":6.8},{\"x\":-1.42,\"y\":6.8500004},{\"x\":-1.42,\"y\":7},{\"x\":-1.5699999,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15}";
                 j = 0
-                while (j < mapViewer.m_RoiObjects[i].m_Points.size) {
+                while (j < mapViewer.roiObjects[i].m_Points.size) {
                     if (j > 0) {
                         strRoiJson += ", "
                     }
@@ -1369,8 +1316,8 @@ class MapEditorActivity : Activity() {
                     strRoiJson += "{"
 
                     val coordinates = calculateCoordinate(
-                        mapViewer.m_RoiObjects[i].m_Points[j]!!.x,
-                        mapViewer.m_RoiObjects[i].m_Points[j]!!.y,
+                        mapViewer.roiObjects[i].m_Points[j]!!.x,
+                        mapViewer.roiObjects[i].m_Points[j]!!.y,
                         image_height
                     )
 
@@ -1386,15 +1333,15 @@ class MapEditorActivity : Activity() {
                 strRoiJson += "]"
                 strRoiJson += ", \"image_path\":["
                 j = 0
-                while (j < mapViewer.m_RoiObjects[i].m_Points.size) {
+                while (j < mapViewer.roiObjects[i].m_Points.size) {
                     if (j > 0) {
                         strRoiJson += ", "
                     }
 
                     strRoiJson += "{"
 
-                    strRoiJson += "\"x\":" + (mapViewer.m_RoiObjects[i].m_Points[j]!!.x)
-                    strRoiJson += ", \"y\":" + (mapViewer.m_RoiObjects[i].m_Points[j]!!.y)
+                    strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_Points[j]!!.x)
+                    strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_Points[j]!!.y)
 
                     strRoiJson += "}"
                     j++
@@ -1413,8 +1360,8 @@ class MapEditorActivity : Activity() {
                 //Log.d(TAG,"height: " + image_height +", origin_y: "+ origin_y + ", imagey: " + MapViewer.m_RoiObjects.get(i).m_Points.get(j).y + ", real_y: "+ (float)((image_height-MapViewer.m_RoiObjects.get(i).m_Points.get(j).y)*nResolution + origin_y));
                 //Toast.makeText(getApplicationContext(), "X: " + (float)(xvw * nResolution + origin_x) +", Y: " + ((image_height - yvh) * nResolution + origin_y), Toast.LENGTH_SHORT).show();
                 val coordinates = calculateCoordinate(
-                    mapViewer.m_RoiObjects[i].m_MBR_center.x,
-                    mapViewer.m_RoiObjects[i].m_MBR_center.y,
+                    mapViewer.roiObjects[i].m_MBR_center.x,
+                    mapViewer.roiObjects[i].m_MBR_center.y,
                     image_height
                 )
 
@@ -1423,7 +1370,7 @@ class MapEditorActivity : Activity() {
                 strRoiJson += "\"x\":$xvw"
                 strRoiJson += ", \"y\":$yvh"
                 var angle =
-                    mapViewer.m_RoiObjects[i].angle - Math.toRadians(rotated_angle.toDouble())
+                    mapViewer.roiObjects[i].angle - Math.toRadians(rotated_angle.toDouble())
 
                 // -pi ~ +pi 범위 검사
 //                if(angle > Math.PI)
@@ -1443,15 +1390,15 @@ class MapEditorActivity : Activity() {
                 var yvh_image = 0 // polygon의 무게중심 x
 
                 // Log.d(TAG, "xvw before : "+ xvw);
-                xvw_image = mapViewer.m_RoiObjects[i].m_MBR_center.x
-                yvh_image = mapViewer.m_RoiObjects[i].m_MBR_center.y
+                xvw_image = mapViewer.roiObjects[i].m_MBR_center.x
+                yvh_image = mapViewer.roiObjects[i].m_MBR_center.y
 
                 // MapViewer.m_RoiObjects.get(i).m_MBR;
                 //Log.d(TAG,"height: " + image_height +", origin_y: "+ origin_y + ", imagey: " + MapViewer.m_RoiObjects.get(i).m_Points.get(j).y + ", real_y: "+ (float)((image_height-MapViewer.m_RoiObjects.get(i).m_Points.get(j).y)*nResolution + origin_y));
                 //Toast.makeText(getApplicationContext(), "X: " + (float)(xvw * nResolution + origin_x) +", Y: " + ((image_height - yvh) * nResolution + origin_y), Toast.LENGTH_SHORT).show();
                 strRoiJson += "\"x\":" + xvw_image
                 strRoiJson += ", \"y\":" + yvh_image
-                strRoiJson += ", \"theta\":" + mapViewer.m_RoiObjects[i].angle
+                strRoiJson += ", \"theta\":" + mapViewer.roiObjects[i].angle
                 strRoiJson += "}"
                 strRoiJson += "}"
             }
@@ -1461,8 +1408,8 @@ class MapEditorActivity : Activity() {
         strRoiJson += "]"
         strRoiJson += ", \"block_area\":["
         i = 0
-        while (i < mapViewer.m_RoiObjects.size) {
-            if (mapViewer.m_RoiObjects[i].roi_type == "roi_rect") {
+        while (i < mapViewer.roiObjects.size) {
+            if (mapViewer.roiObjects[i].roi_type == "roi_rect") {
                 if (count_id_rect > 0) {
                     strRoiJson += ", "
                 }
@@ -1475,23 +1422,23 @@ class MapEditorActivity : Activity() {
                 strRoiJson += "{"
 
                 //left top
-                strRoiJson += "\"x\":" + (mapViewer.m_RoiObjects[i].m_MBR.left)
-                strRoiJson += ", \"y\":" + (mapViewer.m_RoiObjects[i].m_MBR.bottom)
+                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_MBR.left)
+                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_MBR.bottom)
                 strRoiJson += "}, {"
 
                 // right top
-                strRoiJson += "\"x\":" + (mapViewer.m_RoiObjects[i].m_MBR.right)
-                strRoiJson += ", \"y\":" + (mapViewer.m_RoiObjects[i].m_MBR.bottom)
+                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_MBR.right)
+                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_MBR.bottom)
                 strRoiJson += "}, {"
 
                 // right bottom
-                strRoiJson += "\"x\":" + (mapViewer.m_RoiObjects[i].m_MBR.right)
-                strRoiJson += ", \"y\":" + (mapViewer.m_RoiObjects[i].m_MBR.top)
+                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_MBR.right)
+                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_MBR.top)
                 strRoiJson += "}, {"
 
                 // left bottom
-                strRoiJson += "\"x\":" + (mapViewer.m_RoiObjects[i].m_MBR.left)
-                strRoiJson += ", \"y\":" + (mapViewer.m_RoiObjects[i].m_MBR.top)
+                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_MBR.left)
+                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_MBR.top)
 
                 strRoiJson += "}"
 
@@ -1503,8 +1450,8 @@ class MapEditorActivity : Activity() {
 
                 // left top
                 var coordinates = calculateCoordinate(
-                    mapViewer.m_RoiObjects[i].m_MBR.left,
-                    mapViewer.m_RoiObjects[i].m_MBR.bottom,
+                    mapViewer.roiObjects[i].m_MBR.left,
+                    mapViewer.roiObjects[i].m_MBR.bottom,
                     image_height
                 )
                 var area_x = coordinates[0]
@@ -1516,8 +1463,8 @@ class MapEditorActivity : Activity() {
 
                 // right top
                 coordinates = calculateCoordinate(
-                    mapViewer.m_RoiObjects[i].m_MBR.right,
-                    mapViewer.m_RoiObjects[i].m_MBR.bottom,
+                    mapViewer.roiObjects[i].m_MBR.right,
+                    mapViewer.roiObjects[i].m_MBR.bottom,
                     image_height
                 )
                 area_x = coordinates[0]
@@ -1529,8 +1476,8 @@ class MapEditorActivity : Activity() {
 
                 // right bottom
                 coordinates = calculateCoordinate(
-                    mapViewer.m_RoiObjects[i].m_MBR.right,
-                    mapViewer.m_RoiObjects[i].m_MBR.top,
+                    mapViewer.roiObjects[i].m_MBR.right,
+                    mapViewer.roiObjects[i].m_MBR.top,
                     image_height
                 )
                 area_x = coordinates[0]
@@ -1542,8 +1489,8 @@ class MapEditorActivity : Activity() {
 
                 // left bottom
                 coordinates = calculateCoordinate(
-                    mapViewer.m_RoiObjects[i].m_MBR.left,
-                    mapViewer.m_RoiObjects[i].m_MBR.top,
+                    mapViewer.roiObjects[i].m_MBR.left,
+                    mapViewer.roiObjects[i].m_MBR.top,
                     image_height
                 )
                 area_x = coordinates[0]
@@ -1565,8 +1512,8 @@ class MapEditorActivity : Activity() {
         strRoiJson += ", \"block_wall\":["
 
         i = 0
-        while (i < mapViewer.m_RoiObjects.size) {
-            if (mapViewer.m_RoiObjects[i].roi_type == "roi_line") {
+        while (i < mapViewer.roiObjects.size) {
+            if (mapViewer.roiObjects[i].roi_type == "roi_line") {
                 if (count_id_line > 0) {
                     strRoiJson += ", "
                 }
@@ -1577,7 +1524,7 @@ class MapEditorActivity : Activity() {
                 )
 
                 count_id_line++
-                val roi = mapViewer.m_RoiObjects[i]
+                val roi = mapViewer.roiObjects[i]
 
                 strRoiJson += "{\"image_path\":["
 
@@ -1829,16 +1776,16 @@ class MapEditorActivity : Activity() {
                                 if (top > y) top = y
                                 if (bottom < y) bottom = y
                             }
-                            mapViewer.m_drawing = true
+                            mapViewer.drawing = true
                             mapViewer.roi_AddObject()
                             // 241222 seongwoong 현재 버그 있음 확인 필요
                             //MapViewer.m_RoiCurObject.m_MBR = new Rect(left, top, right, bottom);
-                            mapViewer.m_RoiCurObject!!.m_MBR_center.x = mbr_x
-                            mapViewer.m_RoiCurObject!!.m_MBR_center.y = mbr_y
+                            mapViewer.roiCurObject!!.m_MBR_center.x = mbr_x
+                            mapViewer.roiCurObject!!.m_MBR_center.y = mbr_y
                             mapViewer.SetLabel(name)
                             if (lib_flag) {
                                 val theta = imagePosition.getDouble("theta").toFloat()
-                                mapViewer.m_RoiCurObject?.angle = theta
+                                mapViewer.roiCurObject?.angle = theta
                             }
                         }
 
@@ -1896,7 +1843,7 @@ class MapEditorActivity : Activity() {
                         }
 
                         mapViewer?.currentSelectedIndex = -1
-                        mapViewer.m_RoiCurObject = null
+                        mapViewer.roiCurObject = null
                         Log.d(TAG, "Read Json Success")
                         return true
                     }
