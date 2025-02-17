@@ -28,7 +28,7 @@ android {
     signingConfigs {
 
         release {
-            storeFile file('/Users/seongwoongkim/Documents/ondevice.jks')
+            storeFile file(rootProject.file("ondevice.jks"))
             storePassword 'android'
             keyAlias 'platform'
             keyPassword 'android'
