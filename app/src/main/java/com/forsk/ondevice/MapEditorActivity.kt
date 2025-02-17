@@ -31,9 +31,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import com.caselab.forsk.MapOptimization
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_LINE
@@ -42,27 +40,58 @@ import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
 import com.forsk.ondevice.databinding.ActivityMapeditorBinding
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
-import org.json.JSONException
-import org.json.JSONObject
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.yaml.snakeyaml.Yaml
-import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Objects
 
 // opencv 추가
 class MapEditorActivity : AppCompatActivity() {
+
+    companion object {
+        private const val TAG = "MapEditorActivity"
+        private const val NAME_LIBRARY_CASELAB_OPT = "mapoptimization_arm_v2_240117"
+
+        /*
+        PATH_FILE_MAP_ORG : 가공되지 않은 원본 pgm, yaml 파일이 존재하는 폴더
+        PATH_FILE_MAP_ROT : so 라이브리를 이용해서 가공된 pgm, yaml 결과 파일일 만들어질 폴더
+        NAME_FILE_MAP_ORG : 파일형식 확장자(pgm,yaml) 제외한 파일명
+        PATH_FILE_MAP_OPT : 옵티마이징한 결과를 저장할 폴더명
+        PATH_FILE_MAP_SEG : 세그멘트 결과를 저장할 폴더명
+        참고 : NAME_FILE_MAP_ORG의 파일명으로 각각 다른 폴더에 결과물이 나오면 최종 결과물은 PATH_FILE_MAP_ROT 폴더에 저장됨
+     */
+        private const val PATH_FILE_MAP_ORG = "/sdcard/Download/"
+        private const val PATH_FILE_MAP_ROT = "/sdcard/Download/map_test/rot/"
+        private const val NAME_FILE_MAP_ORG = "office" //"5py";
+        private const val PATH_FILE_MAP_OPT = "/sdcard/Download/map_test/opt/"
+        private const val PATH_FILE_MAP_SEG = "/sdcard/Download/map_test/seg/"
+
+        private const val PICK_PGM_FILE_REQUEST = 1
+
+        private const val REQUEST_EXTERNAL_STORAGE = 1
+        private val PERMISSIONS_STORAGE = arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+
+        // 모드 상수 정의
+        private const val MODE_MAP_EXPLORATION = 0
+        private const val MODE_SPACE_CREATION = 1
+        private const val MODE_BLOCK_WALL = 2
+        private const val MODE_BLOCK_AREA = 3
+        private const val MODE_EDIT_PIN = 4
+    }
+
     private var _binding: ActivityMapeditorBinding? = null
     private val binding get() = _binding!!
 
@@ -70,8 +99,6 @@ class MapEditorActivity : AppCompatActivity() {
     private val viewModel get() = _viewModel!!
 
     private val isFabOpen = false
-
-    //private var MapViewer: MapImageView? = null
 
     var strMode: String = "Zoom"
     var srcMapPgmFilePath: String? = ""
@@ -93,20 +120,12 @@ class MapEditorActivity : AppCompatActivity() {
 
     // 선택된 버튼 저장 변수
     var selectedButton: TextView? = null
-
-    //    private var toggleBar: ConstraintLayout? = null
-//    private var toggleBar_CreateSpace: ConstraintLayout? = null
     private var lib_flag = true
 
     private var transformationMatrix: Mat? = null
 
     private var rotated_angle = 0f
     var original_image_height: Int = 0
-
-    // 삭제 토글바 관련 변수
-//    private var deleteToggleBar: View? = null
-//    private var deleteButton: ImageView? = null
-//    private var cancelButton: ImageView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -534,34 +553,15 @@ class MapEditorActivity : AppCompatActivity() {
             "finshButton.setOnClickListener(...)"
         )
         try {
-            //String strFileName = "/sdcard/Download/map_meta_sample.json";
-            //String strFileName = "/Download/new_mapping.json";
             val strFileName = "map_meta_sample.json"
-            //String strPath = "/storage/emulated/0/Download";
             val strPath = "/sdcard/Download"
 
-            // TODO 수정필요 srcMappingfilePath 경로로 확인해서 name,path구분
+            // TODO 수정필요 srcMappingfilePath 경로로 확인해서 name, path구분
 
             //String strSDCardPath = Environment.getExternalStorageDirectory().getAbsolutePath();   // 외부 저장소의 절대 경로를 자동으로 가져와 주는 메서드
             Log.d(TAG, "try roi_saveToFile()")
             if (roi_saveToFile(strPath, strFileName)) {
-                Log.d(TAG, "send broadcast... ")
-                val intent = Intent("sk.action.airbot.map.responseMapping")
-                //intent.setPackage("com.sk.airbot.skmlauncher"); // 2024.12.04 이전
-                intent.setPackage("com.sk.airbot.iotagent")
-                intent.putExtra("destMappingFilePath", "$strPath/$strFileName")
-                //intent.putExtra("destMappingFilePath", strPath+File.separator+strFileName);
-                intent.putExtra("resultCode", "MRC_000")
-                intent.putExtra("appStatus", "stop")
-
-                sendBroadcast(intent)
-                Log.d(TAG, "sent broadcast. ")
-
-                Thread.sleep(1000)
-
-                Log.d(TAG, "finish activity ")
-                //System.exit(0);
-                finish()
+                sendFinishBroadcast(strPath, strFileName)
             } else {
                 Toast.makeText(
                     applicationContext,
@@ -574,6 +574,27 @@ class MapEditorActivity : AppCompatActivity() {
                 TAG,
                 "SendBroadcast Unexpected error: " + ie.message
             )
+        }
+    }
+
+    private fun sendFinishBroadcast(strPath: String, strFileName: String) {
+        lifecycleScope.launch {
+            launch {
+                Log.d(TAG, "send broadcast... ")
+                val intent = Intent("sk.action.airbot.map.responseMapping").apply {
+                    setPackage("com.sk.airbot.iotagent")
+                    putExtra("destMappingFilePath", "$strPath/$strFileName")
+                    putExtra("resultCode", "MRC_000")
+                    putExtra("appStatus", "stop")
+                }
+
+                sendBroadcast(intent)
+                Log.d(TAG, "sent broadcast. ")
+            }.join()
+            launch {
+                Log.d(TAG, "finish activity ")
+                finish()
+            }
         }
     }
 
@@ -599,29 +620,32 @@ class MapEditorActivity : AppCompatActivity() {
             } else {
                 Log.d(TAG, "Already Exist Json FIle")
             }
-
-            Log.d(TAG, "send broadcast... ")
-            val intent = Intent("sk.action.airbot.map.responseMapping")
-            //intent.setPackage("com.sk.airbot.skmlauncher"); // 2024.12.04 이전
-            intent.setPackage("com.sk.airbot.iotagent")
-            intent.putExtra("destMappingFilePath", "$strPath/$strFileName")
-            //intent.putExtra("destMappingFilePath", strPath+File.separator+strFileName);
-            intent.putExtra("resultCode", "MRC_000")
-            intent.putExtra("appStatus", "stop")
-
-            sendBroadcast(intent)
-            Log.d(TAG, "sent broadcast. ")
-
-            Thread.sleep(1000)
-
-            Log.d(TAG, "finish activity ")
-            //System.exit(0);
-            finish()
+            sendCancelBroadcast(strPath, strFileName)
         } catch (ie: InterruptedException) {
             Log.e(
                 TAG,
                 "goBack Button InterruptedExtception: " + ie.message
             )
+        }
+    }
+
+    private fun sendCancelBroadcast(strPath: String, strFileName: String) {
+        Log.d(TAG, "send broadcast... ")
+        lifecycleScope.launch {
+            launch {
+                val intent = Intent("sk.action.airbot.map.responseMapping")
+                intent.setPackage("com.sk.airbot.iotagent")
+                intent.putExtra("destMappingFilePath", "$strPath/$strFileName")
+                intent.putExtra("resultCode", "MRC_000")
+                intent.putExtra("appStatus", "stop")
+                sendBroadcast(intent)
+                Log.d(TAG, "sent broadcast. ")
+            }.join()
+
+            launch {
+                Log.d(TAG, "finish activity ")
+                finish()
+            }
         }
     }
 
@@ -648,38 +672,25 @@ class MapEditorActivity : AppCompatActivity() {
                 Log.d(TAG, "Already Exist Json FIle")
             }
 
-            Log.d(TAG, "send broadcast... ")
-            val intent = Intent("sk.action.airbot.map.responseMapping")
-            //intent.setPackage("com.sk.airbot.skmlauncher"); // 2024.12.04 이전
-            intent.setPackage("com.sk.airbot.iotagent")
-            intent.putExtra("destMappingFilePath", "$strPath/$strFileName")
-            //intent.putExtra("destMappingFilePath", strPath+File.separator+strFileName);
-            intent.putExtra("resultCode", "MRC_000")
-            intent.putExtra("appStatus", "stop")
+            sendCancelBroadcast(strPath, strFileName)
 
-            sendBroadcast(intent)
-            Log.d(TAG, "sent broadcast. ")
-
-            Thread.sleep(1000)
-
-            Log.d(TAG, "finish activity ")
-            //System.exit(0);
-            finish()
         } catch (ie: InterruptedException) {
             Log.e(
                 TAG,
-                "Cancle Button InterruptedExtception: " + ie.message
+                "Cancel Button InterruptedExtception: " + ie.message
             )
         }
     }
 
     private fun sendBroadcast() {
         Log.d(TAG, "send broadcast appStatus start... ")
-        val statusIntent = Intent("sk.action.airbot.map.responseMapping")
-        //intent.setPackage("com.sk.airbot.skmlauncher"); // 2024.12.04 이전
-        statusIntent.setPackage("com.sk.airbot.iotagent")
-        statusIntent.putExtra("appStatus", "start")
-        sendBroadcast(statusIntent)
+
+        Intent("sk.action.airbot.map.responseMapping").apply {
+            setPackage("com.sk.airbot.iotagent")
+            putExtra("appStatus", "start")
+            sendBroadcast(this)
+        }
+
         Log.d(TAG, "sent broadcast. ")
     }
 
@@ -1777,93 +1788,56 @@ class MapEditorActivity : AppCompatActivity() {
         return doubleArrayOf(robot_x, robot_y)
     }
 
+    init {
+        loadMapLibrary()
+    }
 
-    companion object {
-        private const val TAG = "MapEditorActivity"
-
-        private const val NAME_LIBRARY_CASELAB_OPT =
-        //                                                              "mapoptimizationV2";
-        //"mapoptimization241217v11";
-            //0118 외각선 라이브러리 추가.
-            "mapoptimization_arm_v2_240117"
-
-        init {
-            try {
-                System.loadLibrary(NAME_LIBRARY_CASELAB_OPT)
-                Log.d("SKOnDeviceService", "SO library load success!")
-            } catch (e: UnsatisfiedLinkError) {
-                Log.e(
-                    "SKOnDeviceService",
-                    "SO library load error (UnsatisfiedLinkError): $e"
-                )
-            } catch (e: SecurityException) {
-                Log.e(
-                    "SKOnDeviceService",
-                    "SO library load error (SecurityException): $e"
-                )
-            }
+    private fun loadMapLibrary() {
+        try {
+            System.loadLibrary(NAME_LIBRARY_CASELAB_OPT)
+            Log.d("SKOnDeviceService", "SO library load success!")
+        } catch (e: UnsatisfiedLinkError) {
+            Log.e(
+                "SKOnDeviceService",
+                "SO library load error (UnsatisfiedLinkError): $e"
+            )
+        } catch (e: SecurityException) {
+            Log.e(
+                "SKOnDeviceService",
+                "SO library load error (SecurityException): $e"
+            )
         }
+    }
 
-        /*
-        PATH_FILE_MAP_ORG : 가공되지 않은 원본 pgm, yaml 파일이 존재하는 폴더
-        PATH_FILE_MAP_ROT : so 라이브리를 이용해서 가공된 pgm, yaml 결과 파일일 만들어질 폴더
-        NAME_FILE_MAP_ORG : 파일형식 확장자(pgm,yaml) 제외한 파일명
-        PATH_FILE_MAP_OPT : 옵티마이징한 결과를 저장할 폴더명
-        PATH_FILE_MAP_SEG : 세그멘트 결과를 저장할 폴더명
-        참고 : NAME_FILE_MAP_ORG의 파일명으로 각각 다른 폴더에 결과물이 나오면 최종 결과물은 PATH_FILE_MAP_ROT 폴더에 저장됨
-     */
-        private const val PATH_FILE_MAP_ORG = "/sdcard/Download/"
-        private const val PATH_FILE_MAP_ROT = "/sdcard/Download/map_test/rot/"
-        private const val NAME_FILE_MAP_ORG = "office" //"5py";
-        private const val PATH_FILE_MAP_OPT = "/sdcard/Download/map_test/opt/"
-        private const val PATH_FILE_MAP_SEG = "/sdcard/Download/map_test/seg/"
+    @Throws(IOException::class)
+    private fun readToken(`is`: InputStream): String {
+        val sb = StringBuilder()
+        var b: Int
+        while ((`is`.read().also { b = it }) != -1) {
+            if (b == ' '.code || b == '\n'.code) break
+            sb.append(b.toChar())
+        }
+        return sb.toString()
+    }
 
-        private const val PICK_PGM_FILE_REQUEST = 1
-
-        private const val REQUEST_EXTERNAL_STORAGE = 1
-        private val PERMISSIONS_STORAGE = arrayOf(
-            Manifest.permission.READ_EXTERNAL_STORAGE,
+    fun verifyStoragePermissions(activity: Activity) {
+        val permission = ActivityCompat.checkSelfPermission(
+            activity,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
 
-        fun verifyStoragePermissions(activity: Activity) {
-            val permission = ActivityCompat.checkSelfPermission(
-                activity,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+            intent.setData(Uri.parse("package:" + activity.packageName))
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                intent.setData(Uri.parse("package:" + activity.packageName))
-
-                activity.startActivity(intent)
-            }
-            if (permission != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                    activity,
-                    PERMISSIONS_STORAGE,
-                    REQUEST_EXTERNAL_STORAGE
-                )
-            }
+            activity.startActivity(intent)
         }
-
-
-        // 모드 상수 정의
-        private const val MODE_MAP_EXPLORATION = 0
-        private const val MODE_SPACE_CREATION = 1
-        private const val MODE_BLOCK_WALL = 2
-        private const val MODE_BLOCK_AREA = 3
-        private const val MODE_EDIT_PIN = 4
-
-        @Throws(IOException::class)
-        private fun readToken(`is`: InputStream): String {
-            val sb = StringBuilder()
-            var b: Int
-            while ((`is`.read().also { b = it }) != -1) {
-                if (b == ' '.code || b == '\n'.code) break
-                sb.append(b.toChar())
-            }
-            return sb.toString()
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                activity,
+                PERMISSIONS_STORAGE,
+                REQUEST_EXTERNAL_STORAGE
+            )
         }
     }
 }

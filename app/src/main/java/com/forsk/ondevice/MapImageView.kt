@@ -500,14 +500,19 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             }
         }
         strMenu = "default"
-        if (strMode == "맵 탐색") {
-            this.curType = "default"
-        } else if (strMode == "공간 생성") {
-            this.curType = ROI_TYPE_POLYGON
-        } else if (strMode == "가상벽") {
-            this.curType = ROI_TYPE_LINE
-        } else if (strMode == "금지공간") {
-            this.curType = ROI_TYPE_RECT
+        when (strMode) {
+            "맵 탐색" -> {
+                this.curType = "default"
+            }
+            "공간 생성" -> {
+                this.curType = ROI_TYPE_POLYGON
+            }
+            "가상벽" -> {
+                this.curType = ROI_TYPE_LINE
+            }
+            "금지공간" -> {
+                this.curType = ROI_TYPE_RECT
+            }
         }
         //invalidate()
     }

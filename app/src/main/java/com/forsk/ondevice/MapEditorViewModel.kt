@@ -19,7 +19,7 @@ import java.io.InputStreamReader
 
 class MapEditorViewModel(application: Application) : AndroidViewModel(application = application) {
     suspend fun loadJson(mapViewer: MapImageView, filePath: String?, lib_flag: Boolean): Boolean {
-        val TAG = "123132"
+        val TAG = "loadJson"
 
         Log.d(TAG, "Exist Json File")
         val jsonStringBuilder = StringBuilder()
