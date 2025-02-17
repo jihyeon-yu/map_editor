@@ -4,7 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/margin_30">
 
     <LinearLayout
         android:id="@+id/layout_header"
@@ -70,8 +71,6 @@
             android:backgroundTint="@color/black"
             android:contentDescription="@null"
             android:src="@drawable/baseline_clear_24" />
-
-
     </LinearLayout>
 
     <com.google.android.material.divider.MaterialDivider
@@ -88,19 +87,24 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layout_main"
         android:layout_width="match_parent"
-        android:layout_height="236.7dp"
+        android:layout_height="0dp"
         android:layout_gravity="center"
         android:layout_marginHorizontal="@dimen/margin_60"
         android:layout_marginTop="@dimen/margin_40"
         android:background="@drawable/rounded_corners_background"
         android:gravity="center"
         android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/layout_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/divider_top">
 
         <com.forsk.ondevice.MapImageView
             android:id="@+id/mapViewer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -115,7 +119,6 @@
             android:drawableTop="@drawable/baseline_arrow_forward_ios_24"
             android:gravity="center"
             android:padding="10dp"
-            android:text=""
             android:visibility="visible"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -144,6 +147,7 @@
             android:text="공간 생성"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -160,6 +164,7 @@
             android:text="가상벽 추가"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@id/space_creation_button"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -177,25 +182,44 @@
             android:textAlignment="center"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@id/button_block_wall"
             app:layout_constraintTop_toTopOf="parent" />
 
         <!-- 완료 버튼 -->
-        <TextView
+        <LinearLayout
             android:id="@+id/finish_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
             android:background="@drawable/rounded_button"
-            android:drawableStart="@drawable/ic_complete"
-            android:gravity="end"
             android:paddingHorizontal="@dimen/margin_26"
             android:paddingVertical="@dimen/margin_36"
-            android:text="저장"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/img_save_button"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_complete" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="4dp"
+                android:gravity="end"
+                android:text="저장"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </LinearLayout>
+
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
