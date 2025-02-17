@@ -108,21 +108,20 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <Button
+        <ImageView
             android:id="@+id/fabMain"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginStart="@dimen/margin_24"
+            android:layout_marginTop="@dimen/margin_24"
             android:background="@drawable/rounded_toggle_bar"
-            android:contentDescription="열기 버튼"
-            android:drawableTop="@drawable/baseline_arrow_forward_ios_24"
+            android:contentDescription="@null"
             android:gravity="center"
             android:padding="10dp"
+            android:src="@drawable/baseline_arrow_forward_ios_24"
             android:visibility="visible"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -133,6 +132,8 @@
         android:layout_marginTop="@dimen/margin_60"
         android:background="#000000"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/layout_main">
 
         <!-- 공간 생성 -->
@@ -268,7 +269,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="invisible" />
-
 
     <!-- 토글바 클릭 버튼 레이아웃 -->
     <LinearLayout

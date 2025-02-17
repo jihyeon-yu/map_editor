@@ -560,7 +560,12 @@ class MapEditorActivity : AppCompatActivity() {
 
             //String strSDCardPath = Environment.getExternalStorageDirectory().getAbsolutePath();   // 외부 저장소의 절대 경로를 자동으로 가져와 주는 메서드
             Log.d(TAG, "try roi_saveToFile()")
-            if (roi_saveToFile(strPath, strFileName)) {
+            if (roi_saveToFile(
+                    strPath = strPath,
+                    strFileName = strFileName,
+                    isSetTheta = true
+                )
+            ) {
                 sendFinishBroadcast(strPath, strFileName)
             } else {
                 Toast.makeText(
@@ -1263,7 +1268,7 @@ class MapEditorActivity : AppCompatActivity() {
         }
     }
 
-    fun roi_saveToFile(strPath: String, strFileName: String): Boolean {
+    fun roi_saveToFile(strPath: String, strFileName: String, isSetTheta: Boolean): Boolean {
         val mapViewer = binding.mapViewer
         var j: Int
         val image_width = mapViewer.GetBitmapWidth()
@@ -1371,7 +1376,6 @@ class MapEditorActivity : AppCompatActivity() {
                 }
                 strRoiJson += "]"
                 strRoiJson += ", \"robot_position\":{"
-
                 // Log.d(TAG, "xvw before : "+ xvw);
 
                 // MapViewer.m_RoiObjects.get(i).m_MBR;
@@ -1390,6 +1394,7 @@ class MapEditorActivity : AppCompatActivity() {
 
                 val xvw = coordinates[0]
                 val yvh = coordinates[1]
+                strRoiJson += "\"is_set_theta\":$isSetTheta, "
                 strRoiJson += "\"x\":$xvw"
                 strRoiJson += ", \"y\":$yvh"
                 var angle =
@@ -1568,18 +1573,13 @@ class MapEditorActivity : AppCompatActivity() {
                     calculateCoordinate(roi.mMBR.right, roi.mMBR.bottom, image_height)
 
                 // Add start robot path
-                strRoiJson += "{\"x\":" + startCoordinates[0] +
-                        ", \"y\":" + startCoordinates[1] + "}, "
-
+                strRoiJson += "{\"x\":" + startCoordinates[0] + ", \"y\":" + startCoordinates[1] + "}, "
                 // Add end robot path
-                strRoiJson += "{\"x\":" + endCoordinates[0] +
-                        ", \"y\":" + endCoordinates[1] + "}], "
+                strRoiJson += "{\"x\":" + endCoordinates[0] + ", \"y\":" + endCoordinates[1] + "}], "
 
                 // Add unique ID
                 strRoiJson += "\"id\":\"d4f940b8-81cf-4b46-82d6-8f10f4e03038" + (Math.random() * 255).toInt() + "\"}"
             }
-
-
             i++
         }
         strRoiJson += "]"
