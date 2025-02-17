@@ -20,27 +20,26 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 class CDrawObj(// roi_point, roi_line, roi_rect
-    var roi_type: String, nLeft: Int, nTop: Int, nRight: Int, nBottom: Int
+    var roiType: String, nLeft: Int, nTop: Int, nRight: Int, nBottom: Int
 ) {
-    var m_MBR: Rect
-    var m_MBR_center: Point
-    var m_Points: ArrayList<Point?>
-    var m_endroiflag: Boolean = false // 객체의 생성이 끝났는가?
+    var mMBR: Rect
+    var mMBRCenter: Point
+    var mPoints: ArrayList<Point?>
+    var mEndRoiFlag: Boolean = false // 객체의 생성이 끝났는가?
 
-    var m_label: String = "test" // 라벨 이름
-    var m_labelviewflag: Boolean = true
+    var label: String = "test" // 라벨 이름
+    var labelViewFlag: Boolean = true
 
-    var m_Closed: Boolean = false // 닫혔는지 아닌지..
+    var closed: Boolean = false // 닫혔는지 아닌지..
 
-    var labelpaint: Paint // 라벨 글자 색상
-    var Rectpaint: Paint // roi 색상
-
+    var labelPaint: Paint // 라벨 글자 색상
+    var roiPaint: Paint // roi 색상
 
     private val path: Path // 폴리곤 경로
     var fillPaint: Paint // 채우기 색상
     private val random: Random // 랜덤 생성기
 
-    var m_zoom: Double = 0.0
+    var zoom: Double = 0.0
 
     // 241222 jihyeon 핀 회전 모드 아이콘 생성
     var iconDrawable: Drawable? = null // 핀 회전 아이콘
@@ -48,32 +47,29 @@ class CDrawObj(// roi_point, roi_line, roi_rect
     var rotateDrawable: Drawable? = null
     var angle: Float = 0.0f
 
-    var RectDashpaint: Paint
-    var m_DashPoints: ArrayList<Point>
-    var bDashViewflag: Boolean = true
+    var rectDashpaint: Paint
+    var dashPoints: ArrayList<Point>
+    var dashViewflag: Boolean = true
 
     init {
-        m_MBR = Rect(nLeft, nTop, nRight, nBottom)
-        m_MBR_center = Point(((nLeft + nRight) / 2), ((nTop + nBottom) / 2))
+        mMBR = Rect(nLeft, nTop, nRight, nBottom)
+        mMBRCenter = Point(((nLeft + nRight) / 2), ((nTop + nBottom) / 2))
 
-        m_Points = ArrayList()
+        mPoints = ArrayList()
 
-        roi_type = roi_type
-
-        labelpaint = Paint()
-        labelpaint.color = -0x7f010000 // 반투명 빨간색 (#80FF0000)
-        labelpaint.isAntiAlias = true // 텍스트를 부드럽게 렌더링
-        labelpaint.textSize = 48f
-
+        labelPaint = Paint()
+        labelPaint.color = -0x7f010000 // 반투명 빨간색 (#80FF0000)
+        labelPaint.isAntiAlias = true // 텍스트를 부드럽게 렌더링
+        labelPaint.textSize = 48f
 
         //canvas.drawText("This is RED text", 50, 100, labelpaint);
-        Rectpaint = Paint()
-        Rectpaint.color = Color.RED // 반투명 파란색 (#80FF0000)
-        Rectpaint.strokeWidth = 10f
-        if (roi_type == "roi_rect") {
-            Rectpaint.color = Color.RED
+        roiPaint = Paint()
+        roiPaint.color = Color.RED // 반투명 파란색 (#80FF0000)
+        roiPaint.strokeWidth = 10f
+        if (roiType == ROI_TYPE_RECT) {
+            roiPaint.color = Color.RED
         }
-        Rectpaint.style = Paint.Style.STROKE // 사각형 내부를 없음
+        roiPaint.style = Paint.Style.STROKE // 사각형 내부를 없음
 
 
         // 랜덤 생성기 초기화
@@ -90,24 +86,24 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         fillPaint.style = Paint.Style.FILL // 채우기 스타일
         fillPaint.isAntiAlias = true
 
-        if (roi_type == "roi_polygon") {
+        if (roiType == ROI_TYPE_POLYGON) {
             fillPaint.color = getRandomColorArgb(50)
-        } else if (roi_type == "roi_rect") {
+        } else if (roiType == ROI_TYPE_RECT) {
             fillPaint.color = Color.argb(178, 255, 70, 80)
         }
 
-        RectDashpaint = Paint()
-        RectDashpaint.color = Color.WHITE // 반투명 파란색 (#80FF0000)
-        RectDashpaint.strokeWidth = 5f
-        RectDashpaint.style = Paint.Style.STROKE // 사각형 내부를 없음
-        RectDashpaint.setPathEffect(DashPathEffect(floatArrayOf(10f, 10f), 0f))
+        rectDashpaint = Paint()
+        rectDashpaint.color = Color.WHITE // 반투명 파란색 (#80FF0000)
+        rectDashpaint.strokeWidth = 5f
+        rectDashpaint.style = Paint.Style.STROKE // 사각형 내부를 없음
+        rectDashpaint.setPathEffect(DashPathEffect(floatArrayOf(10f, 10f), 0f))
 
-        m_DashPoints = ArrayList()
+        dashPoints = ArrayList()
         var i = 0
         i = 0
         while (i < 4) {
             val pt = Point(0, 0)
-            m_DashPoints.add(pt)
+            dashPoints.add(pt)
             i++
         }
     }
@@ -137,135 +133,82 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         this.rotateDrawable = null
     }
 
-    fun SetPosition(rect: Rect) {
+    fun setPosition(rect: Rect) {
         // 실수 좌표계로 변환하여 대입한다.
 
         // polygon의 경우에는 m_Points들도 같이 이동해야한다.
 
-        m_MBR.left = rect.left
-        m_MBR.top = rect.top
-        m_MBR.right = rect.right
-        m_MBR.bottom = rect.bottom
+        mMBR.left = rect.left
+        mMBR.top = rect.top
+        mMBR.right = rect.right
+        mMBR.bottom = rect.bottom
 
-        m_MBR_center = Point(
+        mMBRCenter = Point(
             ((rect.left + rect.right) / 2),
             ((rect.top + rect.bottom) / 2)
         )
     }
 
-    fun GetPosition(): Rect {
-        return this.m_MBR
-    }
-
-    fun SetZoom(z: Double) {
-        this.m_zoom = z
-    }
-
-    fun GetZoom(): Double {
-        return this.m_zoom
-    }
-
-    fun GetString(): String {
-        return this.m_label
-    }
-
-    fun SetString(m_label: String) {
-        this.m_label = m_label
-    }
-
-    fun SetTextColor(color: Int) {
-        labelpaint.color = color
-    }
-
-    fun SetLineColor(color: Int) {
-        Rectpaint.color = color
-    }
-
-    fun GetLineColor(): Int {
-        return Rectpaint.color
-    }
-
-    fun SetDashLineColor(color: Int) {
-        RectDashpaint.color = color
-    }
-
-    fun GetDashLineColor(): Int {
-        return RectDashpaint.color
-    }
-
-
-    fun SetFillColor(color: Int) {
-        fillPaint.color = color
-    }
-
-    fun GetFillColor(): Int {
-        return fillPaint.color
-    }
-
-    fun GetMBRCenter(): Point {
-        return this.m_MBR_center
-    }
-
-    fun DrawLabel(canvas: Canvas?, pt_Start: Point?) {
+    fun drawLabel(canvas: Canvas?, pt_Start: Point?) {
         val x: Int
         val y: Int
 
-        when (this.roi_type) {
-            "roi_polygon" -> {
+        when (this.roiType) {
+            ROI_TYPE_POLYGON -> {
                 //x = this.m_MBR.left + 2;
                 //y = this.m_MBR.top + 2;
-                x = m_MBR_center.x
-                y = m_MBR_center.y
+                x = mMBRCenter.x
+                y = mMBRCenter.y
             }
         }
     }
 
-    // 2024.12.11 lyt94 bDrawPoint 추가
-    fun Draw(canvas: Canvas, pt_Start: Point, bitmap: Bitmap, bSelected: Boolean, bEdit: Boolean) {
-        //Log.d(TAG, "Draw(...)");
 
+    // 2024.12.11 lyt94 bDrawPoint 추가
+    fun draw(canvas: Canvas, ptStart: Point, bitmap: Bitmap, bSelected: Boolean, bEdit: Boolean) {
+        //Log.d(TAG, "Draw(...)");
         //Log.d(TAG, "roi_type : "+roi_type);
         //Log.d(TAG, "m_MBR : ("+m_MBR.left+","+m_MBR.top+","+m_MBR.right+","+m_MBR.bottom+")");
 
-        when (this.roi_type) {
-            "roi_point" -> canvas.drawCircle(
-                (m_MBR.left.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                (m_MBR.top.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
+        when (this.roiType) {
+            ROI_TYPE_POINT -> canvas.drawCircle(
+                (mMBR.left.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                (mMBR.top.toFloat() * zoom + ptStart.y).toInt().toFloat(),
                 5f,
-                Rectpaint
+                roiPaint
             )
 
-            "roi_line" -> {
+            ROI_TYPE_LINE -> {
                 if (bSelected || bEdit) {
                     canvas.drawCircle(
-                        (m_MBR.left.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                        (m_MBR.top.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
+                        (mMBR.left.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                        (mMBR.top.toFloat() * zoom + ptStart.y).toInt().toFloat(),
                         5f,
-                        Rectpaint
+                        roiPaint
                     )
                 }
                 canvas.drawLine(
-                    (m_MBR.left * m_zoom + pt_Start.x).toInt().toFloat(),
-                    (m_MBR.top * m_zoom + pt_Start.y).toInt().toFloat(),
-                    (m_MBR.right * m_zoom + pt_Start.x).toInt().toFloat(),
-                    (m_MBR.bottom * m_zoom + pt_Start.y).toInt().toFloat(),
-                    Rectpaint
+                    (mMBR.left * zoom + ptStart.x).toInt().toFloat(),
+                    (mMBR.top * zoom + ptStart.y).toInt().toFloat(),
+                    (mMBR.right * zoom + ptStart.x).toInt().toFloat(),
+                    (mMBR.bottom * zoom + ptStart.y).toInt().toFloat(),
+                    roiPaint
                 )
                 if (bSelected || bEdit) {
                     canvas.drawCircle(
-                        (m_MBR.right.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                        (m_MBR.bottom.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
+                        (mMBR.right.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                        (mMBR.bottom.toFloat() * zoom + ptStart.y).toInt().toFloat(),
                         5f,
-                        Rectpaint
+                        roiPaint
                     )
                 }
 
-                if (bDashViewflag && bSelected) {
+                if (dashViewflag && bSelected) {
                     val lengthExtension = 5
-                    val x1 = (m_MBR.left * m_zoom + pt_Start.x).toInt()
-                    val y1 = (m_MBR.top * m_zoom + pt_Start.y).toInt()
-                    val x2 = (m_MBR.right * m_zoom + pt_Start.x).toInt()
-                    val y2 = (m_MBR.bottom * m_zoom + pt_Start.y).toInt()
+                    val x1 = (mMBR.left * zoom + ptStart.x).toInt()
+                    val y1 = (mMBR.top * zoom + ptStart.y).toInt()
+                    val x2 = (mMBR.right * zoom + ptStart.x).toInt()
+                    val y2 = (mMBR.bottom * zoom + ptStart.y).toInt()
 
                     // 두 점 간의 각도 계산
                     val lineAngle = atan2((y2 - y1).toDouble(), (x2 - x1).toDouble())
@@ -284,143 +227,141 @@ class CDrawObj(// roi_point, roi_line, roi_rect
                     // 중심에서 수직으로 떨어진 두 점 계산
                     val distance = 50f
                     val offsetX1 =
-                        ((x1 + x2) / 2.0f) + distance * cos(lineAngle + Math.PI.toFloat() / 2.0f) as Float
+                        ((x1 + x2) / 2.0f) + distance * cos(lineAngle + Math.PI.toFloat() / 2.0f).toFloat()
                     val offsetY1 =
-                        ((y1 + y2) / 2.0f) + distance * sin(lineAngle + Math.PI.toFloat() / 2.0f) as Float
+                        ((y1 + y2) / 2.0f) + distance * sin(lineAngle + Math.PI.toFloat() / 2.0f).toFloat()
 
                     val offsetX2 =
-                        ((x1 + x2) / 2.0f) + distance * cos(lineAngle - Math.PI.toFloat() / 2.0f) as Float
+                        ((x1 + x2) / 2.0f) + distance * cos(lineAngle - Math.PI.toFloat() / 2.0f).toFloat()
                     val offsetY2 =
-                        ((y1 + y2) / 2.0f) + distance * sin(lineAngle - Math.PI.toFloat() / 2.0f) as Float
+                        ((y1 + y2) / 2.0f) + distance * sin(lineAngle - Math.PI.toFloat() / 2.0f).toFloat()
 
                     //                    canvas.drawCircle(offsetX1, offsetY1, 10, Rectpaint); // 첫 번째 선의 중심점
 //                    canvas.drawCircle(offsetX2, offsetY2, 10, Rectpaint); // 두 번째 선의 중심점
 
                     // 줌심에서 수직으로 떨어진 두 점에서 두 점의 기울기를 이용해서 두 점의 거리보다 distance 만큼 더 긴 곳의 두 점을 각각 구한다.
                     val newlineHalfDistance = (lineDistance / 2.0) + distance
-                    m_DashPoints[0].x =
-                        (offsetX1 + newlineHalfDistance * cos(lineAngle) as Float).toInt()
-                    m_DashPoints[0].y =
-                        (offsetY1 + newlineHalfDistance * sin(lineAngle) as Float).toInt()
-                    m_DashPoints[1].x =
-                        (offsetX1 + newlineHalfDistance * cos(lineAngle + Math.PI.toFloat()) as Float).toInt()
-                    m_DashPoints[1].y =
-                        (offsetY1 + newlineHalfDistance * sin(lineAngle + Math.PI.toFloat()) as Float).toInt()
-                    m_DashPoints[3].x =
-                        (offsetX2 + newlineHalfDistance * cos(lineAngle) as Float).toInt()
-                    m_DashPoints[3].y =
-                        (offsetY2 + newlineHalfDistance * sin(lineAngle) as Float).toInt()
-                    m_DashPoints[2].x =
-                        (offsetX2 + newlineHalfDistance * cos(lineAngle + Math.PI.toFloat()) as Float).toInt()
-                    m_DashPoints[2].y =
-                        (offsetY2 + newlineHalfDistance * sin(lineAngle + Math.PI.toFloat()) as Float).toInt()
+                    dashPoints[0].x =
+                        (offsetX1 + newlineHalfDistance * cos(lineAngle).toFloat()).toInt()
+                    dashPoints[0].y =
+                        (offsetY1 + newlineHalfDistance * sin(lineAngle).toFloat()).toInt()
+                    dashPoints[1].x =
+                        (offsetX1 + newlineHalfDistance * cos(lineAngle + Math.PI.toFloat()).toFloat()).toInt()
+                    dashPoints[1].y =
+                        (offsetY1 + newlineHalfDistance * sin(lineAngle + Math.PI.toFloat()).toFloat()).toInt()
+                    dashPoints[3].x =
+                        (offsetX2 + newlineHalfDistance * cos(lineAngle).toFloat()).toInt()
+                    dashPoints[3].y =
+                        (offsetY2 + newlineHalfDistance * sin(lineAngle).toFloat()).toInt()
+                    dashPoints[2].x =
+                        (offsetX2 + newlineHalfDistance * cos(lineAngle + Math.PI.toFloat()).toFloat()).toInt()
+                    dashPoints[2].y =
+                        (offsetY2 + newlineHalfDistance * sin(lineAngle + Math.PI.toFloat()).toFloat()).toInt()
 
                     var i = 0
-                    i = 0
                     while (i < 4) {
                         canvas.drawLine(
-                            m_DashPoints[i % 4].x.toFloat(),
-                            m_DashPoints[i % 4].y.toFloat(),
-                            m_DashPoints[(i + 1) % 4].x.toFloat(),
-                            m_DashPoints[(i + 1) % 4].y.toFloat(),
-                            RectDashpaint
+                            dashPoints[i % 4].x.toFloat(),
+                            dashPoints[i % 4].y.toFloat(),
+                            dashPoints[(i + 1) % 4].x.toFloat(),
+                            dashPoints[(i + 1) % 4].y.toFloat(),
+                            rectDashpaint
                         )
                         i++
                     }
                 }
             }
 
-            "roi_rect" -> {
+            ROI_TYPE_RECT -> {
                 //Rectpaint.setStyle(Paint.Style.FILL); // 사각형 내부를 채우기
                 canvas.drawRect(
-                    (m_MBR.left * m_zoom + pt_Start.x).toInt().toFloat(),
-                    (m_MBR.top * m_zoom + pt_Start.y).toInt().toFloat(),
-                    (m_MBR.right * m_zoom + pt_Start.x).toInt().toFloat(),
-                    (m_MBR.bottom * m_zoom + pt_Start.y).toInt().toFloat(),
+                    (mMBR.left * zoom + ptStart.x).toInt().toFloat(),
+                    (mMBR.top * zoom + ptStart.y).toInt().toFloat(),
+                    (mMBR.right * zoom + ptStart.x).toInt().toFloat(),
+                    (mMBR.bottom * zoom + ptStart.y).toInt().toFloat(),
                     fillPaint
                 )
                 canvas.drawRect(
-                    (m_MBR.left * m_zoom + pt_Start.x).toInt().toFloat(),
-                    (m_MBR.top * m_zoom + pt_Start.y).toInt().toFloat(),
-                    (m_MBR.right * m_zoom + pt_Start.x).toInt().toFloat(),
-                    (m_MBR.bottom * m_zoom + pt_Start.y).toInt().toFloat(),
-                    Rectpaint
+                    (mMBR.left * zoom + ptStart.x).toInt().toFloat(),
+                    (mMBR.top * zoom + ptStart.y).toInt().toFloat(),
+                    (mMBR.right * zoom + ptStart.x).toInt().toFloat(),
+                    (mMBR.bottom * zoom + ptStart.y).toInt().toFloat(),
+                    roiPaint
                 )
 
                 if (bSelected || bEdit) {
                     canvas.drawCircle(
-                        (m_MBR.left.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                        (m_MBR.top.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
+                        (mMBR.left.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                        (mMBR.top.toFloat() * zoom + ptStart.y).toInt().toFloat(),
                         5f,
-                        Rectpaint
+                        roiPaint
                     )
                     canvas.drawCircle(
-                        (m_MBR.left.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                        (m_MBR.bottom.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
+                        (mMBR.left.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                        (mMBR.bottom.toFloat() * zoom + ptStart.y).toInt().toFloat(),
                         5f,
-                        Rectpaint
+                        roiPaint
                     )
                     canvas.drawCircle(
-                        (m_MBR.right.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                        (m_MBR.bottom.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
+                        (mMBR.right.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                        (mMBR.bottom.toFloat() * zoom + ptStart.y).toInt().toFloat(),
                         5f,
-                        Rectpaint
+                        roiPaint
                     )
                     canvas.drawCircle(
-                        (m_MBR.right.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                        (m_MBR.top.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
+                        (mMBR.right.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                        (mMBR.top.toFloat() * zoom + ptStart.y).toInt().toFloat(),
                         5f,
-                        Rectpaint
+                        roiPaint
                     )
                 }
-                if (bDashViewflag && bSelected) {
+                if (dashViewflag && bSelected) {
                     val distance = 50f
 
                     // normalize rect
                     var nTemp = 0
-                    if (m_MBR.left > m_MBR.right) {
-                        nTemp = m_MBR.left
-                        m_MBR.left = m_MBR.right
-                        m_MBR.right = nTemp
+                    if (mMBR.left > mMBR.right) {
+                        nTemp = mMBR.left
+                        mMBR.left = mMBR.right
+                        mMBR.right = nTemp
                     }
-                    if (m_MBR.top > m_MBR.bottom) {
-                        nTemp = m_MBR.bottom
-                        m_MBR.bottom = m_MBR.left
-                        m_MBR.left = nTemp
+                    if (mMBR.top > mMBR.bottom) {
+                        nTemp = mMBR.bottom
+                        mMBR.bottom = mMBR.left
+                        mMBR.left = nTemp
                     }
-                    m_DashPoints[0].x =
-                        ((m_MBR.left.toFloat() * m_zoom + pt_Start.x) - distance).toInt()
-                    m_DashPoints[0].y =
-                        ((m_MBR.top.toFloat() * m_zoom + pt_Start.y) - distance).toInt()
-                    m_DashPoints[1].x =
-                        ((m_MBR.right.toFloat() * m_zoom + pt_Start.x) + distance).toInt()
-                    m_DashPoints[1].y =
-                        ((m_MBR.top.toFloat() * m_zoom + pt_Start.y) - distance).toInt()
-                    m_DashPoints[2].x =
-                        ((m_MBR.right.toFloat() * m_zoom + pt_Start.x) + distance).toInt()
-                    m_DashPoints[2].y =
-                        ((m_MBR.bottom.toFloat() * m_zoom + pt_Start.y) + distance).toInt()
-                    m_DashPoints[3].x =
-                        ((m_MBR.left.toFloat() * m_zoom + pt_Start.x) - distance).toInt()
-                    m_DashPoints[3].y =
-                        ((m_MBR.bottom.toFloat() * m_zoom + pt_Start.y) + distance).toInt()
+                    dashPoints[0].x =
+                        ((mMBR.left.toFloat() * zoom + ptStart.x) - distance).toInt()
+                    dashPoints[0].y =
+                        ((mMBR.top.toFloat() * zoom + ptStart.y) - distance).toInt()
+                    dashPoints[1].x =
+                        ((mMBR.right.toFloat() * zoom + ptStart.x) + distance).toInt()
+                    dashPoints[1].y =
+                        ((mMBR.top.toFloat() * zoom + ptStart.y) - distance).toInt()
+                    dashPoints[2].x =
+                        ((mMBR.right.toFloat() * zoom + ptStart.x) + distance).toInt()
+                    dashPoints[2].y =
+                        ((mMBR.bottom.toFloat() * zoom + ptStart.y) + distance).toInt()
+                    dashPoints[3].x =
+                        ((mMBR.left.toFloat() * zoom + ptStart.x) - distance).toInt()
+                    dashPoints[3].y =
+                        ((mMBR.bottom.toFloat() * zoom + ptStart.y) + distance).toInt()
 
                     var i = 0
-                    i = 0
                     while (i < 4) {
                         canvas.drawLine(
-                            m_DashPoints[i % 4].x.toFloat(),
-                            m_DashPoints[i % 4].y.toFloat(),
-                            m_DashPoints[(i + 1) % 4].x.toFloat(),
-                            m_DashPoints[(i + 1) % 4].y.toFloat(),
-                            RectDashpaint
+                            dashPoints[i % 4].x.toFloat(),
+                            dashPoints[i % 4].y.toFloat(),
+                            dashPoints[(i + 1) % 4].x.toFloat(),
+                            dashPoints[(i + 1) % 4].y.toFloat(),
+                            rectDashpaint
                         )
                         i++
                     }
                 }
             }
 
-            "roi_polygon" -> {
+            ROI_TYPE_POLYGON -> {
                 //Log.d(TAG, "m_Points.size() : "+(m_Points.size()));
 
 
@@ -434,9 +375,9 @@ class CDrawObj(// roi_point, roi_line, roi_rect
                 var bottom = Int.MIN_VALUE
 
                 var p = 0
-                while (p < m_Points.size) {
-                    val x = m_Points[p]!!.x
-                    val y = m_Points[p]!!.y
+                while (p < mPoints.size) {
+                    val x = mPoints[p]!!.x
+                    val y = mPoints[p]!!.y
 
                     // 경계 업데이트
                     if (x < left) left = x
@@ -446,13 +387,13 @@ class CDrawObj(// roi_point, roi_line, roi_rect
 
                     if (p == 0) {
                         path.moveTo(
-                            (m_Points[p]!!.x.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                            (m_Points[p]!!.y.toFloat() * m_zoom + pt_Start.y).toInt().toFloat()
+                            (mPoints[p]!!.x.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                            (mPoints[p]!!.y.toFloat() * zoom + ptStart.y).toInt().toFloat()
                         ) // 첫 번째 점
                     } else {
                         path.lineTo(
-                            (m_Points[p]!!.x.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                            (m_Points[p]!!.y.toFloat() * m_zoom + pt_Start.y).toInt().toFloat()
+                            (mPoints[p]!!.x.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                            (mPoints[p]!!.y.toFloat() * zoom + ptStart.y).toInt().toFloat()
                         ) // 첫 번째 점
                     }
                     p++
@@ -461,13 +402,13 @@ class CDrawObj(// roi_point, roi_line, roi_rect
                 val bounds = intArrayOf(left, top, right, bottom)
 
                 //Log.d(TAG, "fillPaint.getColor() : "+fillPaint.getColor());
-                if (m_endroiflag == true) {
+                if (mEndRoiFlag == true) {
                     // 채우기 색상 먼저 그리기
                     if (bEdit) {
                         canvas.drawPath(path, fillPaint)
                     } else {
                         try {
-                            drawMatchPoints(bitmap, canvas, fillPaint, bounds, pt_Start)
+                            drawMatchPoints(bitmap, canvas, fillPaint, bounds, ptStart)
                         } catch (ie: IllegalStateException) {
                             Log.d(TAG, "Fail drawMatchPoints: " + ie.localizedMessage)
                         } catch (ie: InterruptedException) {
@@ -482,40 +423,40 @@ class CDrawObj(// roi_point, roi_line, roi_rect
                     // 외곽선 그리기
                     // 20241212 jihyeon
                     // 선택 점 그리기
-                    canvas.drawPath(path, Rectpaint)
+                    canvas.drawPath(path, roiPaint)
                     //canvas.drawPath(path, fillPaint);
                     var p = 0
-                    while (p < m_Points.size) {
+                    while (p < mPoints.size) {
                         //Log.d(TAG, "m_Points.get("+p+") : ("+(int)(m_Points.get(p).x)+","+(int)(m_Points.get(p).y)+")");
                         //Log.d(TAG, "m_zoom : ("+m_zoom);
                         //Log.d(TAG, "pt_Start : ("+(int)(pt_Start.x)+","+(int)(pt_Start.y)+")");
                         canvas.drawCircle(
-                            (m_Points[p]!!.x.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                            (m_Points[p]!!.y.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
+                            (mPoints[p]!!.x.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                            (mPoints[p]!!.y.toFloat() * zoom + ptStart.y).toInt().toFloat(),
                             5f,
-                            Rectpaint
+                            roiPaint
                         )
 
                         if (p == 0) {
                             canvas.drawLine(
-                                (m_Points[p]!!.x.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                                (m_Points[p]!!.y.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
-                                (m_Points[m_Points.size - 1]!!.x.toFloat() * m_zoom + pt_Start.x).toInt()
+                                (mPoints[p]!!.x.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                                (mPoints[p]!!.y.toFloat() * zoom + ptStart.y).toInt().toFloat(),
+                                (mPoints[mPoints.size - 1]!!.x.toFloat() * zoom + ptStart.x).toInt()
                                     .toFloat(),
-                                (m_Points[m_Points.size - 1]!!.y.toFloat() * m_zoom + pt_Start.y).toInt()
+                                (mPoints[mPoints.size - 1]!!.y.toFloat() * zoom + ptStart.y).toInt()
                                     .toFloat(),
-                                Rectpaint
+                                roiPaint
                             )
                         }
                         if (p > 0) {
                             canvas.drawLine(
-                                (m_Points[p - 1]!!.x.toFloat() * m_zoom + pt_Start.x).toInt()
+                                (mPoints[p - 1]!!.x.toFloat() * zoom + ptStart.x).toInt()
                                     .toFloat(),
-                                (m_Points[p - 1]!!.y.toFloat() * m_zoom + pt_Start.y).toInt()
+                                (mPoints[p - 1]!!.y.toFloat() * zoom + ptStart.y).toInt()
                                     .toFloat(),
-                                (m_Points[p]!!.x.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                                (m_Points[p]!!.y.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
-                                Rectpaint
+                                (mPoints[p]!!.x.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                                (mPoints[p]!!.y.toFloat() * zoom + ptStart.y).toInt().toFloat(),
+                                roiPaint
                             )
                         }
                         p++
@@ -525,12 +466,12 @@ class CDrawObj(// roi_point, roi_line, roi_rect
 
                 if (bEdit) {
                     var p = 0
-                    while (p < m_Points.size) {
+                    while (p < mPoints.size) {
                         canvas.drawCircle(
-                            (m_Points[p]!!.x.toFloat() * m_zoom + pt_Start.x).toInt().toFloat(),
-                            (m_Points[p]!!.y.toFloat() * m_zoom + pt_Start.y).toInt().toFloat(),
+                            (mPoints[p]!!.x.toFloat() * zoom + ptStart.x).toInt().toFloat(),
+                            (mPoints[p]!!.y.toFloat() * zoom + ptStart.y).toInt().toFloat(),
                             5f,
-                            Rectpaint
+                            roiPaint
                         )
                         p++
                     }
@@ -538,8 +479,8 @@ class CDrawObj(// roi_point, roi_line, roi_rect
             }
         }
         //if (m_endroiflag == true && m_labelviewflag)
-        if (m_labelviewflag) {
-            DrawLabel(canvas, pt_Start)
+        if (labelViewFlag) {
+            drawLabel(canvas, ptStart)
         }
 
         if (iconDrawable != null) {
@@ -548,8 +489,8 @@ class CDrawObj(// roi_point, roi_line, roi_rect
             val iconHeight = 86.89f * 2 // 아이콘의 높이
 
             // 중심점을 기준으로 아이콘의 Bounds 설정
-            val iconLeft = ((m_MBR_center.x * m_zoom + pt_Start.x) - (iconWidth / 2)).toInt()
-            val iconTop = ((m_MBR_center.y * m_zoom + pt_Start.y) - (iconHeight / 2)).toInt()
+            val iconLeft = ((mMBRCenter.x * zoom + ptStart.x) - (iconWidth / 2)).toInt()
+            val iconTop = ((mMBRCenter.y * zoom + ptStart.y) - (iconHeight / 2)).toInt()
             val iconRight = (iconLeft + iconWidth).toInt()
             val iconBottom = (iconTop + iconHeight).toInt()
 
@@ -597,52 +538,52 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         }
     }
 
-    fun AddPoint(point: Point?) {
+    fun addPoint(point: Point?) {
         //Log.d(TAG, "AddPoint("+point.x+","+point.y+")");
-        m_Points.add(point)
+        mPoints.add(point)
         //Log.d(TAG, "m_MBR : ("+m_MBR.left+","+m_MBR.top+","+m_MBR.right+","+m_MBR.bottom+")");
         // MBR 구하기
-        m_MBR = Rect(10000, 10000, 0, 0)
-        for (p in m_Points.indices) {
-            if (m_MBR.left > m_Points[p]!!.x) m_MBR.left = m_Points[p]!!.x
-            if (m_MBR.right < m_Points[p]!!.x) m_MBR.right = m_Points[p]!!.x
-            if (m_MBR.top > m_Points[p]!!.y) m_MBR.top = m_Points[p]!!.y
-            if (m_MBR.bottom < m_Points[p]!!.y) m_MBR.bottom = m_Points[p]!!.y
+        mMBR = Rect(10000, 10000, 0, 0)
+        for (p in mPoints.indices) {
+            if (mMBR.left > mPoints[p]!!.x) mMBR.left = mPoints[p]!!.x
+            if (mMBR.right < mPoints[p]!!.x) mMBR.right = mPoints[p]!!.x
+            if (mMBR.top > mPoints[p]!!.y) mMBR.top = mPoints[p]!!.y
+            if (mMBR.bottom < mPoints[p]!!.y) mMBR.bottom = mPoints[p]!!.y
         }
         //Log.d(TAG, "m_MBR : ("+m_MBR.left+","+m_MBR.top+","+m_MBR.right+","+m_MBR.bottom+")");
-        m_MBR_center.x = ((m_MBR.left + m_MBR.right) / 2)
-        m_MBR_center.y = ((m_MBR.top + m_MBR.bottom) / 2)
+        mMBRCenter.x = ((mMBR.left + mMBR.right) / 2)
+        mMBRCenter.y = ((mMBR.top + mMBR.bottom) / 2)
     }
 
     fun AddEndPoint(point: Point?, flag: Boolean) {
         //Log.d(TAG, "AddEndPoint(...)");
         // 마지막 점은 제외하고 시작 포인트와 끝 포인트를 같게 함
         if (flag) {
-            m_Points.add(point)
+            mPoints.add(point)
         }
 
         // MBR 구하기
-        m_MBR = Rect(10000, 10000, 0, 0)
-        for (p in m_Points.indices) {
-            if (m_MBR.left > m_Points[p]!!.x) m_MBR.left = m_Points[p]!!.x
-            if (m_MBR.right < m_Points[p]!!.x) m_MBR.right = m_Points[p]!!.x
-            if (m_MBR.top > m_Points[p]!!.y) m_MBR.top = m_Points[p]!!.y
-            if (m_MBR.bottom < m_Points[p]!!.y) m_MBR.bottom = m_Points[p]!!.y
+        mMBR = Rect(10000, 10000, 0, 0)
+        for (p in mPoints.indices) {
+            if (mMBR.left > mPoints[p]!!.x) mMBR.left = mPoints[p]!!.x
+            if (mMBR.right < mPoints[p]!!.x) mMBR.right = mPoints[p]!!.x
+            if (mMBR.top > mPoints[p]!!.y) mMBR.top = mPoints[p]!!.y
+            if (mMBR.bottom < mPoints[p]!!.y) mMBR.bottom = mPoints[p]!!.y
         }
         //Log.d(TAG, "m_MBR : ("+m_MBR.left+","+m_MBR.top+","+m_MBR.right+","+m_MBR.bottom+")");
-        m_endroiflag = true
-        m_MBR_center.x = ((m_MBR.left + m_MBR.right) / 2)
-        m_MBR_center.y = ((m_MBR.top + m_MBR.bottom) / 2)
+        mEndRoiFlag = true
+        mMBRCenter.x = ((mMBR.left + mMBR.right) / 2)
+        mMBRCenter.y = ((mMBR.top + mMBR.bottom) / 2)
     }
 
 
     fun GetPointCount(): Int {
         var point_count = 0
-        when (this.roi_type) {
-            "roi_point" -> point_count = 1
-            "roi_line" -> point_count = 2
-            "roi_rect" -> point_count = 4
-            "roi_polygon" -> point_count = m_Points.size
+        when (this.roiType) {
+            ROI_TYPE_POINT -> point_count = 1
+            ROI_TYPE_LINE -> point_count = 2
+            ROI_TYPE_RECT -> point_count = 4
+            ROI_TYPE_POLYGON -> point_count = mPoints.size
         }
         return point_count
     }
@@ -651,29 +592,29 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         var nHandle = nHandle
         var x = -1
         var y = -1
-        when (this.roi_type) {
-            "roi_line" -> when (nHandle) {
+        when (this.roiType) {
+            ROI_TYPE_LINE -> when (nHandle) {
                 1 -> {
-                    x = m_MBR.left
-                    y = m_MBR.top
+                    x = mMBR.left
+                    y = mMBR.top
                 }
 
                 2 -> {
-                    x = m_MBR.right
-                    y = m_MBR.bottom
+                    x = mMBR.right
+                    y = mMBR.bottom
                 }
 
             }
 
-            "roi_point" -> when (nHandle) {
+            ROI_TYPE_POINT -> when (nHandle) {
                 1 -> {
-                    x = m_MBR.left
-                    y = m_MBR.top
+                    x = mMBR.left
+                    y = mMBR.top
                 }
             }
 
-            "roi_polygon" -> if (nHandle < m_Points.size) {
-                nHandle = m_Points.size
+            ROI_TYPE_POLYGON -> if (nHandle < mPoints.size) {
+                nHandle = mPoints.size
             }
         }
         val pt = Point(x, y)
@@ -684,19 +625,19 @@ class CDrawObj(// roi_point, roi_line, roi_rect
     // 점, 선은 2 나머지는 8을 리턴
     fun GetHandleCount(): Int {
         var handle_count = 0
-        when (this.roi_type) {
-            "roi_point" -> handle_count = 2
-            "roi_line" -> handle_count = 2
-            "roi_rect" -> handle_count = 8
-            "roi_polygon" -> handle_count = m_Points.size
+        when (this.roiType) {
+            ROI_TYPE_POINT -> handle_count = 2
+            ROI_TYPE_LINE -> handle_count = 2
+            ROI_TYPE_RECT -> handle_count = 8
+            ROI_TYPE_POLYGON -> handle_count = mPoints.size
         }
         return handle_count
     }
 
     fun GetHandle(nHandle: Int): Point {
         var nHandle = nHandle
-        when (this.roi_type) {
-            "roi_line" -> {
+        when (this.roiType) {
+            ROI_TYPE_LINE -> {
                 if (nHandle == 2) {
                     nHandle = 8
                 }
@@ -706,12 +647,12 @@ class CDrawObj(// roi_point, roi_line, roi_rect
                 }
             }
 
-            "roi_point" -> if (nHandle == 1) {
+            ROI_TYPE_POINT -> if (nHandle == 1) {
                 nHandle = 1
             }
 
-            "roi_polygon" -> if (nHandle == 1) {
-                nHandle = m_Points.size
+            ROI_TYPE_POLYGON -> if (nHandle == 1) {
+                nHandle = mPoints.size
             }
 
             else -> nHandle = 8
@@ -726,14 +667,14 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         y = -1
         x = y // 선택된 Tracker의 좌표 초기화
 
-        if (this.roi_type == "roi_polygon") {
-            if (nHandle < m_Points.size) {
-                x = m_Points[nHandle]!!.x
-                y = m_Points[nHandle]!!.y
+        if (this.roiType == ROI_TYPE_POLYGON) {
+            if (nHandle < mPoints.size) {
+                x = mPoints[nHandle]!!.x
+                y = mPoints[nHandle]!!.y
             }
         } else {
             //데이터 크기의 중심 좌표 설정(Tracker 2, 4, 5, 7 해당하는 위치 나타냄)
-            val temp = m_MBR
+            val temp = mMBR
             xcenter = temp.left + temp.width() / 2
             ycenter = temp.top + temp.height() / 2
 
@@ -797,12 +738,12 @@ class CDrawObj(// roi_point, roi_line, roi_rect
 
         //double zoom = this.m_zoom;
 
-        when (this.roi_type) {
-            "roi_line" -> {
-                val sx = (m_MBR.left.toFloat()).toInt()
-                val sy = (m_MBR.top.toFloat()).toInt()
-                val ex = (m_MBR.right.toFloat()).toInt()
-                val ey = (m_MBR.bottom.toFloat()).toInt()
+        when (this.roiType) {
+            ROI_TYPE_LINE -> {
+                val sx = (mMBR.left.toFloat()).toInt()
+                val sy = (mMBR.top.toFloat()).toInt()
+                val ex = (mMBR.right.toFloat()).toInt()
+                val ey = (mMBR.bottom.toFloat()).toInt()
 
                 if (sx < ex) {
                     if (point.x > ex || point.x < sx) return false
@@ -827,23 +768,23 @@ class CDrawObj(// roi_point, roi_line, roi_rect
                 }
             }
 
-            "roi_point" -> {
+            ROI_TYPE_POINT -> {
                 //Log.d(TAG, "point : ("+point.x+","+point.y+")");
                 //Log.d(TAG, "this.m_MBR.left - 50 : "+(this.m_MBR.left - 50));
                 //Log.d(TAG, "this.m_MBR.left + 50 : "+(this.m_MBR.left + 50));
                 //Log.d(TAG, "((this.m_MBR.left - 50)<point.x) : "+((this.m_MBR.left - 50)<point.x));
-                if (((m_MBR.left - 50) < point.x) && ((m_MBR.left + 50) > point.x)) {
+                if (((mMBR.left - 50) < point.x) && ((mMBR.left + 50) > point.x)) {
                     //Log.d(TAG, "this.m_MBR.top - 50 : "+(this.m_MBR.top - 50));
                     //Log.d(TAG, "this.m_MBR.top + 50 : "+(this.m_MBR.top + 50));
-                    if (((m_MBR.top - 50) < point.y) && ((m_MBR.top + 50) > point.y)) {
+                    if (((mMBR.top - 50) < point.y) && ((mMBR.top + 50) > point.y)) {
                         return true
                     }
                 }
             }
 
-            "roi_rect", "roi_polygon" -> {
-                if (((m_MBR.left) < point.x) && ((m_MBR.right) > point.x)) {
-                    if (((m_MBR.top) < point.y) && ((m_MBR.bottom) > point.y)) {
+            ROI_TYPE_RECT, ROI_TYPE_POLYGON -> {
+                if (((mMBR.left) < point.x) && ((mMBR.right) > point.x)) {
+                    if (((mMBR.top) < point.y) && ((mMBR.bottom) > point.y)) {
                         //Log.d(TAG,"Y!" + this.m_MBR.top + " " + point.y + " " + this.m_MBR.bottom);
                         //Log.d(TAG,"X!" + this.m_MBR.left + " " + point.x + " " + this.m_MBR.right);
                         return true
@@ -875,7 +816,7 @@ class CDrawObj(// roi_point, roi_line, roi_rect
             //if (rect.PtInRect(pt)) // 동작하지 않는다?
             if (((pt_handle.x - cw) <= point.x) && (point.x <= (pt_handle.x + cw)) && ((pt_handle.y - ch) <= point.y) && (point.y <= (pt_handle.y + ch))) {
                 //console.log(this.roi_type);
-                if ((this.roi_type == "roi_line") && nHandle == 2) return 8
+                if ((this.roiType == ROI_TYPE_LINE) && nHandle == 2) return 8
                 //if (m_Type == NIP_ELLIPSE_ROI && nHandle == 1)		return  8;
                 return nHandle
             }
@@ -889,31 +830,31 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         Log.d(TAG, "PointInPoint( (" + point.x + "," + point.y + ") " + cw + ", " + ch + ")")
 
         val pt = Point(point.x, point.y)
-        when (roi_type) {
-            "roi_line" -> if (((m_MBR.left - cw) <= pt.x) && (pt.x <= (m_MBR.left + cw)) && ((m_MBR.top - ch) <= pt.y) && (pt.y <= (m_MBR.top + ch))) {
+        when (roiType) {
+            ROI_TYPE_LINE -> if (((mMBR.left - cw) <= pt.x) && (pt.x <= (mMBR.left + cw)) && ((mMBR.top - ch) <= pt.y) && (pt.y <= (mMBR.top + ch))) {
                 return 1 // left, top
-            } else if (((m_MBR.right - cw) <= pt.x) && (pt.x <= (m_MBR.right + cw)) && ((m_MBR.bottom - ch) <= pt.y) && (pt.y <= (m_MBR.bottom + ch))) {
+            } else if (((mMBR.right - cw) <= pt.x) && (pt.x <= (mMBR.right + cw)) && ((mMBR.bottom - ch) <= pt.y) && (pt.y <= (mMBR.bottom + ch))) {
                 return 8 // right, bottom
             }
 
-            "roi_rect" -> if (((m_MBR.left - cw) <= pt.x) && (pt.x <= (m_MBR.left + cw)) && ((m_MBR.top - ch) <= pt.y) && (pt.y <= (m_MBR.top + ch))) {
+            ROI_TYPE_RECT -> if (((mMBR.left - cw) <= pt.x) && (pt.x <= (mMBR.left + cw)) && ((mMBR.top - ch) <= pt.y) && (pt.y <= (mMBR.top + ch))) {
                 return 1 // left, top
-            } else if (((m_MBR.right - cw) <= pt.x) && (pt.x <= (m_MBR.right + cw)) && ((m_MBR.top - ch) <= pt.y) && (pt.y <= (m_MBR.top + ch))) {
+            } else if (((mMBR.right - cw) <= pt.x) && (pt.x <= (mMBR.right + cw)) && ((mMBR.top - ch) <= pt.y) && (pt.y <= (mMBR.top + ch))) {
                 return 3 // right, top
-            } else if (((m_MBR.left - cw) <= pt.x) && (pt.x <= (m_MBR.left + cw)) && ((m_MBR.bottom - ch) <= pt.y) && (pt.y <= (m_MBR.bottom + ch))) {
+            } else if (((mMBR.left - cw) <= pt.x) && (pt.x <= (mMBR.left + cw)) && ((mMBR.bottom - ch) <= pt.y) && (pt.y <= (mMBR.bottom + ch))) {
                 return 6 // left, bottom
-            } else if (((m_MBR.right - cw) <= pt.x) && (pt.x <= (m_MBR.right + cw)) && ((m_MBR.bottom - ch) <= pt.y) && (pt.y <= (m_MBR.bottom + ch))) {
+            } else if (((mMBR.right - cw) <= pt.x) && (pt.x <= (mMBR.right + cw)) && ((mMBR.bottom - ch) <= pt.y) && (pt.y <= (mMBR.bottom + ch))) {
                 return 8 // right, bottom
             }
 
-            "roi_polygon" -> {
+            ROI_TYPE_POLYGON -> {
                 var i = 0
                 i = 0
-                while (i < m_Points.size) {
-                    if (((m_Points[i]!!.x - cw) <= pt.x) && (pt.x <= (m_Points[i]!!.x + cw)) && ((m_Points[i]!!.y - ch) <= pt.y) && (pt.y <= (m_Points[i]!!.y + ch))) {
+                while (i < mPoints.size) {
+                    if (((mPoints[i]!!.x - cw) <= pt.x) && (pt.x <= (mPoints[i]!!.x + cw)) && ((mPoints[i]!!.y - ch) <= pt.y) && (pt.y <= (mPoints[i]!!.y + ch))) {
                         Log.d(
                             TAG,
-                            "m_Points.get($i) : (" + m_Points[i]!!.x + "," + m_Points[i]!!.y + ")"
+                            "m_Points.get($i) : (" + mPoints[i]!!.x + "," + mPoints[i]!!.y + ")"
                         )
                         return i + 1 // 0인 경우는 이동이므로 1부터 시작한다.
                     }
@@ -932,20 +873,20 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         val dx = pt1.x - pt2.x
         val dy = pt1.y - pt2.y
         // m_Points도 이동한다.
-        if (roi_type == "roi_polygon") {
-            for (p in m_Points.indices) {
+        if (roiType == ROI_TYPE_POLYGON) {
+            for (p in mPoints.indices) {
                 val point = Point(0, 0)
 
-                point.x = m_Points[p]!!.x - dx
-                point.y = m_Points[p]!!.y - dy
+                point.x = mPoints[p]!!.x - dx
+                point.y = mPoints[p]!!.y - dy
 
-                m_Points[p] = point
+                mPoints[p] = point
             }
         }
-        m_MBR.left = pt1.x
-        m_MBR.top = pt1.y
-        m_MBR.right = pt2.x
-        m_MBR.bottom = pt2.y
+        mMBR.left = pt1.x
+        mMBR.top = pt1.y
+        mMBR.right = pt2.x
+        mMBR.bottom = pt2.y
     }
 
     fun MoveTo(pt1: Point, pt2: Point) {
@@ -958,16 +899,16 @@ class CDrawObj(// roi_point, roi_line, roi_rect
 
         val dx = pt1.x - pt2.x
         val dy = pt1.y - pt2.y
-        if (roi_type == "roi_polygon") {
+        if (roiType == ROI_TYPE_POLYGON) {
             // 중심 좌표만 이동한다.
-            m_MBR_center.x += dx
-            m_MBR_center.y += dy
+            mMBRCenter.x += dx
+            mMBRCenter.y += dy
 
             // 예외처리
-            if (m_MBR_center.x < m_MBR.left) m_MBR_center.x = m_MBR.left
-            if (m_MBR_center.x > m_MBR.right) m_MBR_center.x = m_MBR.right
-            if (m_MBR_center.y < m_MBR.top) m_MBR_center.y = m_MBR.top
-            if (m_MBR_center.y > m_MBR.bottom) m_MBR_center.y = m_MBR.bottom
+            if (mMBRCenter.x < mMBR.left) mMBRCenter.x = mMBR.left
+            if (mMBRCenter.x > mMBR.right) mMBRCenter.x = mMBR.right
+            if (mMBRCenter.y < mMBR.top) mMBRCenter.y = mMBR.top
+            if (mMBRCenter.y > mMBR.bottom) mMBRCenter.y = mMBR.bottom
 
             //    m_Points.get(m_Points.size()-1).x += dx;
             //    m_Points.get(m_Points.size()-1).y += dy;
@@ -986,17 +927,17 @@ class CDrawObj(// roi_point, roi_line, roi_rect
             //this.m_MBR.top = pt1.y;
             //this.m_MBR.right = pt2.x;
             //this.m_MBR.bottom = pt2.y;
-            m_MBR.left += dx
-            m_MBR.top += dy
-            m_MBR.right += dx
-            m_MBR.bottom += dy
+            mMBR.left += dx
+            mMBR.top += dy
+            mMBR.right += dx
+            mMBR.bottom += dy
         }
     }
 
     fun MoveHandleTo(pt1: Point, pt2: Point, nHandle: Int) {
         //console.log(pt1);
         // 실수 좌표계로 변환하여 대입한다.
-        val zoom = this.m_zoom
+        val zoom = this.zoom
 
         // 왜 좌표가 2배 차이가 날까?
         val dx = (pt1.x - pt2.x)
@@ -1004,39 +945,39 @@ class CDrawObj(// roi_point, roi_line, roi_rect
 
         when (nHandle) {
             1 -> {
-                m_MBR.left += dx
-                m_MBR.top += dy
+                mMBR.left += dx
+                mMBR.top += dy
             }
 
             2 -> {
-                m_MBR.top += dy
+                mMBR.top += dy
             }
 
             3 -> {
-                m_MBR.right += dx
-                m_MBR.top += dy
+                mMBR.right += dx
+                mMBR.top += dy
             }
 
             4 -> {
-                m_MBR.left += dx
+                mMBR.left += dx
             }
 
             5 -> {
-                m_MBR.right += dx
+                mMBR.right += dx
             }
 
             6 -> {
-                m_MBR.left += dx
-                m_MBR.bottom += dy
+                mMBR.left += dx
+                mMBR.bottom += dy
             }
 
             7 -> {
-                m_MBR.bottom += dy
+                mMBR.bottom += dy
             }
 
             8 -> {
-                m_MBR.right += dx
-                m_MBR.bottom += dy
+                mMBR.right += dx
+                mMBR.bottom += dy
             }
         }
 
@@ -1055,12 +996,12 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         val dx = (pt1.x - pt2.x)
         val dy = (pt1.y - pt2.y)
 
-        when (roi_type) {
-            "roi_line" -> MoveHandleTo(pt1, pt2, nHandle)
-            "roi_rect" -> MoveHandleTo(pt1, pt2, nHandle)
-            "roi_polygon" -> if (nHandle <= m_Points.size) {
-                m_Points[nHandle - 1]!!.x += dx
-                m_Points[nHandle - 1]!!.y += dy
+        when (roiType) {
+            ROI_TYPE_LINE -> MoveHandleTo(pt1, pt2, nHandle)
+            ROI_TYPE_RECT -> MoveHandleTo(pt1, pt2, nHandle)
+            ROI_TYPE_POLYGON -> if (nHandle <= mPoints.size) {
+                mPoints[nHandle - 1]!!.x += dx
+                mPoints[nHandle - 1]!!.y += dy
             }
         }
     }
@@ -1100,7 +1041,7 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         val pixels = IntArray(width * height)
         bitmap.getPixels(pixels, 0, width, left, top, width, height)
 
-        val floatZoom = m_zoom.toFloat()
+        val floatZoom = zoom.toFloat()
         paint.strokeWidth = 5f
 
         // 점 좌표를 저장할 리스트
@@ -1129,11 +1070,11 @@ class CDrawObj(// roi_point, roi_line, roi_rect
 
     fun isPointInPolygon(point: Point): Boolean {
         var intersectCount = 0
-        val size = m_Points.size
+        val size = mPoints.size
 
         for (i in 0 until size) {
-            val p1 = m_Points[i]
-            val p2 = m_Points[(i + 1) % size]
+            val p1 = mPoints[i]
+            val p2 = mPoints[(i + 1) % size]
 
             // Check if the point is on a horizontal edge of the polygon
             if (p1!!.y == p2!!.y && p1.y == point.y && point.x >= min(
@@ -1168,5 +1109,9 @@ class CDrawObj(// roi_point, roi_line, roi_rect
 
     companion object {
         private const val TAG = "CDrawObj"
+        const val ROI_TYPE_POINT = "roi_point"
+        const val ROI_TYPE_LINE = "roi_line"
+        const val ROI_TYPE_RECT = "roi_rect"
+        const val ROI_TYPE_POLYGON = "roi_polygon"
     }
 }

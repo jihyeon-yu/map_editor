@@ -16,6 +16,10 @@ import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.SimpleOnScaleGestureListener
 import android.view.View
 import android.widget.Toast
+import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_LINE
+import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POINT
+import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POLYGON
+import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
 import java.util.Random
 import kotlin.math.atan2
 import kotlin.math.min
@@ -97,27 +101,29 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             if (currentSelectedIndex != -1 && currentSelectedIndex < roiObjects.size) {
                 val x: Int
                 val y: Int
-                when (roiCurObject?.roi_type) {
-                    "roi_polygon" -> {
+                when (roiCurObject?.roiType) {
+                    ROI_TYPE_POLYGON -> {
                         val mbr =
-                            roiObjects[currentSelectedIndex].GetMBRCenter()
+                            roiObjects[currentSelectedIndex].mMBRCenter
                         x =
-                            (mbr.x * roiObjects[currentSelectedIndex].m_zoom + startPosX - 57).toInt()
+                            (mbr.x * roiObjects[currentSelectedIndex].zoom + startPosX - 57).toInt()
                         y =
-                            (mbr.y * roiObjects[currentSelectedIndex].m_zoom + startPosY - 15).toInt()
+                            (mbr.y * roiObjects[currentSelectedIndex].zoom + startPosY - 15).toInt()
                     }
-                    "roi_line" -> {
+
+                    ROI_TYPE_LINE -> {
                         x =
-                            (roiObjects[currentSelectedIndex].m_MBR.left * roiObjects[currentSelectedIndex].m_zoom + startPosX).toInt()
+                            (roiObjects[currentSelectedIndex].mMBR.left * roiObjects[currentSelectedIndex].zoom + startPosX).toInt()
                         y =
-                            (roiObjects[currentSelectedIndex].m_MBR.top * roiObjects[currentSelectedIndex].m_zoom + startPosY + 100).toInt()
+                            (roiObjects[currentSelectedIndex].mMBR.top * roiObjects[currentSelectedIndex].zoom + startPosY + 100).toInt()
                     }
+
                     else -> {
                         x =
-                            (((roiObjects[currentSelectedIndex].m_MBR.left + roiObjects[currentSelectedIndex].m_MBR.right) / 2)
-                                    * roiObjects[currentSelectedIndex].m_zoom + startPosX - 55).toInt()
+                            (((roiObjects[currentSelectedIndex].mMBR.left + roiObjects[currentSelectedIndex].mMBR.right) / 2)
+                                    * roiObjects[currentSelectedIndex].zoom + startPosX - 55).toInt()
                         y =
-                            (roiObjects[currentSelectedIndex].m_MBR.top * roiObjects[currentSelectedIndex].m_zoom + startPosY + 120).toInt()
+                            (roiObjects[currentSelectedIndex].mMBR.top * roiObjects[currentSelectedIndex].zoom + startPosY + 120).toInt()
                     }
                 }
                 return Pair(x, y)
@@ -127,14 +133,14 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
     fun clearSelection() {
         currentSelectedIndex = -1
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
     }
 
     fun CountRoomNum(): Int {
         var count = 0
 
         for (i in roiObjects.indices) {
-            if (roiObjects[i].roi_type == "roi_polygon") count++
+            if (roiObjects[i].roiType == ROI_TYPE_POLYGON) count++
         }
         return count
     }
@@ -224,10 +230,10 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             //translateY = (getHeight() - bitmap.getHeight() * scaleFactor) / 2;
             //if(bitmap != null)
             run {
-                val CenterToImgX =
+                val centerToImgX =
                     ((width / 2 - startPosXOffset) / zoomRateOffset).toInt() // 선터 좌료를 원본 이미지 좌표로 변환
-                val ImgStartPosX =
-                    ((width / 2) - CenterToImgX * zoomRate).toFloat() // 원본이미지의 좌표를 변경된 이미지의 줌심좌표로 수정
+                val imgStartPosX =
+                    ((width / 2) - centerToImgX * zoomRate).toFloat() // 원본이미지의 좌표를 변경된 이미지의 줌심좌표로 수정
                 val translateX =
                     ((width / 2) - (((width / 2 - startPosXOffset) / zoomRateOffset).toInt()) * zoomRate).toFloat()
                 val translateY =
@@ -297,7 +303,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         var i = 0
         while (i < roiObjects.size) {
             if (strMenu == "핀 회전") {
-                if (roiObjects[i].roi_type == "roi_polygon") {
+                if (roiObjects[i].roiType == ROI_TYPE_POLYGON) {
                     // 선택된 것만 회전한다.
                     if (i == currentSelectedIndex) {
                         roiObjects[i].iconDrawable = iconDrawable
@@ -312,28 +318,28 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             }
 
 
-            roiObjects[i].SetZoom(zoomRate)
+            roiObjects[i].zoom = zoomRate
             if (strMenu == "수정") {
-                if (curType == roiObjects[i].roi_type && i == currentSelectedIndex) {
-                    roiObjects[i].Draw(canvas, pt, bitmap!!, true, true)
+                if (curType == roiObjects[i].roiType && i == currentSelectedIndex) {
+                    roiObjects[i].draw(canvas, pt, bitmap!!, true, true)
                 } else {
-                    roiObjects[i].Draw(canvas, pt, bitmap!!, false, false)
+                    roiObjects[i].draw(canvas, pt, bitmap!!, false, false)
                 }
             } else {
                 if (i == currentSelectedIndex) {
-                    roiObjects[i].Draw(canvas, pt, bitmap!!, true, false)
+                    roiObjects[i].draw(canvas, pt, bitmap!!, true, false)
                 } else {
-                    roiObjects[i].Draw(canvas, pt, bitmap!!, false, false)
+                    roiObjects[i].draw(canvas, pt, bitmap!!, false, false)
                 }
             }
             //m_RoiObjects.get(i).DrawLabel(canvas);
             // 241222 jihyeon 핀 회전일 때 아이콘 변경
             if (strMenu == "핀 회전") {
                 //RotatePinIcon();
-            } else if (roiObjects[i].roi_type == "roi_polygon") {
-                val mbr = roiObjects[i].GetMBRCenter()
-                x = (mbr!!.x * roiObjects[i].m_zoom + pt.x).toInt()
-                y = (mbr.y * roiObjects[i].m_zoom + pt.y).toInt()
+            } else if (roiObjects[i].roiType == ROI_TYPE_POLYGON) {
+                val mbr = roiObjects[i].mMBRCenter
+                x = (mbr.x * roiObjects[i].zoom + pt.x).toInt()
+                y = (mbr.y * roiObjects[i].zoom + pt.y).toInt()
                 // 배경으로 VectorDrawable 그리기
                 val drawable_ic = resources.getDrawable(R.drawable.ic_location, null)
                 drawable_ic.setBounds(x - 30, y - 80, x + 30, y + 10) //(60, 90)
@@ -361,32 +367,32 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
                 drawable_ic.draw(canvas)
                 drawable.draw(canvas)
-                canvas.drawText(roiObjects[i].m_label, x.toFloat(), (y - 100).toFloat(), paint)
+                canvas.drawText(roiObjects[i].label, x.toFloat(), (y - 100).toFloat(), paint)
             }
             i++
         }
 
-        if (roiCurObject != null) {
-            val oldc = roiCurObject!!.GetLineColor()
-            roiCurObject!!.SetLineColor(Color.rgb(253, 60, 60))
-            if (roiCurObject!!.roi_type == "roi_rect") {
-                roiCurObject!!.SetFillColor(Color.argb(178, 255, 70, 80)) //투명도 30
+        roiCurObject?.let {
+            it.roiPaint.color = Color.rgb(253, 60, 60)
+
+            if (it.roiType == ROI_TYPE_RECT) {
+                it.fillPaint.color = Color.argb(178, 255, 70, 80) //투명도 30
                 //m_RoiCurObject.SetLineColor(Color.rgb(255,70,80));
             }
             //else if(m_RoiCurObject.roi_type.equals("roi_polygon")){
             //m_RoiCurObject.SetFillColor(getRandomColorArgb(50));
             //}
-            roiCurObject!!.SetZoom(zoomRate)
+            roiCurObject!!.zoom = zoomRate
 
             //m_RoiCurObject.Draw(canvas, zoom_rate);
             if (strMenu == "수정") {
-                if (curType == roiCurObject?.roi_type) {
-                    roiCurObject!!.Draw(canvas, pt, bitmap!!, true, true)
+                if (curType == roiCurObject?.roiType) {
+                    roiCurObject!!.draw(canvas, pt, bitmap!!, true, true)
                 } else {
-                    roiCurObject!!.Draw(canvas, pt, bitmap!!, false, false)
+                    roiCurObject!!.draw(canvas, pt, bitmap!!, false, false)
                 }
             } else {
-                roiCurObject!!.Draw(canvas, pt, bitmap!!, false, false)
+                roiCurObject!!.draw(canvas, pt, bitmap!!, false, false)
             }
             if (strMenu == "삭제") {
                 // 삭제 메뉴일 때 토글바 처리
@@ -464,7 +470,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         matrix.postTranslate(translateX, translateY)
 
 
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
     }
 
     fun GetBitmapWidth(): Int {
@@ -483,7 +489,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
     fun SetMode(str: String) {
         //Log.d(TAG, "SetMode("+str+")");
-        CObject_CurRoiCancelFunc()
+        cancelCurObject()
         drawStart = false
         this.strMode = str
         // 241222 jihyeon 이전 모드가 핀 회전 모드였으면, 초기화
@@ -497,13 +503,13 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         if (strMode == "맵 탐색") {
             this.curType = "default"
         } else if (strMode == "공간 생성") {
-            this.curType = "roi_polygon"
+            this.curType = ROI_TYPE_POLYGON
         } else if (strMode == "가상벽") {
-            this.curType = "roi_line"
+            this.curType = ROI_TYPE_LINE
         } else if (strMode == "금지공간") {
-            this.curType = "roi_rect"
+            this.curType = ROI_TYPE_RECT
         }
-        invalidate()
+        //invalidate()
     }
 
     fun GetMode(): String {
@@ -522,13 +528,13 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             SetMode(strMode) // m_CurType를 재 설정해준다.
             drawStart = true
         } else if (str == "수정") {
-            CObject_CurRoiCancelFunc()
+            cancelCurObject()
             drawStart = false
         } else if (str == "선택") {
             if (strMenu == "추가") {
                 roi_AddObject()
             } else {
-                CObject_CurRoiCancelFunc()
+                cancelCurObject()
             }
             drawStart = false
         } else if (str == "삭제") {
@@ -538,7 +544,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         strMenu = str
-        invalidate()
+        //invalidate()
     }
 
     // 241222 jihyeon 핀 회전 모드 아이콘
@@ -547,14 +553,14 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         val rotateDrawable = resources.getDrawable(R.drawable.ic_rotate, null)
         // 모든 ROI 객체의 핀을 새로운 Drawable로 설정
         for (roiObject in roiObjects) {
-            if (roiObject.roi_type == "roi_polygon") {
+            if (roiObject.roiType == ROI_TYPE_POLYGON) {
                 roiObject.iconDrawable = iconDrawable
                 roiObject.rotateDrawable = rotateDrawable
             }
         }
 
         // 화면 갱신
-        invalidate()
+        //invalidate()
     }
 
     private fun RotatePinIcon(nIndex: Int) {
@@ -563,30 +569,10 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
         val iconDrawable = resources.getDrawable(R.drawable.benjamin_direction, null)
         val rotateDrawable = resources.getDrawable(R.drawable.ic_rotate, null)
-        if (roiObject.roi_type == "roi_polygon") {
+        if (roiObject.roiType == ROI_TYPE_POLYGON) {
             roiObject.iconDrawable = iconDrawable
             roiObject.rotateDrawable = rotateDrawable
         }
-    }
-
-    fun GetMenu(): String {
-        return this.strMenu
-    }
-
-    fun SetRoiType(str: String) {
-        this.roiType = str
-    }
-
-    fun GetRoiType(): String {
-        return this.roiType
-    }
-
-    fun SetCurType(str: String) {
-        this.curType = str
-    }
-
-    fun GetCurType(): String {
-        return this.curType
     }
 
     fun ZoomIn() {
@@ -594,7 +580,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         // 최대 5배 확대만 가능하게
         if (zoomRate > (aspectRate * 5.0)) zoomRate = aspectRate * 5.0
 
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
     }
 
     fun ZoomOut() {
@@ -602,7 +588,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         // 화면에 꽉차게
         if (aspectRate > zoomRate) zoomRate = aspectRate
 
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
     }
 
     fun MouseDown(x: Float, y: Float) {
@@ -644,7 +630,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             if (drawStart == true) {
                 if (drawing == false) {
                     //console.log(point);
-                    if (!CObject_CreateObject(curType, point)) {
+                    if (!createCObject(curType, point)) {
                         drawStart = false
                         return
                     }
@@ -663,7 +649,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
                     isCapture = true
                 } else {
-                    if (curType == "roi_polygon") {
+                    if (curType == ROI_TYPE_POLYGON) {
                         //CPen pen,*pOldPen;
                         //pen.CreatePen(PS_DOT, 1, m_LineColor);		// 도트
                         //pOldPen = (CPen *)dc.SelectObject(&pen);
@@ -684,13 +670,13 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                             ((point.x - startPosX) / zoomRate).toInt(),
                             ((point.y - startPosY) / zoomRate).toInt()
                         )
-                        roiCurObject!!.AddPoint(pt)
+                        roiCurObject!!.addPoint(pt)
                         ptOld = point
                     }
                     dnPoint.x = point.x
                     dnPoint.y = point.y
 
-                    invalidate() // 화면을 다시 그리도록 요청
+                    //invalidate() // 화면을 다시 그리도록 요청
                 }
             } else if (drawing == false) {
                 val pt = Point(
@@ -726,7 +712,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     //map_image_draw();
                     //CObject_Draw();
                 }
-                invalidate() // 화면을 다시 그리도록 요청
+                //invalidate() // 화면을 다시 그리도록 요청
             }
         }
         isMouseDown = true
@@ -766,14 +752,14 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 matrix.postTranslate(dx.toFloat(), dy.toFloat())
 
                 //Log.d(TAG,"check mouse move: ");
-                invalidate() // 화면을 다시 그리도록 요청
+                //invalidate() // 화면을 다시 그리도록 요청
             }
         } else if (strMenu == "핀 회전") {
             if (currentSelectedIndex != -1) {
                 val iconCenterX =
-                    ((roiObjects[currentSelectedIndex].m_MBR_center.x * zoomRate + startPosX)).toFloat() // +30 - 30 상쇄됨
+                    ((roiObjects[currentSelectedIndex].mMBRCenter.x * zoomRate + startPosX)).toFloat() // +30 - 30 상쇄됨
                 val iconCenterY =
-                    ((roiObjects[currentSelectedIndex].m_MBR_center.y * zoomRate + startPosY)).toFloat() // +40 - 40 상쇄됨
+                    ((roiObjects[currentSelectedIndex].mMBRCenter.y * zoomRate + startPosY)).toFloat() // +40 - 40 상쇄됨
 
                 val deltaAngle = calculateAngle(iconCenterX, iconCenterY, x, y)
 
@@ -790,7 +776,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 //                m_RoiObjects.get(m_RoiCurIndex).setAngle((float)anglef);
 
                 // 화면을 갱신해준다.
-                invalidate()
+                //invalidate()
             }
         } else {
             // 정수로 변환
@@ -812,7 +798,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             if (isCapture == true)  // 마우스 누른 상태에서 이동중이면
             {
                 if (drawing == true) {
-                    if (curType == "roi_line" || curType == "roi_rect") {
+                    if (curType == ROI_TYPE_LINE || curType == ROI_TYPE_RECT) {
                         CObject_MoveToRect(dnPoint, point)
                     }
                 } else {
@@ -826,9 +812,9 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                         Log.d(TAG, "m_RoiCurIndex :  " + currentSelectedIndex)
                         Log.d(
                             TAG,
-                            "m_RoiObjects.get(m_RoiCurIndex).roi_type : " + roiObjects[currentSelectedIndex].roi_type
+                            "m_RoiObjects.get(m_RoiCurIndex).roi_type : " + roiObjects[currentSelectedIndex].roiType
                         )
-                        if (roiObjects[currentSelectedIndex].roi_type != "roi_point") {
+                        if (roiObjects[currentSelectedIndex].roiType != ROI_TYPE_POINT) {
                             // 선택된 객체의 모양을 변경한다.
                             //  Log.d(TAG, "else if Point : " + point.x + ", " + point.y);
                             // Log.d(TAG, "DPoint: " + m_DnPoint.x + ", " + m_DnPoint.y);
@@ -837,11 +823,11 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                             } else {
                                 CObject_MoveHandleTo(point, dnPoint, objSelect)
                             }
-                        } else if (roiObjects[currentSelectedIndex].roi_type != "roi_polygon") {
+                        } else if (roiObjects[currentSelectedIndex].roiType != ROI_TYPE_POLYGON) {
                             CObject_MoveToRect(dnPoint, point)
 
 
-                            invalidate() // 화면을 다시 그리도록 요청
+                            //invalidate() // 화면을 다시 그리도록 요청
                         }
                     }
                     dnPoint.x = point.x
@@ -867,12 +853,12 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     //    m_DnPoint.x = point.x;
                     //    m_DnPoint.y = point.y;
                     //}
-                    if (curType == "roi_polygon") {
+                    if (curType == ROI_TYPE_POLYGON) {
                         CObject_MoveTo(dnPoint, point)
                         //CObject_MoveToRect(m_DnPoint, point);
                         dnPoint = point
 
-                        invalidate() // 화면을 다시 그리도록 요청
+                        //invalidate() // 화면을 다시 그리도록 요청
                     }
                 }
             }
@@ -913,8 +899,8 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             {
                 isCapture = false // 누른 상태로 마우스 이동 해제
                 if (drawing == true) {
-                    if (curType == "roi_point") {
-                        roiCurObject!!.m_endroiflag = true
+                    if (curType == ROI_TYPE_POINT) {
+                        roiCurObject!!.mEndRoiFlag = true
                         if (CObject_AddCurObject(point)) {
                             drawStart = true // 그리기가 끝남.
                             drawing = false
@@ -925,8 +911,8 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                             drawStart = false
                             curType = "default"
                         }
-                    } else if (curType == "roi_line") {
-                        roiCurObject!!.m_endroiflag = true // 그리기가 끝났음을 나타냄
+                    } else if (curType == ROI_TYPE_LINE) {
+                        roiCurObject!!.mEndRoiFlag = true // 그리기가 끝났음을 나타냄
                         if (CObject_AddCurObject(point)) {
                             drawing = false
                             drawStart = true
@@ -942,8 +928,8 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                             ptOld.x = -1
                             ptOld.y = -1
                         }
-                    } else if (curType == "roi_rect") {
-                        roiCurObject!!.m_endroiflag = true // 그리기가 끝났음을 나타냄
+                    } else if (curType == ROI_TYPE_RECT) {
+                        roiCurObject!!.mEndRoiFlag = true // 그리기가 끝났음을 나타냄
                         if (CObject_AddCurObject(point)) {
                             drawing = false
                             drawStart = true
@@ -959,7 +945,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                             ptOld.x = -1
                             ptOld.y = -1
                         }
-                    } else if (curType == "roi_polygon") {
+                    } else if (curType == ROI_TYPE_POLYGON) {
                         //Point pt = new Point((int)(point.x*zoom_rate - StartPos_x),(int)(point.y*zoom_rate - StartPos_y));
                         //m_RoiCurObject.AddPoint(pt);
 
@@ -974,7 +960,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
                     //map_image_draw();
                     //CObject_Draw();
-                    invalidate() // 화면을 다시 그리도록 요청
+                    //invalidate() // 화면을 다시 그리도록 요청
 
                     SetCursorType()
                 } else if (select != 0) {
@@ -982,7 +968,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     isSelected = true
 
                     //map_image_draw();
-                    invalidate()
+                    //invalidate()
 
                     //CObject_Draw();
                     SetCursorType()
@@ -1010,7 +996,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
 
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
     }
 
 
@@ -1018,38 +1004,38 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         //Log.d(TAG, "roi_AddPoint()");
 
         strMode = "Add Roi"
-        roiType = "roi_point"
+        roiType = ROI_TYPE_POINT
 
-        CObject_CurRoiCancelFunc()
-        curType = "roi_point"
+        cancelCurObject()
+        curType = ROI_TYPE_POINT
         drawStart = true
     }
 
     fun roi_AddLine() {
         strMode = "Roi Add"
-        roiType = "roi_line"
+        roiType = ROI_TYPE_LINE
 
-        CObject_CurRoiCancelFunc()
-        curType = "roi_line"
+        cancelCurObject()
+        curType = ROI_TYPE_LINE
         drawStart = true
     }
 
     fun roi_AddRect() {
         strMode = "Roi Add"
-        roiType = "roi_rect"
+        roiType = ROI_TYPE_RECT
 
-        CObject_CurRoiCancelFunc()
-        curType = "roi_rect"
+        cancelCurObject()
+        curType = ROI_TYPE_RECT
         drawStart = true
     }
 
     fun roi_AddPolygon() {
         strMode = "Roi Add"
-        roiType = "roi_polygon"
+        roiType = ROI_TYPE_POLYGON
 
         val pt = Point(0, 0)
         //CObject_AddCurObject(pt);
-        curType = "roi_polygon"
+        curType = ROI_TYPE_POLYGON
         drawStart = true
     }
 
@@ -1058,58 +1044,58 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         if (roiCurObject == null) return
 
         // line 생성
-        if ((select == -1) && roiCurObject?.roi_type == "roi_line") {
+        if ((select == -1) && roiCurObject?.roiType == ROI_TYPE_LINE) {
             // 객체 완성
             currentSelectedIndex = roiObjects.size
             roiObjects.add(roiCurObject!!)
 
-            ////Log.d(TAG, "m_RoiObjects.add(m_RoiCurObject): " + m_RoiCurObject.roi_type.equals("roi_line"));
+            ////Log.d(TAG, "m_RoiObjects.add(m_RoiCurObject): " + m_RoiCurObject.roi_type.equals(ROI_TYPE_LINE));
             drawStart = true
             drawing = false
-            roiCurObject!!.m_endroiflag = true
+            roiCurObject!!.mEndRoiFlag = true
             isCapture = false
             isSelected = true
 
-            invalidate()
+            //invalidate()
 
             return
         }
 
         // rect 생성
-        if ((select == -1) && roiCurObject?.roi_type == "roi_rect") {
+        if ((select == -1) && roiCurObject?.roiType == ROI_TYPE_RECT) {
             // 객체 완성
             currentSelectedIndex = roiObjects.size
             roiObjects.add(roiCurObject!!)
             Log.d(
                 TAG,
-                "m_RoiObjects.add(m_RoiCurObject): " + (roiCurObject?.roi_type == "roi_rect")
+                "m_RoiObjects.add(m_RoiCurObject): " + (roiCurObject?.roiType == ROI_TYPE_RECT)
             )
 
             drawStart = true
             drawing = false
-            roiCurObject!!.m_endroiflag = true
+            roiCurObject!!.mEndRoiFlag = true
             isCapture = false
             isSelected = true
 
-            invalidate()
+            //invalidate()
 
             return
         }
 
         if (drawing) {
-            if (roiCurObject!!.m_Points.size < 3) {
+            if (roiCurObject!!.mPoints.size < 3) {
                 roiCurObject = null
                 currentSelectedIndex = -1
                 drawStart = true
                 drawing = false
                 isSelected = false
             } else {
-                if (select == -1 && roiCurObject?.roi_type == "roi_polygon") {
+                if (select == -1 && roiCurObject?.roiType == ROI_TYPE_POLYGON) {
                     val pt = Point(0, 0)
                     roiCurObject!!.AddEndPoint(pt, false) // 끝점 제거
 
                     roomNum++
-                    roiCurObject!!.m_label = "공간$roomNum"
+                    roiCurObject!!.label = "공간$roomNum"
                     // 객체 완성
                     currentSelectedIndex = roiObjects.size
                     roiObjects.add(roiCurObject!!)
@@ -1117,25 +1103,25 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
                     drawStart = true
                     drawing = false
-                    roiCurObject!!.m_endroiflag = true
+                    roiCurObject!!.mEndRoiFlag = true
                     isCapture = false
                     isSelected = true
 
-                    invalidate()
+                    //invalidate()
 
                     return
                 }
             }
-            invalidate()
+            //invalidate()
             SetCursorType()
         }
     }
 
     fun roi_RemoveObject() {
         if (!drawStart && !drawing) {
-            if (CObject_DelCurObject()) {
+            if (delCurObject()) {
                 //roomNum = CountRoomNum(); 공간 이름을 갱신할 것인가?
-                invalidate()
+                //invalidate()
             }
         }
     }
@@ -1145,7 +1131,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
         curType = "default"
 
-        CObject_CurRoiCancelFunc()
+        cancelCurObject()
 
         strMode = "Roi Find & Move"
     }
@@ -1165,24 +1151,24 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         val pt = Point(pt_x, pt_y)
 
         // 좌상단 좌표를 시작점으로 하고 마지막 점과 같으면
-        val sp = Point(roiCurObject!!.m_MBR.left, roiCurObject!!.m_MBR.top)
+        val sp = Point(roiCurObject!!.mMBR.left, roiCurObject!!.mMBR.top)
         //console.log('CObject_AddCurObject::( ('+pt_x+','+pt_y+') ('+sp.x+','+sp.y+') )');
         if ((sp.x == pt_x) && (sp.y == pt_y)) {
-            if (roiCurObject?.roi_type != "roi_point") {
+            if (roiCurObject?.roiType != ROI_TYPE_POINT) {
                 roiCurObject = null
                 currentSelectedIndex = -1
                 return false
             }
         }
 
-        if (roiCurObject?.roi_type == "roi_point") {
-            roiCurObject!!.m_MBR.right = pt_x
-            roiCurObject!!.m_MBR.bottom = pt_y
+        if (roiCurObject?.roiType == ROI_TYPE_POINT) {
+            roiCurObject!!.mMBR.right = pt_x
+            roiCurObject!!.mMBR.bottom = pt_y
 
             currentSelectedIndex = roiObjects.size
             roiObjects.add(roiCurObject!!)
             //Log.d(TAG, "m_RoiObjects.add(m_RoiCurObject)");
-        } else if (roiCurObject?.roi_type == "roi_polygon") {
+        } else if (roiCurObject?.roiType == ROI_TYPE_POLYGON) {
             roiCurObject!!.AddEndPoint(pt, false)
 
             currentSelectedIndex = roiObjects.size
@@ -1194,23 +1180,23 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         return true
     }
 
-    fun CObject_CreateObject(objType: String, point: Point): Boolean {
+    fun createCObject(objType: String, point: Point): Boolean {
         roiCurObject = null
         currentSelectedIndex = -1
 
         //Log.d(TAG, "CObject_CreateObject("+objType+",("+point.x+","+point.y+") )");
-        val pt_x = ((point.x - startPosX) / zoomRate).toInt()
-        val pt_y = ((point.y - startPosY) / zoomRate).toInt()
+        val ptX = ((point.x - startPosX) / zoomRate).toInt()
+        val ptY = ((point.y - startPosY) / zoomRate).toInt()
 
         //Log.d(TAG, "CObject_CreateObject("+objType+",("+pt_x+","+pt_y+") )");
         when (objType) {
-            "roi_point" ->                 //console.log('pt('+pt_x+','+pt_y+')');
-                roiCurObject = CDrawObj("roi_point", pt_x, pt_y, pt_x, pt_y)
+            ROI_TYPE_POINT ->                 //console.log('pt('+pt_x+','+pt_y+')');
+                roiCurObject = CDrawObj(ROI_TYPE_POINT, ptX, ptY, ptX, ptY)
 
-            "roi_line" -> {
+            ROI_TYPE_LINE -> {
                 //console.log('pt('+pt_x+','+pt_y+')');
                 //m_RoiCurObject = new CDrawObj('roi_point', pt_x, pt_y, pt_x, pt_y);
-                roiCurObject = CDrawObj("roi_line", pt_x, pt_y, pt_x, pt_y)
+                roiCurObject = CDrawObj(ROI_TYPE_LINE, ptX, ptY, ptX, ptY)
                 //console.log(m_RoiCurObject.m_MBR);
                 //console.log(m_RoiCurObject);
                 //m_RoiCurObject.set_width(img_map.width);
@@ -1218,29 +1204,28 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 ////m_RoiCurObject.setZoom(zoom_rate);
                 //m_RoiCurObject.set_orient(map_orient_x, map_orient_y);
                 //m_RoiCurObject.set_resolution(map_resolution);
-                roiCurObject!!.SetFillColor(randomColor)
+                roiCurObject!!.fillPaint.color = randomColor
             }
 
-            "roi_rect" ->                 //console.log('pt('+pt_x+','+pt_y+')');
+            ROI_TYPE_RECT ->                 //console.log('pt('+pt_x+','+pt_y+')');
                 //m_RoiCurObject = new CDrawObj('roi_point', pt_x, pt_y, pt_x, pt_y);
-                roiCurObject = CDrawObj("roi_rect", pt_x, pt_y, pt_x, pt_y)
+                roiCurObject = CDrawObj(ROI_TYPE_RECT, ptX, ptY, ptX, ptY)
 
-
-            "roi_polygon" -> {
-                roiCurObject = CDrawObj("roi_polygon", pt_x, pt_y, pt_x, pt_y)
-                val pt = Point(pt_x, pt_y)
-                roiCurObject!!.AddPoint(pt)
+            ROI_TYPE_POLYGON -> {
+                val pt = Point(ptX, ptY)
+                roiCurObject = CDrawObj(ROI_TYPE_POLYGON, ptX, ptY, ptX, ptY).apply {
+                    addPoint(pt)
+                }
             }
 
             else -> {}
         }
 
-
         //console.log(m_RoiCurObject);
         return true
     }
 
-    fun CObject_DelCurObject(): Boolean {
+    fun delCurObject(): Boolean {
         //console.log('CObject_DelCurObject()');
         //console.log('m_RoiCurIndex: '+m_RoiCurIndex);
 
@@ -1253,13 +1238,13 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         currentSelectedIndex = -1
 
         //map_image_draw();
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
 
         //CObject_Draw();
         return true
     }
 
-    fun CObject_CurRoiCancelFunc() {
+    fun cancelCurObject() {
         //console.log('CObject_CurRoiCancelFunc()');
 
         if (drawing) {
@@ -1273,7 +1258,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             isSelected = false
 
             //map_image_draw();
-            invalidate() // 화면을 다시 그리도록 요청
+            //invalidate() // 화면을 다시 그리도록 요청
             //CObject_Draw();
         } else if (drawStart) {
             drawing = false
@@ -1322,7 +1307,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         //map_image_draw();
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
 
@@ -1358,7 +1343,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         //map_image_draw();
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
 
@@ -1399,7 +1384,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
 
         //map_image_draw();
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
 
@@ -1429,7 +1414,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         if (currentSelectedIndex > -1) {
             roiObjects[currentSelectedIndex] = roiCurObject!!
         }
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
     }
 
     // 마우스 좌표만큼 선택한 객체를 이동한다.
@@ -1455,15 +1440,15 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         // 선택된 객체이동
 
         // 241216 Bitmap밖으로 안벗어나게 변화
-        val origin_MBR_center = roiCurObject!!.m_MBR_center
-        val x = roiCurObject!!.m_MBR_center.x
-        val y = roiCurObject!!.m_MBR_center.y
+        val origin_MBR_center = roiCurObject!!.mMBRCenter
+        val x = roiCurObject!!.mMBRCenter.x
+        val y = roiCurObject!!.mMBRCenter.y
         val dx = pt1.x - pt2.x
         val dy = pt1.y - pt2.y
         val pixelColor: Int
 
         // 241216 핀이 bitmap 영역 밖으로 나가지 않도록 변경
-        if (roiCurObject?.roi_type === "roi_polygon") {
+        if (roiCurObject?.roiType === ROI_TYPE_POLYGON) {
             if ((x + dx > 0) && (y + dy > 0) &&
                 (x + dx <= bitmap!!.width) && (y + dy <= bitmap!!.height)
             ) {
@@ -1484,7 +1469,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         //map_image_draw();
-        invalidate() // 화면갱신
+        //invalidate() // 화면갱신
         //CObject_Draw();
     }
 
@@ -1529,7 +1514,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 Log.d(TAG, "m_CurType : $curType")
 
                 //Log.d(TAG, "m_RoiCurObject.roi_type : " + m_RoiCurObject.roi_type);
-                if (curType == roiCurObject?.roi_type) {
+                if (curType == roiCurObject?.roiType) {
                     fRet = if (strMenu == "수정") {
                         roiCurObject!!.PointInPoint(point, cw, ch)
                     } else {
@@ -1550,7 +1535,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
             //Log.d(TAG, "fRet : " + fRet);
             //console.log(fRet);
-            if ((roiObjects[currentSelectedIndex].roi_type == "roi_point") && (fRet == 1)) {
+            if ((roiObjects[currentSelectedIndex].roiType == ROI_TYPE_POINT) && (fRet == 1)) {
                 // point의 경우에는 커서를 이동으로 설정한다.
                 return 0
             }
@@ -1566,7 +1551,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         while (obj < roiObjects.size) {
             ////Log.d(TAG, "m_CurType : " + m_CurType);
             ////Log.d(TAG, "m_RoiObjects.get("+obj+").roi_type : " + m_RoiObjects.get(obj).roi_type);
-            if (curType == roiObjects[obj].roi_type) {
+            if (curType == roiObjects[obj].roiType) {
                 if (roiObjects[obj].PointInRect(point)) {
                     if (msMove)  // 마우스를 누른 경우
                     {
@@ -1676,16 +1661,16 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 return null
             }
 
-            return roiObjects[currentSelectedIndex].GetString()
+            return roiObjects[currentSelectedIndex].label
         }
         set(strName) {
             if (currentSelectedIndex < 0) {
                 return
             }
 
-            roiObjects[currentSelectedIndex].SetString(strName!!)
+            roiObjects[currentSelectedIndex].label = strName!!
             if (roiCurObject != null) {
-                roiCurObject!!.SetString(strName)
+                roiCurObject!!.label = strName
             }
         }
 
@@ -1707,14 +1692,14 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         // 중복이 아니면 라벨 설정
-        roiCurObject!!.m_label = newLabel
-        invalidate()
+        roiCurObject!!.label = newLabel
+        //invalidate()
     }
 
 
     private fun isLabelDuplicate(label: String): Boolean {
         for (roiObject in roiObjects) {
-            if (roiObject !== roiCurObject && label == roiObject.m_label) {
+            if (roiObject !== roiCurObject && label == roiObject.label) {
                 return true // 중복된 라벨 발견
             }
         }
@@ -1722,7 +1707,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
     }
 
     fun AddPoint_Polygon(point: Point?) {
-        roiCurObject!!.AddPoint(point)
+        roiCurObject!!.addPoint(point)
     }
 
     fun CObject_LoadObject(objType: String, point: Point): Boolean {
@@ -1735,21 +1720,20 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
         //Log.d(TAG, "CObject_CreateObject("+objType+",("+pt_x+","+pt_y+") )");
         when (objType) {
-            "roi_point" ->                 //console.log('pt('+pt_x+','+pt_y+')');
-                roiCurObject = CDrawObj("roi_point", pt_x, pt_y, pt_x, pt_y)
+            ROI_TYPE_POINT ->                 //console.log('pt('+pt_x+','+pt_y+')');
+                roiCurObject = CDrawObj(ROI_TYPE_POINT, pt_x, pt_y, pt_x, pt_y)
 
-            "roi_line" -> {
-                roiCurObject = CDrawObj("roi_line", pt_x, pt_y, pt_x, pt_y)
-
-                roiCurObject!!.SetFillColor(randomColor)
+            ROI_TYPE_LINE -> {
+                roiCurObject = CDrawObj(ROI_TYPE_LINE, pt_x, pt_y, pt_x, pt_y)
+                roiCurObject!!.fillPaint.color = randomColor
             }
 
-            "roi_rect" -> roiCurObject = CDrawObj("roi_rect", pt_x, pt_y, pt_x, pt_y)
+            ROI_TYPE_RECT -> roiCurObject = CDrawObj(ROI_TYPE_RECT, pt_x, pt_y, pt_x, pt_y)
 
-            "roi_polygon" -> {
-                roiCurObject = CDrawObj("roi_polygon", pt_x, pt_y, pt_x, pt_y)
+            ROI_TYPE_POLYGON -> {
+                roiCurObject = CDrawObj(ROI_TYPE_POLYGON, pt_x, pt_y, pt_x, pt_y)
                 val pt = Point(pt_x, pt_y)
-                roiCurObject!!.AddPoint(pt)
+                roiCurObject!!.addPoint(pt)
             }
 
             else -> {}
@@ -1767,15 +1751,15 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
 
         // 왼쪽 하단이 원점(0,0)이다.
-        roiCurObject!!.m_MBR.right = point1.x
-        roiCurObject!!.m_MBR.bottom = point1.y
-        roiCurObject!!.m_MBR.left = point2.x
-        roiCurObject!!.m_MBR.top = point2.y
+        roiCurObject!!.mMBR.right = point1.x
+        roiCurObject!!.mMBR.bottom = point1.y
+        roiCurObject!!.mMBR.left = point2.x
+        roiCurObject!!.mMBR.top = point2.y
         if (currentSelectedIndex > -1) {
             roiObjects[currentSelectedIndex] = roiCurObject!!
         }
 
-        invalidate() // 화면을 다시 그리도록 요청
+        //invalidate() // 화면을 다시 그리도록 요청
     }
 
     private fun calculateAngle(x1: Float, y1: Float, x2: Float, y2: Float): Float {

@@ -26,17 +26,21 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import com.caselab.forsk.MapOptimization
+import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_LINE
+import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POLYGON
+import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
 import com.forsk.ondevice.databinding.ActivityMapeditorBinding
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
@@ -59,8 +63,11 @@ import java.util.Objects
 
 // opencv 추가
 class MapEditorActivity : AppCompatActivity() {
-    var _binding: ActivityMapeditorBinding? = null
-    val binding get() = _binding!!
+    private var _binding: ActivityMapeditorBinding? = null
+    private val binding get() = _binding!!
+
+    private var _viewModel: MapEditorViewModel? = null
+    private val viewModel get() = _viewModel!!
 
     private val isFabOpen = false
 
@@ -85,7 +92,7 @@ class MapEditorActivity : AppCompatActivity() {
     private val scaleFactor = 1.0f
 
     // 선택된 버튼 저장 변수
-    var selectedButton: Button? = null
+    var selectedButton: TextView? = null
 
     //    private var toggleBar: ConstraintLayout? = null
 //    private var toggleBar_CreateSpace: ConstraintLayout? = null
@@ -103,89 +110,12 @@ class MapEditorActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        installSplashScreen()
         setTheme(R.style.Theme_OnDevice)
 
         _binding = ActivityMapeditorBinding.inflate(layoutInflater)
+        _viewModel = ViewModelProvider(this)[MapEditorViewModel::class.java]
 
         setContentView(binding.root)
-
-        sendBroadcast()
-
-//        // 추가된 TextView 참조
-//        var modeDescription: TextView? = null
-
-//        val fabMain = findViewById<Button>(R.id.fabMain)
-//        val fabMainBack = findViewById<View>(R.id.fabMainBack)
-//        val fabMainBackCS = findViewById<View>(R.id.fabMainBackCS)
-
-        // 맵 탐색 - 줌 인/아웃, 맵 이동
-        //val fabMoveMap = findViewById<View>(R.id.fabMoveMap)
-
-        // 공간생성,가상벽,금지구역,청저위치 - 객체 추가, 객체 이동, 선택, 제거, 이름 변경
-//        val fabAddObject = findViewById<View>(R.id.fabAddObject)
-//        val fabMoveObject = findViewById<View>(R.id.fabMoveObject)
-//        val fabSelectObject = findViewById<View>(R.id.fabSelectObject)
-//        val fabDeleteObject = findViewById<View>(R.id.fabDeleteObject)
-//        val fabMovePin = findViewById<View>(R.id.fabMovePin)
-//        val fabRotatePin = findViewById<View>(R.id.fabRotatePin)
-
-//        val fabAddObjectCS = findViewById<View>(R.id.fabAddObjectCS)
-//        val fabMoveObjectCS = findViewById<View>(R.id.fabMoveObjectCS)
-//        val fabSelectObjectCS = findViewById<View>(R.id.fabSelectObjectCS)
-//        val fabDeleteObjectCS = findViewById<View>(R.id.fabDeleteObjectCS)
-//        val fabRenameObjectCS = findViewById<View>(R.id.fabRenameObjectCS)
-//        val fabMovePinCS = findViewById<View>(R.id.fabMovePinCS)
-//        val fabRotatePinCS = findViewById<View>(R.id.fabRotatePinCS)
-
-//        val finishButton = findViewById<Button>(R.id.finish_button)
-//        val cancelButton = findViewById<Button>(R.id.cancel_button)
-//        val goBackButton = findViewById<Button>(R.id.goback_button)
-
-        // 메뉴 클릭 시 배경 생성 버튼
-//        val fabAddObjectClicked = findViewById<View>(R.id.fabAddObjectClicked)
-//        val fabSelectObjectClicked = findViewById<View>(R.id.fabSelectObjectClicked)
-//        val fabMoveObjectClicked = findViewById<View>(R.id.fabMoveObjectClicked)
-//        val fabMovePinClicked = findViewById<View>(R.id.fabMovePinClicked)
-//        val fabRotatePinClicked = findViewById<View>(R.id.fabRotatePinClicked)
-//        val fabDeleteObjectClicked = findViewById<View>(R.id.fabDeleteObjectClicked)
-//        val fabRenameObjectClicked = findViewById<View>(R.id.fabRenameObjectClicked)
-
-        // 삭제 버튼 초기화 (onCreate 메서드에서)
-//        deleteToggleBar = findViewById(R.id.delete_toggle_bar)
-//        deleteButton = deleteToggleBar?.findViewById(R.id.deleteButton)
-//        cancelButton = deleteToggleBar?.findViewById(R.id.cancelButton)
-
-
-        // 20241217 jihyeon
-        // 공간 생성, 가상벽, 금지공간 버튼 분리
-//        val buttonSpaceCreation = findViewById<Button>(R.id.button_space_creation)
-//        val buttonBlockWall = findViewById<Button>(R.id.button_block_wall)
-//        val buttonBlockArea = findViewById<Button>(R.id.button_block_area)
-
-        // Mode-specific TextView 초기화
-        //   modeDescription = findViewById(R.id.mode_description)
-
-        // Toggle Bar 레이아웃 가져오기
-//        toggleBar = findViewById(R.id.toggle_bar)
-//        toggleBar_CreateSpace = findViewById(R.id.toggle_bar_createspace)
-
-        srcMapPgmFilePath = intent.getStringExtra("srcMapPgmFilePath")
-        if (srcMapPgmFilePath == null) {
-            //srcMapPgmFilePath = "/storage/emulated/0/Download/caffe_map.pgm";   // for test
-            srcMapPgmFilePath = "/sdcard/Download/office.pgm" // for test
-        }
-        srcMapYamlFilePath = intent.getStringExtra("srcMapYamlFilePath")
-        if (srcMapYamlFilePath == null) {
-            //srcMapYamlFilePath = "/storage/emulated/0/Download/caffe_map.yaml";   // for test
-            //srcMapYamlFilePath = "/storage/emulated/0/Download/office.yaml";   // for test
-            srcMapYamlFilePath = "/sdcard/Download/office.yaml"
-        }
-        destMappingFilePath = intent.getStringExtra("destMappingFilePath")
-        if (destMappingFilePath == null) {
-            //srcMappingFilePath = "/storage/emulated/0/Download/map_meta_sample.json";   // for test
-            destMappingFilePath = "/sdcard/Download/map_meta_sample.json" // for test
-        }
     }
 
     private fun setUI() {
@@ -258,108 +188,112 @@ class MapEditorActivity : AppCompatActivity() {
             // 방법 1: ViewTreeObserver를 사용
             binding.mapViewer.apply {
                 getViewTreeObserver()?.addOnGlobalLayoutListener(object : OnGlobalLayoutListener {
-                        override fun onGlobalLayout() {
-                            // 가로와 세로 크기 얻기
-                            Log.d("ViewSize", "Width: $width, Height: $height")
+                    override fun onGlobalLayout() {
+                        // 가로와 세로 크기 얻기
+                        Log.d("ViewSize", "Width: $width, Height: $height")
 
-                            screenWidth = width
-                            screenHeight = height
+                        screenWidth = width
+                        screenHeight = height
 
-                            // 리스너 제거 (메모리 누수 방지)
-                            getViewTreeObserver().removeOnGlobalLayoutListener(this)
+                        // 리스너 제거 (메모리 누수 방지)
+                        getViewTreeObserver().removeOnGlobalLayoutListener(this)
 
-                            lifecycleScope.launch(IO) {
-                                try {
-                                    // File 객체 생성
-                                    val file = File(srcMapPgmFilePath)
+                        try {
+                            // File 객체 생성
+                            val file = File(srcMapPgmFilePath)
 
-                                    val path = file.parent + "/" // 디렉터리 경로
-                                    val filename = file.name // 파일 이름
-                                    val fileTitle =
-                                        filename.substring(
-                                            0,
-                                            filename.lastIndexOf('.')
-                                        ) // 확장자를 제외한 파일 제목
+                            val path = file.parent + "/" // 디렉터리 경로
+                            val filename = file.name // 파일 이름
+                            val fileTitle =
+                                filename.substring(
+                                    0,
+                                    filename.lastIndexOf('.')
+                                ) // 확장자를 제외한 파일 제목
 
-                                    val path_rot = path + "rot/"
-                                    val file_rot = File(path_rot)
-                                    // 폴더가 제대로 만들어졌는지 체크 ======
-                                    if (!file_rot.mkdirs()) {
-                                        Log.e("FILE", "Directory not created : $path_rot")
-                                    }
-                                    Log.d("SKOnDeviceService", "Run library-rotate!")
-                                    //com.caselab.forsk.MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
-                                    MapOptimization.mapRotation(path, path_rot, fileTitle)
-                                    Log.d("SKOnDeviceService", "Library-rotate Finish!")
-
-                                    val path_opt = path + "opt/"
-                                    val file_opt = File(path_opt)
-                                    // 폴더가 제대로 만들어졌는지 체크 ======
-                                    if (!file_opt.mkdirs()) {
-                                        Log.e("FILE", "Directory not created : $path_opt")
-                                    }
-                                    Log.d("SKOnDeviceService", "Run library-line opt!")
-                                    //MapOptimization.lineOptimization(PATH_FILE_MAP_ROT, PATH_FILE_MAP_OPT, NAME_FILE_MAP_ORG);
-                                    MapOptimization.lineOptimization(path_rot, path_opt, fileTitle)
-                                    Log.d("SKOnDeviceService", "Library-line Finish!")
-
-                                    val strPgmFile = "$path_opt$fileTitle.pgm"
-                                    val strPngFile = "$path_opt$fileTitle.png"
-
-                                    //Log.d(TAG, strPgmFile);
-                                    lib_flag = true
-                                    srcMapPgmFilePath = strPgmFile
-                                    srcMapPngFilePath = strPngFile
-                                    srcMapYamlFilePath = "$path_opt$fileTitle.yaml"
-                                } catch (e: UnsatisfiedLinkError) {
-                                    Log.e(TAG, "Native library not loaded or linked properly", e)
-                                } catch (e: ExceptionInInitializerError) {
-                                    Log.e(TAG, "Initialization error in native method", e)
-                                } catch (e: RuntimeException) {
-                                    Log.e(TAG, "Runtime exception occurred", e)
-                                } catch (e: Throwable) {
-                                    Log.e(TAG, "Unexpected error occurred", e)
-                                }
+                            val path_rot = path + "rot/"
+                            val file_rot = File(path_rot)
+                            // 폴더가 제대로 만들어졌는지 체크 ======
+                            if (!file_rot.mkdirs()) {
+                                Log.e("FILE", "Directory not created : $path_rot")
                             }
+                            Log.d("SKOnDeviceService", "Run library-rotate!")
+                            //com.caselab.forsk.MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
+                            MapOptimization.mapRotation(path, path_rot, fileTitle)
+                            Log.d("SKOnDeviceService", "Library-rotate Finish!")
 
-                            lifecycleScope.launch(IO) {
-                                try {
-                                    //v2_240117.so
-                                    val bitmap = loadPNG(srcMapPngFilePath)
-                                    // 241217v11.so
-                                    // Bitmap bitmap = loadPGM(srcMapPgmFilePath);
-                                    if (bitmap != null) {
-                                        setBitmap(bitmap)
-                                    }
-                                } catch (e: IOException) {
-                                    Log.e(TAG, "IOException error occurred", e)
-                                }
+                            val path_opt = path + "opt/"
+                            val file_opt = File(path_opt)
+                            // 폴더가 제대로 만들어졌는지 체크 ======
+                            if (!file_opt.mkdirs()) {
+                                Log.e("FILE", "Directory not created : $path_opt")
+                            }
+                            Log.d("SKOnDeviceService", "Run library-line opt!")
+                            //MapOptimization.lineOptimization(PATH_FILE_MAP_ROT, PATH_FILE_MAP_OPT, NAME_FILE_MAP_ORG);
+                            MapOptimization.lineOptimization(path_rot, path_opt, fileTitle)
+                            Log.d("SKOnDeviceService", "Library-line Finish!")
 
-                                if (!loadYaml(srcMapYamlFilePath)) {
-                                    Log.d(
-                                        TAG,
-                                        "con not read $srcMapYamlFilePath"
-                                    )
-                                }
-                                // 241218 성웅 맵 불러오기
-                                if (!loadJson(destMappingFilePath)) {
-                                    Log.d(
-                                        TAG,
-                                        "con not read $destMappingFilePath"
-                                    )
-                                }
-                            }
-                            /*
-                            for (int it = 0; it < MapViewer.m_RoiObjects.size(); it++) {
-                                Log.d(TAG,"Type: "+MapViewer.m_RoiObjects.get(it).roi_type);
-                                for (int j = 0; j < MapViewer.m_RoiObjects.get(it).m_Points.size(); j++) {
-                                    Log.d(TAG, "\"x\":" + (int) (MapViewer.m_RoiObjects.get(it).m_Points.get(j).x));
-                                    Log.d(TAG, ", \"y\":" + (int) (MapViewer.m_RoiObjects.get(it).m_Points.get(j).y));
-                                }
-                            }
-                            */
+                            val strPgmFile = "$path_opt$fileTitle.pgm"
+                            val strPngFile = "$path_opt$fileTitle.png"
+
+                            //Log.d(TAG, strPgmFile);
+                            lib_flag = true
+                            srcMapPgmFilePath = strPgmFile
+                            srcMapPngFilePath = strPngFile
+                            srcMapYamlFilePath = "$path_opt$fileTitle.yaml"
+                        } catch (e: UnsatisfiedLinkError) {
+                            Log.e(TAG, "Native library not loaded or linked properly", e)
+                        } catch (e: ExceptionInInitializerError) {
+                            Log.e(TAG, "Initialization error in native method", e)
+                        } catch (e: RuntimeException) {
+                            Log.e(TAG, "Runtime exception occurred", e)
+                        } catch (e: Throwable) {
+                            Log.e(TAG, "Unexpected error occurred", e)
                         }
-                    })
+
+                        try {
+                            //v2_240117.so
+                            val bitmap = loadPNG(srcMapPngFilePath)
+                            // 241217v11.so
+                            // Bitmap bitmap = loadPGM(srcMapPgmFilePath);
+                            if (bitmap != null) {
+                                setBitmap(bitmap)
+                            }
+                        } catch (e: IOException) {
+                            Log.e(TAG, "IOException error occurred", e)
+                        }
+
+                        if (!loadYaml(srcMapYamlFilePath)) {
+                            Log.d(
+                                TAG,
+                                "con not read $srcMapYamlFilePath"
+                            )
+                        }
+                        // 241218 성웅 맵 불러오기
+                        lifecycleScope.launch(IO) {
+                            if (!viewModel.loadJson(
+                                    mapViewer = mapViewer,
+                                    filePath = destMappingFilePath,
+                                    lib_flag = lib_flag
+                                )
+                            ) {
+                                Log.d(
+                                    TAG,
+                                    "con not read $destMappingFilePath"
+                                )
+                            }
+                        }
+                    }
+                    /*
+                    for (int it = 0; it < MapViewer.m_RoiObjects.size(); it++) {
+                        Log.d(TAG,"Type: "+MapViewer.m_RoiObjects.get(it).roi_type);
+                        for (int j = 0; j < MapViewer.m_RoiObjects.get(it).m_Points.size(); j++) {
+                            Log.d(TAG, "\"x\":" + (int) (MapViewer.m_RoiObjects.get(it).m_Points.get(j).x));
+                            Log.d(TAG, ", \"y\":" + (int) (MapViewer.m_RoiObjects.get(it).m_Points.get(j).y));
+                        }
+                    }
+                    */
+
+                })
             }
         }
     }
@@ -367,7 +301,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun deleteButtonClickEvent() {
         binding.apply {
             mapViewer.roi_RemoveObject()
-            mapViewer.CObject_CurRoiCancelFunc()
+            mapViewer.cancelCurObject()
             mapViewer.clearSelection() // 선택 초기화 메서드
         }
         hideDeleteToggleBar()
@@ -787,13 +721,13 @@ class MapEditorActivity : AppCompatActivity() {
                 MODE_SPACE_CREATION -> "한 공간으로 묶고 싶은 영역을 3점 이상 Tap하여 지정해주세요."
                 MODE_BLOCK_WALL -> "Drag하여 진입 금지벽을 지정해주세요."
                 MODE_BLOCK_AREA -> "Drag하여 진입 금지 영역을 지정해주세요."
-                else -> "" // 다른 상태에서는 빈 문자열
+                else -> "맵 내에 영역을 묶어 공간을 나눠주세요" // 다른 상태에서는 빈 문자열
             }
         }
     }
 
     // 버튼 색상 변경 메소드
-    private fun updateButtonBackground(currentButton: Button) {
+    private fun updateButtonBackground(currentButton: TextView) {
         binding.apply {
             // 이전에 선택된 버튼이 있으면 배경을 원래 색상으로 변경
             if (selectedButton != null) {
@@ -1066,7 +1000,85 @@ class MapEditorActivity : AppCompatActivity() {
 
     protected override fun onResume() {
         super.onResume()
+
         setUI()
+
+        sendBroadcast()
+
+//        // 추가된 TextView 참조
+//        var modeDescription: TextView? = null
+
+//        val fabMain = findViewById<Button>(R.id.fabMain)
+//        val fabMainBack = findViewById<View>(R.id.fabMainBack)
+//        val fabMainBackCS = findViewById<View>(R.id.fabMainBackCS)
+
+        // 맵 탐색 - 줌 인/아웃, 맵 이동
+        //val fabMoveMap = findViewById<View>(R.id.fabMoveMap)
+
+        // 공간생성,가상벽,금지구역,청저위치 - 객체 추가, 객체 이동, 선택, 제거, 이름 변경
+//        val fabAddObject = findViewById<View>(R.id.fabAddObject)
+//        val fabMoveObject = findViewById<View>(R.id.fabMoveObject)
+//        val fabSelectObject = findViewById<View>(R.id.fabSelectObject)
+//        val fabDeleteObject = findViewById<View>(R.id.fabDeleteObject)
+//        val fabMovePin = findViewById<View>(R.id.fabMovePin)
+//        val fabRotatePin = findViewById<View>(R.id.fabRotatePin)
+
+//        val fabAddObjectCS = findViewById<View>(R.id.fabAddObjectCS)
+//        val fabMoveObjectCS = findViewById<View>(R.id.fabMoveObjectCS)
+//        val fabSelectObjectCS = findViewById<View>(R.id.fabSelectObjectCS)
+//        val fabDeleteObjectCS = findViewById<View>(R.id.fabDeleteObjectCS)
+//        val fabRenameObjectCS = findViewById<View>(R.id.fabRenameObjectCS)
+//        val fabMovePinCS = findViewById<View>(R.id.fabMovePinCS)
+//        val fabRotatePinCS = findViewById<View>(R.id.fabRotatePinCS)
+
+//        val finishButton = findViewById<Button>(R.id.finish_button)
+//        val cancelButton = findViewById<Button>(R.id.cancel_button)
+//        val goBackButton = findViewById<Button>(R.id.goback_button)
+
+        // 메뉴 클릭 시 배경 생성 버튼
+//        val fabAddObjectClicked = findViewById<View>(R.id.fabAddObjectClicked)
+//        val fabSelectObjectClicked = findViewById<View>(R.id.fabSelectObjectClicked)
+//        val fabMoveObjectClicked = findViewById<View>(R.id.fabMoveObjectClicked)
+//        val fabMovePinClicked = findViewById<View>(R.id.fabMovePinClicked)
+//        val fabRotatePinClicked = findViewById<View>(R.id.fabRotatePinClicked)
+//        val fabDeleteObjectClicked = findViewById<View>(R.id.fabDeleteObjectClicked)
+//        val fabRenameObjectClicked = findViewById<View>(R.id.fabRenameObjectClicked)
+
+        // 삭제 버튼 초기화 (onCreate 메서드에서)
+//        deleteToggleBar = findViewById(R.id.delete_toggle_bar)
+//        deleteButton = deleteToggleBar?.findViewById(R.id.deleteButton)
+//        cancelButton = deleteToggleBar?.findViewById(R.id.cancelButton)
+
+
+        // 20241217 jihyeon
+        // 공간 생성, 가상벽, 금지공간 버튼 분리
+//        val buttonSpaceCreation = findViewById<Button>(R.id.button_space_creation)
+//        val buttonBlockWall = findViewById<Button>(R.id.button_block_wall)
+//        val buttonBlockArea = findViewById<Button>(R.id.button_block_area)
+
+        // Mode-specific TextView 초기화
+        //   modeDescription = findViewById(R.id.mode_description)
+
+        // Toggle Bar 레이아웃 가져오기
+//        toggleBar = findViewById(R.id.toggle_bar)
+//        toggleBar_CreateSpace = findViewById(R.id.toggle_bar_createspace)
+
+        srcMapPgmFilePath = intent.getStringExtra("srcMapPgmFilePath")
+        if (srcMapPgmFilePath == null) {
+            //srcMapPgmFilePath = "/storage/emulated/0/Download/caffe_map.pgm";   // for test
+            srcMapPgmFilePath = "/sdcard/Download/office.pgm" // for test
+        }
+        srcMapYamlFilePath = intent.getStringExtra("srcMapYamlFilePath")
+        if (srcMapYamlFilePath == null) {
+            //srcMapYamlFilePath = "/storage/emulated/0/Download/caffe_map.yaml";   // for test
+            //srcMapYamlFilePath = "/storage/emulated/0/Download/office.yaml";   // for test
+            srcMapYamlFilePath = "/sdcard/Download/office.yaml"
+        }
+        destMappingFilePath = intent.getStringExtra("destMappingFilePath")
+        if (destMappingFilePath == null) {
+            //srcMappingFilePath = "/storage/emulated/0/Download/map_meta_sample.json";   // for test
+            destMappingFilePath = "/sdcard/Download/map_meta_sample.json" // for test
+        }
     }
 
     private fun loadYaml(filePath: String?): Boolean {
@@ -1292,7 +1304,7 @@ class MapEditorActivity : AppCompatActivity() {
         */
         var i = 0
         while (i < mapViewer.roiObjects.size) {
-            if (mapViewer.roiObjects[i].roi_type == "roi_polygon") {
+            if (mapViewer.roiObjects[i].roiType == ROI_TYPE_POLYGON) {
                 if (count_id > 0) {
                     strRoiJson += ", "
                 }
@@ -1302,13 +1314,13 @@ class MapEditorActivity : AppCompatActivity() {
 
                 strRoiJson += "{"
                 strRoiJson += "\"id\": \"$count_id\""
-                strRoiJson += ", \"name\": \"" + mapViewer.roiObjects[i].m_label + "\""
+                strRoiJson += ", \"name\": \"" + mapViewer.roiObjects[i].label + "\""
                 strRoiJson += ", \"color\":\"#47910f\", \"desc\":\"\""
                 strRoiJson += ", \"robot_path\":["
 
                 //strRoiJson += "{\"x\":-2.97,\"y\":7.15},{\"x\":-3.02,\"y\":7.1000004},{\"x\":-3.17,\"y\":7.1000004},{\"x\":-3.22,\"y\":7.05},{\"x\":-3.22,\"y\":6.9},{\"x\":-3.27,\"y\":6.8500004},{\"x\":-3.27,\"y\":4},{\"x\":-3.22,\"y\":3.95},{\"x\":-2.47,\"y\":3.95},{\"x\":-2.42,\"y\":4},{\"x\":-2.22,\"y\":4},{\"x\":-2.17,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.1},{\"x\":-1.67,\"y\":4.15},{\"x\":-1.67,\"y\":4.25},{\"x\":-1.62,\"y\":4.3},{\"x\":-1.62,\"y\":4.35},{\"x\":-1.5699999,\"y\":4.4},{\"x\":-1.5699999,\"y\":4.4500003},{\"x\":-1.52,\"y\":4.5},{\"x\":-1.52,\"y\":4.6},{\"x\":-1.4699999,\"y\":4.65},{\"x\":-1.4699999,\"y\":4.7000003},{\"x\":-1.42,\"y\":4.75},{\"x\":-1.42,\"y\":4.8500004},{\"x\":-1.37,\"y\":4.9},{\"x\":-1.37,\"y\":4.9500003},{\"x\":-1.3199999,\"y\":5},{\"x\":-1.3199999,\"y\":5.05},{\"x\":-1.27,\"y\":5.1000004},{\"x\":-1.27,\"y\":5.2000003},{\"x\":-1.2199999,\"y\":5.25},{\"x\":-1.2199999,\"y\":5.3},{\"x\":-1.17,\"y\":5.3500004},{\"x\":-1.17,\"y\":5.4500003},{\"x\":-1.12,\"y\":5.5},{\"x\":-1.12,\"y\":5.55},{\"x\":-1.0699999,\"y\":5.6000004},{\"x\":-1.0699999,\"y\":5.65},{\"x\":-1.02,\"y\":5.7000003},{\"x\":-1.02,\"y\":5.8},{\"x\":-0.96999997,\"y\":5.8500004},{\"x\":-0.96999997,\"y\":5.9},{\"x\":-0.91999996,\"y\":5.9500003},{\"x\":-0.91999996,\"y\":6.05},{\"x\":-0.86999995,\"y\":6.1000004},{\"x\":-0.86999995,\"y\":6.15},{\"x\":-0.81999993,\"y\":6.2000003},{\"x\":-0.81999993,\"y\":6.3},{\"x\":-0.77,\"y\":6.3500004},{\"x\":-0.77,\"y\":6.4},{\"x\":-1.27,\"y\":6.4},{\"x\":-1.37,\"y\":6.5},{\"x\":-1.37,\"y\":6.8},{\"x\":-1.42,\"y\":6.8500004},{\"x\":-1.42,\"y\":7},{\"x\":-1.5699999,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15}";
                 j = 0
-                while (j < mapViewer.roiObjects[i].m_Points.size) {
+                while (j < mapViewer.roiObjects[i].mPoints.size) {
                     if (j > 0) {
                         strRoiJson += ", "
                     }
@@ -1316,8 +1328,8 @@ class MapEditorActivity : AppCompatActivity() {
                     strRoiJson += "{"
 
                     val coordinates = calculateCoordinate(
-                        mapViewer.roiObjects[i].m_Points[j]!!.x,
-                        mapViewer.roiObjects[i].m_Points[j]!!.y,
+                        mapViewer.roiObjects[i].mPoints[j]!!.x,
+                        mapViewer.roiObjects[i].mPoints[j]!!.y,
                         image_height
                     )
 
@@ -1333,15 +1345,15 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "]"
                 strRoiJson += ", \"image_path\":["
                 j = 0
-                while (j < mapViewer.roiObjects[i].m_Points.size) {
+                while (j < mapViewer.roiObjects[i].mPoints.size) {
                     if (j > 0) {
                         strRoiJson += ", "
                     }
 
                     strRoiJson += "{"
 
-                    strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_Points[j]!!.x)
-                    strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_Points[j]!!.y)
+                    strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].mPoints[j]!!.x)
+                    strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].mPoints[j]!!.y)
 
                     strRoiJson += "}"
                     j++
@@ -1360,8 +1372,8 @@ class MapEditorActivity : AppCompatActivity() {
                 //Log.d(TAG,"height: " + image_height +", origin_y: "+ origin_y + ", imagey: " + MapViewer.m_RoiObjects.get(i).m_Points.get(j).y + ", real_y: "+ (float)((image_height-MapViewer.m_RoiObjects.get(i).m_Points.get(j).y)*nResolution + origin_y));
                 //Toast.makeText(getApplicationContext(), "X: " + (float)(xvw * nResolution + origin_x) +", Y: " + ((image_height - yvh) * nResolution + origin_y), Toast.LENGTH_SHORT).show();
                 val coordinates = calculateCoordinate(
-                    mapViewer.roiObjects[i].m_MBR_center.x,
-                    mapViewer.roiObjects[i].m_MBR_center.y,
+                    mapViewer.roiObjects[i].mMBRCenter.x,
+                    mapViewer.roiObjects[i].mMBRCenter.y,
                     image_height
                 )
 
@@ -1390,8 +1402,8 @@ class MapEditorActivity : AppCompatActivity() {
                 var yvh_image = 0 // polygon의 무게중심 x
 
                 // Log.d(TAG, "xvw before : "+ xvw);
-                xvw_image = mapViewer.roiObjects[i].m_MBR_center.x
-                yvh_image = mapViewer.roiObjects[i].m_MBR_center.y
+                xvw_image = mapViewer.roiObjects[i].mMBRCenter.x
+                yvh_image = mapViewer.roiObjects[i].mMBRCenter.y
 
                 // MapViewer.m_RoiObjects.get(i).m_MBR;
                 //Log.d(TAG,"height: " + image_height +", origin_y: "+ origin_y + ", imagey: " + MapViewer.m_RoiObjects.get(i).m_Points.get(j).y + ", real_y: "+ (float)((image_height-MapViewer.m_RoiObjects.get(i).m_Points.get(j).y)*nResolution + origin_y));
@@ -1409,7 +1421,7 @@ class MapEditorActivity : AppCompatActivity() {
         strRoiJson += ", \"block_area\":["
         i = 0
         while (i < mapViewer.roiObjects.size) {
-            if (mapViewer.roiObjects[i].roi_type == "roi_rect") {
+            if (mapViewer.roiObjects[i].roiType == ROI_TYPE_RECT) {
                 if (count_id_rect > 0) {
                     strRoiJson += ", "
                 }
@@ -1422,23 +1434,23 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "{"
 
                 //left top
-                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_MBR.left)
-                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_MBR.bottom)
+                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].mMBR.left)
+                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].mMBR.bottom)
                 strRoiJson += "}, {"
 
                 // right top
-                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_MBR.right)
-                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_MBR.bottom)
+                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].mMBR.right)
+                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].mMBR.bottom)
                 strRoiJson += "}, {"
 
                 // right bottom
-                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_MBR.right)
-                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_MBR.top)
+                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].mMBR.right)
+                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].mMBR.top)
                 strRoiJson += "}, {"
 
                 // left bottom
-                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].m_MBR.left)
-                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].m_MBR.top)
+                strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].mMBR.left)
+                strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].mMBR.top)
 
                 strRoiJson += "}"
 
@@ -1450,8 +1462,8 @@ class MapEditorActivity : AppCompatActivity() {
 
                 // left top
                 var coordinates = calculateCoordinate(
-                    mapViewer.roiObjects[i].m_MBR.left,
-                    mapViewer.roiObjects[i].m_MBR.bottom,
+                    mapViewer.roiObjects[i].mMBR.left,
+                    mapViewer.roiObjects[i].mMBR.bottom,
                     image_height
                 )
                 var area_x = coordinates[0]
@@ -1463,8 +1475,8 @@ class MapEditorActivity : AppCompatActivity() {
 
                 // right top
                 coordinates = calculateCoordinate(
-                    mapViewer.roiObjects[i].m_MBR.right,
-                    mapViewer.roiObjects[i].m_MBR.bottom,
+                    mapViewer.roiObjects[i].mMBR.right,
+                    mapViewer.roiObjects[i].mMBR.bottom,
                     image_height
                 )
                 area_x = coordinates[0]
@@ -1476,8 +1488,8 @@ class MapEditorActivity : AppCompatActivity() {
 
                 // right bottom
                 coordinates = calculateCoordinate(
-                    mapViewer.roiObjects[i].m_MBR.right,
-                    mapViewer.roiObjects[i].m_MBR.top,
+                    mapViewer.roiObjects[i].mMBR.right,
+                    mapViewer.roiObjects[i].mMBR.top,
                     image_height
                 )
                 area_x = coordinates[0]
@@ -1489,8 +1501,8 @@ class MapEditorActivity : AppCompatActivity() {
 
                 // left bottom
                 coordinates = calculateCoordinate(
-                    mapViewer.roiObjects[i].m_MBR.left,
-                    mapViewer.roiObjects[i].m_MBR.top,
+                    mapViewer.roiObjects[i].mMBR.left,
+                    mapViewer.roiObjects[i].mMBR.top,
                     image_height
                 )
                 area_x = coordinates[0]
@@ -1513,7 +1525,7 @@ class MapEditorActivity : AppCompatActivity() {
 
         i = 0
         while (i < mapViewer.roiObjects.size) {
-            if (mapViewer.roiObjects[i].roi_type == "roi_line") {
+            if (mapViewer.roiObjects[i].roiType == ROI_TYPE_LINE) {
                 if (count_id_line > 0) {
                     strRoiJson += ", "
                 }
@@ -1529,20 +1541,20 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "{\"image_path\":["
 
                 // Add start point
-                strRoiJson += "{\"x\":" + roi.m_MBR.left +
-                        ", \"y\":" + (roi.m_MBR.top) + "}, "
+                strRoiJson += "{\"x\":" + roi.mMBR.left +
+                        ", \"y\":" + (roi.mMBR.top) + "}, "
 
                 // Add end point
-                strRoiJson += "{\"x\":" + roi.m_MBR.right +
-                        ", \"y\":" + (roi.m_MBR.bottom) + "}], "
+                strRoiJson += "{\"x\":" + roi.mMBR.right +
+                        ", \"y\":" + (roi.mMBR.bottom) + "}], "
 
                 strRoiJson += "\"robot_path\":["
 
                 // Convert image coordinates to robot coordinates
                 val startCoordinates =
-                    calculateCoordinate(roi.m_MBR.left, roi.m_MBR.top, image_height)
+                    calculateCoordinate(roi.mMBR.left, roi.mMBR.top, image_height)
                 val endCoordinates =
-                    calculateCoordinate(roi.m_MBR.right, roi.m_MBR.bottom, image_height)
+                    calculateCoordinate(roi.mMBR.right, roi.mMBR.bottom, image_height)
 
                 // Add start robot path
                 strRoiJson += "{\"x\":" + startCoordinates[0] +
@@ -1662,18 +1674,16 @@ class MapEditorActivity : AppCompatActivity() {
         Log.d(TAG, strRoiJson)
 
         //권한 상태 체크 팝업 띄우기
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(
+        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     Manifest.permission.READ_EXTERNAL_STORAGE
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                requestPermissions(
-                    arrayOf(
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                    ), 2
-                )
-            }
+                ), 2
+            )
         }
 
         // 액션 바와 상태 바 숨기
@@ -1714,159 +1724,9 @@ class MapEditorActivity : AppCompatActivity() {
         return false
     }
 
-    @Synchronized
-    private fun loadJson(filePath: String?): Boolean {
-        val mapViewer = binding.mapViewer
-        Log.d(TAG, "Exist Json File")
-        val jsonStringBuilder = StringBuilder()
-
-        // 내부 저장소에서 파일 스트림 열기
-        // InputStream 데이터를 문자열로 변환
-        try {
-            FileInputStream(filePath).use { inputStream ->
-                InputStreamReader(inputStream).use { inputStreamReader ->
-                    BufferedReader(inputStreamReader).use { bufferedReader ->
-                        var line: String?
-                        while ((bufferedReader.readLine().also { line = it }) != null) {
-                            jsonStringBuilder.append(line)
-                        }
-
-                        // JSON 문자열로 변환
-                        val jsonString = jsonStringBuilder.toString()
-
-                        // JSON 파싱
-                        val jsonObject = JSONObject(jsonString)
-
-                        var x = 0
-                        var y = 0
-                        var left = 0
-                        var right = 0
-                        var bottom = 0
-                        var top = 0
-                        // 1. room_list 데이터 읽기
-                        println("Room List:")
-                        val roomList = jsonObject.getJSONArray("room_list")
-                        for (i in 0 until roomList.length()) {
-                            val room = roomList.getJSONObject(i)
-                            val id = room.getString("id")
-                            val name = room.getString("name")
-                            val imagePathArray = room.getJSONArray("image_path")
-                            val imagePosition = room.getJSONObject("image_position")
-                            val mbr_x = imagePosition.getInt("x")
-                            val mbr_y = imagePosition.getInt("y")
-                            Log.d(TAG, "  Room ID: $id")
-                            Log.d(TAG, "  Name: $name")
-                            Log.d(TAG, "  Image Path:")
-                            Log.d(
-                                TAG,
-                                "  ImagePosition: $mbr_x $mbr_y"
-                            )
-                            for (j in 0 until imagePathArray.length()) {
-                                val point = imagePathArray.getJSONObject(j)
-                                x = point.getInt("x")
-                                y = point.getInt("y")
-                                Log.d(TAG, "    Point: ($x, $y)")
-                                if (j == 0) {
-                                    mapViewer.CObject_LoadObject("roi_polygon", Point(x, y))
-                                } else {
-                                    mapViewer.AddPoint_Polygon(Point(x, y))
-                                }
-                                if (left > x) left = x
-                                if (right < x) right = x
-                                if (top > y) top = y
-                                if (bottom < y) bottom = y
-                            }
-                            mapViewer.drawing = true
-                            mapViewer.roi_AddObject()
-                            // 241222 seongwoong 현재 버그 있음 확인 필요
-                            //MapViewer.m_RoiCurObject.m_MBR = new Rect(left, top, right, bottom);
-                            mapViewer.roiCurObject!!.m_MBR_center.x = mbr_x
-                            mapViewer.roiCurObject!!.m_MBR_center.y = mbr_y
-                            mapViewer.SetLabel(name)
-                            if (lib_flag) {
-                                val theta = imagePosition.getDouble("theta").toFloat()
-                                mapViewer.roiCurObject?.angle = theta
-                            }
-                        }
-
-
-                        // 2. block_area 데이터 읽기
-                        Log.d(TAG, "\nBlock Area:")
-                        val blockAreaArray = jsonObject.getJSONArray("block_area")
-                        for (i in 0 until blockAreaArray.length()) {
-                            val block = blockAreaArray.getJSONObject(i)
-                            val imagePathArray = block.getJSONArray("image_path")
-
-                            Log.d(TAG, "  Block Area Image Path:")
-                            val point = imagePathArray.getJSONObject(0)
-                            x = point.getInt("x")
-                            y = point.getInt("y")
-                            val pt1 = Point(x, y)
-                            Log.d(TAG, "    Point: ($x, $y)")
-                            val point2 = imagePathArray.getJSONObject(2)
-                            x = point2.getInt("x")
-                            y = point2.getInt("y")
-                            val pt2 = Point(x, y)
-
-                            Log.d(TAG, "    Point: ($x, $y)")
-
-                            mapViewer.CObject_LoadObject("roi_rect", pt1)
-                            mapViewer.CObject_LoadRect(pt1, pt2)
-                            mapViewer.roi_AddObject()
-                        }
-
-                        // 3. block_wall 데이터 읽기
-                        Log.d(TAG, "\nBlock Wall:")
-                        val blockWallArray = jsonObject.getJSONArray("block_wall")
-                        for (i in 0 until blockWallArray.length()) {
-                            val block = blockWallArray.getJSONObject(i)
-                            val imagePathArray = block.getJSONArray("image_path")
-
-                            Log.d(TAG, "  Block Wall Image Path:")
-                            val point = imagePathArray.getJSONObject(0)
-                            x = point.getInt("x")
-                            y = point.getInt("y")
-                            val pt1 = Point(x, y)
-
-                            Log.d(TAG, "    Point: ($x, $y)")
-
-                            val point2 = imagePathArray.getJSONObject(1)
-                            x = point2.getInt("x")
-                            y = point2.getInt("y")
-                            val pt2 = Point(x, y)
-
-                            Log.d(TAG, "    Point: ($x, $y)")
-
-                            mapViewer.CObject_LoadObject("roi_line", pt1)
-                            mapViewer.CObject_LoadRect(pt1, pt2)
-                            mapViewer.roi_AddObject()
-                        }
-
-                        mapViewer?.currentSelectedIndex = -1
-                        mapViewer.roiCurObject = null
-                        Log.d(TAG, "Read Json Success")
-                        return true
-                    }
-                }
-            }
-        } catch (fe: FileNotFoundException) {
-            Log.e(TAG, "Read Json FileNotFoundException: " + filePath + " " + fe.message)
-            return false
-        } catch (e: JSONException) {
-            Log.e(TAG, "Read Json JSON, IO Exception: " + e.message)
-            return false
-        } catch (e: IOException) {
-            Log.e(TAG, "Read Json JSON, IO Exception: " + e.message)
-            return false
-        } finally {
-            // 자원이 자동으로 닫히는지 확인할 필요가 없지만 명시적으로 로깅 가능
-            Log.d(TAG, "loadjson end")
-        }
-    }
 
     fun transformToRobotCoordinates(image_x: Int, image_y: Int): Point {
         // 1. 이미지 좌표를 3x1 행렬로 변환
-
 
         val pointMat = Mat(3, 1, CvType.CV_64F)
         pointMat.put(0, 0, image_x.toDouble()) // transformed_pixel_x
@@ -1894,6 +1754,7 @@ class MapEditorActivity : AppCompatActivity() {
         val original_pixel_y = Math.round(inverseTransformedPointMat[1, 0][0]).toInt()
 
         //Log.d(TAG, "check dobule to int inversion. dobule: " + inverseTransformedPointMat.get(0, 0)[0] + ",int:  " + original_pixel_x);
+
         // 5. 로봇 좌표로 변환
         //double robot_x = (original_pixel_x * nResolution) + origin_x;
         //double robot_y = (original_image_height - original_pixel_y) * nResolution + origin_y;
@@ -1957,9 +1818,7 @@ class MapEditorActivity : AppCompatActivity() {
         private const val PATH_FILE_MAP_OPT = "/sdcard/Download/map_test/opt/"
         private const val PATH_FILE_MAP_SEG = "/sdcard/Download/map_test/seg/"
 
-
         private const val PICK_PGM_FILE_REQUEST = 1
-
 
         private const val REQUEST_EXTERNAL_STORAGE = 1
         private val PERMISSIONS_STORAGE = arrayOf(

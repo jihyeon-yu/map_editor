@@ -11,4 +11,14 @@
     <!-- Layout sizes -->
     <dimen name="button_height">48dp</dimen>
     <dimen name="button_width">100dp</dimen>
+
+    <dimen name="margin_24">8dp</dimen>
+    <dimen name="margin_26">8.66dp</dimen>
+    <dimen name="margin_30">10dp</dimen>
+    <dimen name="margin_36">12dp</dimen>
+    <dimen name="margin_32">10.66dp</dimen>
+    <dimen name="margin_40">13.33dp</dimen>
+    <dimen name="margin_60">20dp</dimen>
+
+    <dimen name="layout_84">28dp</dimen>
 </resources>
