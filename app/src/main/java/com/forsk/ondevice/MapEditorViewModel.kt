@@ -72,9 +72,9 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
                                     y = point.getInt("y")
                                     Log.d(TAG, "    Point: ($x, $y)")
                                     if (j == 0) {
-                                        mapViewer.CObject_LoadObject(ROI_TYPE_POLYGON, Point(x, y))
+                                        mapViewer.loadObject(ROI_TYPE_POLYGON, Point(x, y))
                                     } else {
-                                        mapViewer.AddPoint_Polygon(Point(x, y))
+                                        mapViewer.addPointPolygon(Point(x, y))
                                     }
                                     if (left > x) left = x
                                     if (right < x) right = x
@@ -82,7 +82,7 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
                                     if (bottom < y) bottom = y
                                 }
                                 mapViewer.drawing = true
-                                mapViewer.roi_AddObject()
+                                mapViewer.roiAddObject()
                                 // 241222 seongwoong 현재 버그 있음 확인 필요
                                 //MapViewer.m_RoiCurObject.m_MBR = new Rect(left, top, right, bottom);
                                 mapViewer.roiCurObject!!.mMBRCenter.x = mbr_x
@@ -115,9 +115,9 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
 
                                 Log.d(TAG, "    Point: ($x, $y)")
 
-                                mapViewer.CObject_LoadObject(ROI_TYPE_RECT, pt1)
-                                mapViewer.CObject_LoadRect(pt1, pt2)
-                                mapViewer.roi_AddObject()
+                                mapViewer.loadObject(ROI_TYPE_RECT, pt1)
+                                mapViewer.loadRect(pt1, pt2)
+                                mapViewer.roiAddObject()
                             }
 
                             // 3. block_wall 데이터 읽기
@@ -142,9 +142,9 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
 
                                 Log.d(TAG, "    Point: ($x, $y)")
 
-                                mapViewer.CObject_LoadObject(ROI_TYPE_LINE, pt1)
-                                mapViewer.CObject_LoadRect(pt1, pt2)
-                                mapViewer.roi_AddObject()
+                                mapViewer.loadObject(ROI_TYPE_LINE, pt1)
+                                mapViewer.loadRect(pt1, pt2)
+                                mapViewer.roiAddObject()
                             }
 
                             mapViewer?.currentSelectedIndex = -1

@@ -16,6 +16,7 @@ import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.SimpleOnScaleGestureListener
 import android.view.View
 import android.widget.Toast
+import androidx.core.content.res.ResourcesCompat
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_LINE
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POINT
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POLYGON
@@ -29,10 +30,6 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
     var strMenu: String = "Zoom"
 
     private var bitmap: Bitmap? = null // 표시할 비트맵
-    private val scaledBitmap: Bitmap? = null
-
-    var screenWidth: Int = 0
-    var screenHeight: Int = 0
 
     private var viewWidth: Int = 0
     private var viewHeight: Int = 0
@@ -83,13 +80,6 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
     private val matrix: Matrix
 
     private var scaleFactor = 1.0f
-    private val translateX = 0f // X축 이동
-    private val translateY = 0f // Y축 이동
-
-    private val focusX = 0f // 확대 중심 X좌표
-    private val focusY = 0f // 확대 중심 Y좌표
-    private val offsetX = 0f
-    private val offsetY = 0f
 
     private val random: Random // 랜덤 생성기
 
@@ -136,15 +126,6 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         //invalidate() // 화면을 다시 그리도록 요청
     }
 
-    fun CountRoomNum(): Int {
-        var count = 0
-
-        for (i in roiObjects.indices) {
-            if (roiObjects[i].roiType == ROI_TYPE_POLYGON) count++
-        }
-        return count
-    }
-
     init {
         paint.color = Color.BLUE
         paint.style = Paint.Style.FILL
@@ -166,10 +147,6 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        //String strMode = "맵 탐색";
-        //String strMenu = "Zoom";
-        //Log.d(TAG,"mouse GetPointCount: " + event.getPointerCount());
-
         if (event.pointerCount > 1) {
             scaleGestureDetector.onTouchEvent(event)
         } else {
@@ -198,37 +175,13 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
             zoomRate = zoomRateOffset * scaleFactor
 
-            //scaleFactor = Math.max((float)aspect_rate, Math.min(scaleFactor, 5.0f));
-
-            // 꽉찬 전체 이미지의 aspect_rate가 1.0보다 큰 경우와, 1.0보다 작은 경우를 고려한다.
-            //scaleFactor = Math.max((float)aspect_rate, Math.min(scaleFactor, Math.max((float)(aspect_rate*5.0f), 5.0f)));
-
-            // 최소 확대비율은 꽉찬 이미지의 1/2배까지만 축소
-            // 최대 확대비율은 꽉찬 이미지(확대 배율 1.0이상)의 5.0배와 원본 이미지(확대 배율이 1.0미만)의 5.0배 중에 큰 값들 사용한다.
-            //scaleFactor = Math.max((float)(aspect_rate/2.0f), Math.min(scaleFactor, Math.max((float)(aspect_rate*5.0f), 5.0f)));
-
-            //Log.d(TAG,"zoom_rate: "+ zoom_rate);
-            //Log.d(TAG,"zoom_rate_offset: "+ zoom_rate_offset);
-            //Log.d(TAG, "scaleFactor: " + scaleFactor);
             val values = FloatArray(9)
-            matrix.getValues(values)
 
-            //Log.d(TAG, "values[Matrix.MTRANS_X] : " + values[Matrix.MTRANS_X]);
-            //Log.d(TAG, "values[Matrix.MTRANS_Y] : " + values[Matrix.MTRANS_Y]);
-            //matrix.reset(); // matrix의 값을 초기화 한다.
+            matrix.getValues(values)
 
             // 현재 Matrix 값에 스케일 적용
             matrix.setScale(zoomRate.toFloat(), zoomRate.toFloat())
 
-            val focus_x = detector.focusX
-            val focus_y = detector.focusY
-
-            // 포커싱 된 부분을 이미지의 위치를 확인하여 해당 포커싱된 부분이 이미지의 가운데로 오게 한다.
-
-            // 이동 값을 적용 (중앙 고정)
-            //translateX = (getWidth() - bitmap.getWidth() * scaleFactor) / 2;
-            //translateY = (getHeight() - bitmap.getHeight() * scaleFactor) / 2;
-            //if(bitmap != null)
             run {
                 val centerToImgX =
                     ((width / 2 - startPosXOffset) / zoomRateOffset).toInt() // 선터 좌료를 원본 이미지 좌표로 변환
@@ -239,12 +192,6 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 val translateY =
                     ((height / 2) - (((height / 2 - startPosYOffset) / zoomRateOffset).toInt()) * zoomRate).toFloat()
 
-
-                //translateX = (float)(StartPos_x_offset + (getWidth()/2.0)*(1.0f - scaleFactor)*zoom_rate_offset );
-                //translateX = (float)(StartPos_y_offset + (getHeight()/2.0)*(1.0f - scaleFactor)*zoom_rate_offset );
-                //translateY = (float)(StartPos_y_offset + ((getHeight()/2.0)*zoom_rate_offset)*(1.0f - scaleFactor) );
-                //Log.d(TAG, "translateX : " + translateX);
-                //Log.d(TAG, "translateY : " + translateY);
                 matrix.postTranslate(translateX, translateY)
             }
 
@@ -256,38 +203,16 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-
-        //Log.d(TAG, "OnDraw(...)");
         val values = FloatArray(9)
         matrix.getValues(values)
+
         // 변환된 이미지의 시작 좌표
         startPosX = (values[Matrix.MTRANS_X]).toInt()
         startPosY = (values[Matrix.MTRANS_Y]).toInt()
 
-        //Log.d(TAG, "values[Matrix.MTRANS_X] : "+values[Matrix.MTRANS_X]);
-        //Log.d(TAG, "values[Matrix.MTRANS_Y] : "+values[Matrix.MTRANS_Y]);
-
         // 이미지 비율을 유지하면서 화면에 꽉차게 그려준다.
         if (bitmap != null) {
-            // Matrix 변환을 사용하여 Bitmap 그리기
-
             canvas.drawBitmap(bitmap!!, matrix, null)
-            /*
-            // View 크기 가져오기
-            int viewWidth = getWidth();
-            int viewHeight = getHeight();
-
-            // 원본 비트맵의 특정 영역
-            Rect srcRect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-
-            // View 전체에 이미지를 확대해서 표시
-            Rect destRect = new Rect(StartPos_x, StartPos_y, (int) (StartPos_x + bitmap.getWidth() * zoom_rate), (int) (StartPos_y + bitmap.getHeight() * zoom_rate));
-
-
-            // 캔버스에 그리기
-            canvas.drawBitmap(bitmap, srcRect, destRect, null);
-
-            */
         }
 
         val iconDrawable = resources.getDrawable(R.drawable.benjamin_direction, null)
@@ -344,11 +269,9 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 val drawable_ic = resources.getDrawable(R.drawable.ic_location, null)
                 drawable_ic.setBounds(x - 30, y - 80, x + 30, y + 10) //(60, 90)
 
-                //Log.d(TAG,"PIN X: " + mbr.x + " " + mbr.y);
                 val drawable = resources.getDrawable(R.drawable.pin_name, null)
                 drawable.setBounds(x - 65, y - 146, x + 64, y - 80) //(129, 66)
                 drawable.draw(canvas)
-
 
                 // 텍스트 추가
                 val paint = Paint()
@@ -377,11 +300,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
             if (it.roiType == ROI_TYPE_RECT) {
                 it.fillPaint.color = Color.argb(178, 255, 70, 80) //투명도 30
-                //m_RoiCurObject.SetLineColor(Color.rgb(255,70,80));
             }
-            //else if(m_RoiCurObject.roi_type.equals("roi_polygon")){
-            //m_RoiCurObject.SetFillColor(getRandomColorArgb(50));
-            //}
             roiCurObject!!.zoom = zoomRate
 
             //m_RoiCurObject.Draw(canvas, zoom_rate);
@@ -405,36 +324,24 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     }
                 }
             }
-            //m_RoiCurObject.SetLineColor(oldc);
         }
     }
 
     fun setBitmap(map: Bitmap?) {
-        //Log.d(TAG, "setBitmap(...)");
         this.bitmap = map
 
-
-        //Log.d(TAG, "ScreenWidth : " + ScreenWidth);
-        //Log.d(TAG, "ScreenHeight : " + ScreenHeight);
         if ((this.width < 1) || (this.height < 1)) return
 
         val viewWidth = this.width
         val viewHeight = this.height
 
-        //Log.d(TAG, "viewWidth : " + viewWidth);
-        //Log.d(TAG, "viewHeight : " + viewHeight);
         val imageW = bitmap!!.width
         val imageH = bitmap!!.height
-
-        //Log.d(TAG, "imageW : " + imageW);
-        //Log.d(TAG, "imageH : " + imageH);
 
         // 가로세로 비율을 구한다.
         val hRatio = (viewWidth).toDouble() / imageW
         val vRatio = (viewHeight).toDouble() / imageH
 
-        //Log.d(TAG, "hRatio : " + hRatio);
-        //Log.d(TAG, "vRatio : " + vRatio);
         aspectRate = min(hRatio, vRatio)
 
         // 확대 비율
@@ -443,18 +350,10 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         //Log.d(TAG, "zoom_rate : " + zoom_rate);
         zoomRateOffset = zoomRate
 
-        // 그려지는 이미지의 중심 좌표
-        val draw_image_center_x = (imageW / 2).toDouble()
-        val draw_image_center_y = (imageH / 2).toDouble()
-
         // 이미지를 그릴 위치를 구한다.
-        //StartPos_x = (int) ((viewWidth - imageW * zoom_rate) / 2);
         startPosX = ((width - bitmap!!.width * zoomRate) / 2).toInt()
-        //StartPos_y = (int) ((viewHeight - imageH * zoom_rate) / 2);
         startPosY = ((height - bitmap!!.height * zoomRate) / 2).toInt()
 
-        //Log.d(TAG, "StartPos_x : "+StartPos_x);
-        //Log.d(TAG, "StartPos_y : "+StartPos_y);
         startPosXOffset = startPosX
         startPosYOffset = startPosY
 
@@ -464,29 +363,14 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         val translateX = ((width - bitmap!!.width * zoomRate) / 2).toFloat()
         val translateY = ((height - bitmap!!.height * zoomRate) / 2).toFloat()
 
-        //Log.d(TAG, "translateX : " + translateX );
-        //Log.d(TAG, "translateY : " + translateY );
         matrix.postTranslate(translateX, translateY)
-
-
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
     }
 
-    fun GetBitmapWidth(): Int {
-        if (bitmap == null) {
-            return 0
-        }
-        return bitmap!!.width
-    }
+    fun getBitmapWidth(): Int = bitmap?.width ?: 0
+    fun getBitmapHeight(): Int = bitmap?.height ?: 0
 
-    fun GetBitmapHeight(): Int {
-        if (bitmap == null) {
-            return 0
-        }
-        return bitmap!!.height
-    }
-
-    fun SetMode(str: String) {
+    fun setMode(str: String) {
         //Log.d(TAG, "SetMode("+str+")");
         cancelCurObject()
         drawStart = false
@@ -500,27 +384,15 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
         strMenu = "default"
         when (strMode) {
-            "맵 탐색" -> {
-                this.curType = "default"
-            }
-            "공간 생성" -> {
-                this.curType = ROI_TYPE_POLYGON
-            }
-            "가상벽" -> {
-                this.curType = ROI_TYPE_LINE
-            }
-            "금지공간" -> {
-                this.curType = ROI_TYPE_RECT
-            }
+            "맵 탐색" -> this.curType = "default"
+            "공간 생성" -> this.curType = ROI_TYPE_POLYGON
+            "가상벽" -> this.curType = ROI_TYPE_LINE
+            "금지공간" -> this.curType = ROI_TYPE_RECT
         }
-        //invalidate()
+        invalidate()
     }
 
-    fun GetMode(): String {
-        return this.strMode
-    }
-
-    fun SetMenu(str: String) {
+    fun setMenu(str: String) {
         //Toast.makeText(getContext().getApplicationContext(), "SetMenu("+str+")", Toast.LENGTH_SHORT).show();
         // 241222 jihyeon 이전 모드가 핀 회전 모드였으면, 초기화
         if (str != "핀 회전" && strMenu == "핀 회전") {
@@ -528,23 +400,33 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 roiObject.clearIconDrawable()
             }
         }
-        if (str == "추가") {
-            SetMode(strMode) // m_CurType를 재 설정해준다.
-            drawStart = true
-        } else if (str == "수정") {
-            cancelCurObject()
-            drawStart = false
-        } else if (str == "선택") {
-            if (strMenu == "추가") {
-                roi_AddObject()
-            } else {
-                cancelCurObject()
+        when (str) {
+            "추가" -> {
+                setMode(strMode) // m_CurType를 재 설정해준다.
+                drawStart = true
             }
-            drawStart = false
-        } else if (str == "삭제") {
-        } else if (str == "핀 회전") {
-            // RotatePinIcon();
-            // TODO 기능 구현 필요
+
+            "수정" -> {
+                cancelCurObject()
+                drawStart = false
+            }
+
+            "선택" -> {
+                if (strMenu == "추가") {
+                    roiAddObject()
+                } else {
+                    cancelCurObject()
+                }
+                drawStart = false
+            }
+
+            "삭제" -> {
+            }
+
+            "핀 회전" -> {
+                rotatePinIcon();
+                // TODO 기능 구현 필요
+            }
         }
 
         strMenu = str
@@ -552,10 +434,10 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
     }
 
     // 241222 jihyeon 핀 회전 모드 아이콘
-    private fun RotatePinIcon() {
-        val iconDrawable = resources.getDrawable(R.drawable.benjamin_direction, null)
-        val rotateDrawable = resources.getDrawable(R.drawable.ic_rotate, null)
-        // 모든 ROI 객체의 핀을 새로운 Drawable로 설정
+    private fun rotatePinIcon() {
+        val iconDrawable = ResourcesCompat.getDrawable(resources, R.drawable.benjamin_direction, null)
+        val rotateDrawable = ResourcesCompat.getDrawable(resources, R.drawable.ic_rotate, null)
+
         for (roiObject in roiObjects) {
             if (roiObject.roiType == ROI_TYPE_POLYGON) {
                 roiObject.iconDrawable = iconDrawable
@@ -564,10 +446,10 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         // 화면 갱신
-        //invalidate()
+        invalidate()
     }
 
-    private fun RotatePinIcon(nIndex: Int) {
+    private fun rotatePinIcon(nIndex: Int) {
         if (nIndex > (roiObjects.size - 1)) return
         val roiObject = roiObjects[nIndex]
 
@@ -1043,7 +925,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         drawStart = true
     }
 
-    fun roi_AddObject() {
+    fun roiAddObject() {
         Log.d(TAG, "roi_AddObject(): ")
         if (roiCurObject == null) return
 
@@ -1679,8 +1561,8 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
     fun SetModeAndMenu(sMode: String, sMenu: String) {
-        SetMode(sMode)
-        SetMenu(sMenu)
+        setMode(sMode)
+        setMenu(sMenu)
     }
 
     fun SetLabel(newLabel: String) {
@@ -1710,11 +1592,11 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         return false // 중복 없음
     }
 
-    fun AddPoint_Polygon(point: Point?) {
+    fun addPointPolygon(point: Point?) {
         roiCurObject!!.addPoint(point)
     }
 
-    fun CObject_LoadObject(objType: String, point: Point): Boolean {
+    fun loadObject(objType: String, point: Point): Boolean {
         roiCurObject = null
         currentSelectedIndex = -1
 
@@ -1748,7 +1630,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         return true
     }
 
-    fun CObject_LoadRect(point1: Point, point2: Point) {
+    fun loadRect(point1: Point, point2: Point) {
         //m_RoiCurIndex = m_RoiObjects.size()-1;
 
         if (roiCurObject == null) return
@@ -1768,8 +1650,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
     private fun calculateAngle(x1: Float, y1: Float, x2: Float, y2: Float): Float {
         // atan2로 각도 계산
-        val angle = -(atan2((y2 - y1).toDouble(), (x2 - x1).toDouble())) as Float
-
+        val angle = -(atan2((y2 - y1).toDouble(), (x2 - x1).toDouble())).toFloat()
         return angle
     }
 

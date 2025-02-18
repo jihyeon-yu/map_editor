@@ -18,7 +18,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
@@ -36,6 +35,7 @@ import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
 import com.forsk.ondevice.CommonUtil.debugLog
 import com.forsk.ondevice.CommonUtil.warnLog
 import com.forsk.ondevice.databinding.ActivityMapeditorBinding
+import com.forsk.ondevice.databinding.DialogScrollableWithButtonsBinding
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
@@ -47,7 +47,6 @@ import org.opencv.core.Mat
 import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.text.SimpleDateFormat
@@ -95,23 +94,21 @@ class MapEditorActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMapeditorBinding
     private lateinit var viewModel: MapEditorViewModel
 
-    var strMode: String = "Zoom"
-    var srcMapPgmFilePath: String? = ""
-    var srcMapPngFilePath: String = ""
-    var srcMapYamlFilePath: String? = ""
-    var destMappingFilePath: String? = ""
+    private var strMode: String = "Zoom"
+    private var srcMapPgmFilePath: String = ""
+    private var srcMapPngFilePath: String = ""
+    private var srcMapYamlFilePath: String = ""
+    private var destMappingFilePath: String = ""
 
     var nResolution: Double = 0.0
-    var origin_x: Double = 0.0
-    var origin_y: Double = 0.0
-    var origin_angle: Double = 0.0
+    var originX: Double = 0.0
+    var originY: Double = 0.0
+    var originAngle: Double = 0.0
 
     // 현재 모드 변수
     private var currentMode = MODE_MAP_EXPLORATION
 
-    private var PinName = ""
-
-    private val scaleFactor = 1.0f
+    private var pinName = ""
 
     // 선택된 버튼 저장 변수
     var selectedButton: TextView? = null
@@ -157,19 +154,11 @@ class MapEditorActivity : AppCompatActivity() {
             spaceCreationButton.setOnClickListener { spaceCreationButtonClickFunc() }
             buttonBlockWall.setOnClickListener { blockWallClickEvent() }
             buttonBlockArea.setOnClickListener { blockAreaButtonClickEvent() }
-            // 열기 버튼 클릭 시 toggle_bar 보이기
             fabMain.setOnClickListener { fabMainClickEvent() }
-            // 닫기 버튼 클릭 시 toggle_bar 숨기기
-            toggleBar.fabMainBack.setOnClickListener { fabMainBackClickEvent() }
-            toggleBarCreatespace.fabMainBackCS.setOnClickListener { fabMainBackClickEvent() }
             fabMoveMap.setOnClickListener { fabMoveMapClickEvent() }
 
-            //        fabZoom.setOnClickListener(v -> {
-//            MapViewer.SetMenu("줌");
-//            strMode = "Zoom";
-//        });
-
             toggleBar.apply {
+                fabMainBack.setOnClickListener { fabMainBackClickEvent() }
                 fabAddObject.setOnClickListener { fabAddObjectClickEvent() }
                 fabMoveObject.setOnClickListener { fabMoveObjectClickEvent() }//  move Object
                 fabSelectObject.setOnClickListener { fabSelectObjectClickEvent() }//  Select Object
@@ -181,6 +170,7 @@ class MapEditorActivity : AppCompatActivity() {
             // 241217 jihyeon
             // 공간 생성 모드일 때 토글 버튼 설정
             toggleBarCreatespace.apply {
+                fabMainBackCS.setOnClickListener { fabMainBackClickEvent() }
                 fabAddObjectCS.setOnClickListener { fabAddObjectClickEvent() }
                 fabMoveObjectCS.setOnClickListener { fabMoveObjectClickEvent() }
                 fabSelectObjectCS.setOnClickListener { fabSelectObjectClickEvent() }
@@ -191,15 +181,16 @@ class MapEditorActivity : AppCompatActivity() {
             }
 
             // 휴지통 버튼 클릭 이벤트
-            deleteToggleBar.deleteButton.setOnClickListener { deleteButtonClickEvent() }
-
-            // X 버튼 클릭 이벤트
-            deleteToggleBar.cancelButton.setOnClickListener { v: View? ->
-                mapViewer.clearSelection() // 선택 초기화 메서드
-                hideDeleteToggleBar()
+            deleteToggleBar.apply {
+                deleteButton.setOnClickListener { deleteButtonClickEvent() }
+                // X 버튼 클릭 이벤트
+                cancelButton.setOnClickListener { v: View? ->
+                    mapViewer.clearSelection() // 선택 초기화 메서드
+                    hideDeleteToggleBar()
+                }
             }
 
-            binding.mapViewer.apply {
+            mapViewer.apply {
                 viewTreeObserver.addOnGlobalLayoutListener(object : OnGlobalLayoutListener {
                     override fun onGlobalLayout() {
                         processMapFiles()
@@ -284,12 +275,12 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun fabRenameObjectCSClickEvent() {
         strMode = "None"
-        val oldPinName = PinName
+        val oldPinName = pinName
         binding.apply {
             showCustomDialog(object : DialogCallback {
                 override fun onConfirm(selectedText: String?) {
                     if ((mapViewer.roiCurObject != null)) {
-                        mapViewer.SetLabel(PinName)
+                        mapViewer.SetLabel(pinName)
                     }
                 }
             })
@@ -309,7 +300,7 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun fabRotatePinCSClickEvent() {
         binding.apply {
-            mapViewer.SetMenu("핀 회전")
+            mapViewer.setMenu("핀 회전")
             fabAddObjectClicked.visibility = View.GONE
             fabSelectObjectClicked.visibility = View.GONE
             fabMoveObjectClicked.visibility = View.GONE
@@ -323,7 +314,7 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun fabMovePinCSClickEvent() {
         binding.apply {
-            mapViewer.SetMenu("핀 이동")
+            mapViewer.setMenu("핀 이동")
             fabAddObjectClicked.visibility = View.GONE
             fabSelectObjectClicked.visibility = View.GONE
             fabMoveObjectClicked.visibility = View.GONE
@@ -337,7 +328,7 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun toggleBarCreateSpaceClickEvent() {
         binding.apply {
-            mapViewer.SetMenu("삭제")
+            mapViewer.setMenu("삭제")
             fabAddObjectClicked.visibility = View.GONE
             fabSelectObjectClicked.visibility = View.GONE
             fabMoveObjectClicked.visibility = View.GONE
@@ -358,7 +349,7 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun fabSelectObjectClickEvent() {
         binding.apply {
-            mapViewer.SetMenu("선택")
+            mapViewer.setMenu("선택")
             fabAddObjectClicked.visibility = View.GONE
             fabSelectObjectClicked.visibility = View.VISIBLE
             fabMoveObjectClicked.visibility = View.GONE
@@ -372,7 +363,7 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun fabMoveObjectClickEvent() {
         binding.apply {
-            mapViewer.SetMenu("수정")
+            mapViewer.setMenu("수정")
             fabAddObjectClicked.visibility = View.GONE
             fabSelectObjectClicked.visibility = View.GONE
             fabMoveObjectClicked.visibility = View.VISIBLE
@@ -386,7 +377,7 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun fabAddObjectClickEvent() {
         binding.apply {
-            mapViewer.SetMenu("추가")
+            mapViewer.setMenu("추가")
             fabAddObjectClicked.visibility = View.VISIBLE
             fabSelectObjectClicked.visibility = View.GONE
             fabMoveObjectClicked.visibility = View.GONE
@@ -408,10 +399,10 @@ class MapEditorActivity : AppCompatActivity() {
             fabDeleteObjectClicked.visibility = View.GONE
             fabRenameObjectClicked.visibility = View.GONE
             if (mapViewer.strMenu === "이동") {
-                mapViewer.SetMenu("이동")
+                mapViewer.setMenu("이동")
                 //strMode = "Move";
             } else {
-                mapViewer.SetMenu("이동")
+                mapViewer.setMenu("이동")
                 //strMode = "Move";
             }
         }
@@ -449,7 +440,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun blockAreaButtonClickEvent() {
         binding.apply {
             currentMode = MODE_BLOCK_AREA
-            mapViewer.SetMode("금지공간")
+            mapViewer.setMode("금지공간")
             Log.d(TAG, "금지공간 모드 활성화")
             updateButtonBackground(buttonBlockArea)
             updateToggleBarVisibility()
@@ -468,7 +459,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun blockWallClickEvent() {
         binding.apply {
             currentMode = MODE_BLOCK_WALL
-            mapViewer.SetMode("가상벽")
+            mapViewer.setMode("가상벽")
             Log.d(TAG, "가상벽 모드 활성화")
             updateButtonBackground(buttonBlockWall)
             updateToggleBarVisibility()
@@ -487,7 +478,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun spaceCreationButtonClickFunc() {
         binding.apply {
             currentMode = MODE_SPACE_CREATION
-            mapViewer.SetMode("공간 생성")
+            mapViewer.setMode("공간 생성")
             Log.d(TAG, "공간 생성 모드 활성화")
             updateButtonBackground(spaceCreationButton)
             updateToggleBarVisibility()
@@ -642,6 +633,7 @@ class MapEditorActivity : AppCompatActivity() {
             // 현재 선택된 버튼은 흰색으로 변경
             currentButton.setBackgroundResource(R.drawable.rounded_button_white)
             currentButton.setTextColor(Color.BLACK)
+
             selectedButton = currentButton
         }
     }
@@ -651,19 +643,15 @@ class MapEditorActivity : AppCompatActivity() {
     }
 
     private fun showCustomDialog(callback: DialogCallback) {
-        // Inflate the custom layout
-        val inflater = layoutInflater
-        val dialogView = inflater.inflate(R.layout.dialog_scrollable_with_buttons, null)
-
+        val dialogBinding = DialogScrollableWithButtonsBinding.inflate(layoutInflater)
+        val dialogView = dialogBinding.root
         val builder = AlertDialog.Builder(this, R.style.CustomDialogTheme)
         builder.setView(dialogView)
 
         val dialog = builder.create()
 
+        dialogBinding.radioGroup
         // Find views
-        val radioGroup = dialogView.findViewById<RadioGroup>(R.id.radio_group)
-        val cancelButton = dialogView.findViewById<Button>(R.id.rename_pin_cancel_button)
-        val confirmButton = dialogView.findViewById<Button>(R.id.rename_pin_confirm_button)
 
         // Layout for items
         val layout = arrayOf(
@@ -735,21 +723,15 @@ class MapEditorActivity : AppCompatActivity() {
             }
 
             // Add the row to the RadioGroup
-            radioGroup.addView(rowLayout)
+            dialogBinding.radioGroup.addView(rowLayout)
         }
 
         // Set button listeners
-        cancelButton.setOnClickListener { v: View? -> dialog.dismiss() }
-
-        confirmButton.setOnClickListener { v: View? ->
-            if (selectedText[0] != null) {
-                PinName = selectedText[0]
-                callback.onConfirm(selectedText[0])
-                dialog.dismiss()
-            } else {
-                Log.d(TAG, "공간명이 선택되지 않음")
-                dialog.dismiss()
-            }
+        dialogBinding.renamePinCancelButton.setOnClickListener { v: View? -> dialog.dismiss() }
+        dialogBinding.renamePinConfirmButton.setOnClickListener { v: View? ->
+            pinName = selectedText[0]
+            callback.onConfirm(selectedText[0])
+            dialog.dismiss()
         }
 
         // Show the dialog
@@ -769,86 +751,6 @@ class MapEditorActivity : AppCompatActivity() {
             params.verticalMargin = 0.1f // 상하 마진
             window.attributes = params
         }
-    }
-
-    private fun toggleFabVisibility(fabToHide: View, fabToShow: View) {
-        // 숨길 FAB를 GONE으로 설정
-        fabToHide.visibility = View.GONE
-
-        // 보일 FAB를 VISIBLE로 설정
-        fabToShow.visibility = View.VISIBLE
-    }
-
-    //    private void toggleFab(View fabMain, View... fabs) {
-    //        if (isFabOpen) {
-    //            // 메뉴를 닫을 때
-    //            for (int i = 0; i < fabs.length; i++) {
-    //                ObjectAnimator.ofFloat(fabs[i], "translationX", 0f).start();
-    //                fabs[i].setVisibility(View.GONE); // 버튼 숨기기
-    //            }
-    //            fabMain.setBackgroundResource(R.drawable.baseline_add_24); // "+" 아이콘으로 변경
-    //        } else {
-    //            // 메뉴를 열 때
-    //            for (int i = 0; i < fabs.length; i++) {
-    //                ObjectAnimator.ofFloat(fabs[i], "translationX", 240f + (150f * i)).start();
-    //                fabs[i].setVisibility(View.VISIBLE); // 버튼 보이기
-    //            }
-    //        }
-    //        isFabOpen = !isFabOpen;
-    //    }
-    @Throws(IOException::class)
-    private fun loadPGM(filePath: String): Bitmap? {
-        Log.d(TAG, "loadPGM(\"$filePath\")")
-
-        val paths = filePath.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        val fileName = paths[paths.size - 1]
-        Log.d(TAG, "fileName : $fileName")
-
-        val file = File(filePath)
-        //if (!file.exists()) {
-        //    throw new IOException("File not found: " + filePath);
-        //}
-        try {
-            FileInputStream(file).use { fis ->
-                //InputStream inputStream = new FileInputStream(filePath);
-                //AssetManager assetManager = getAssets();
-                //InputStream inputStream = assetManager.open(fileName);
-
-
-                // Basic PGM file decoding
-                val magicNumber = readToken(fis) // Reads "P5"
-                if ("P5" != magicNumber) throw IOException("Not a PGM file")
-
-                val width = readToken(fis).toInt()
-                val height = readToken(fis).toInt()
-                val maxGray = readToken(fis).toInt()
-
-                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-
-                for (y in 0 until height) {
-                    for (x in 0 until width) {
-                        var grayValue = fis.read()
-                        // original PGM은 흰색:254, 0:검은색,else:회색
-                        // rotate pgm은 흰색 255, Else:회색(220)
-                        grayValue =
-                            if ((grayValue == 254) || (grayValue == 255)) { //내부와 외걱선 옅은 회색 #969696
-                                150
-                            } else if (grayValue == 0) {
-                                17
-                            } else {    //외부(254)는 짙은 회색 #333333
-                                51
-                            }
-                        val color = Color.rgb(grayValue, grayValue, grayValue)
-                        bitmap.setPixel(x, y, color)
-                    }
-                }
-                return bitmap
-            }
-        } catch (fe: FileNotFoundException) {
-            Log.e(TAG, "loadPGM FileNotFoundException: " + fe.message)
-            verifyStoragePermissions(this)
-        }
-        return null
     }
 
     @Throws(IOException::class)
@@ -910,23 +812,13 @@ class MapEditorActivity : AppCompatActivity() {
 
         sendBroadcast()
 
-        srcMapPgmFilePath = intent.getStringExtra("srcMapPgmFilePath")
-        if (srcMapPgmFilePath == null) {
-            srcMapPgmFilePath = "/sdcard/Download/office.pgm" // for test
-        }
-        srcMapYamlFilePath = intent.getStringExtra("srcMapYamlFilePath")
-        if (srcMapYamlFilePath == null) {
-            srcMapYamlFilePath = "/sdcard/Download/office.yaml"
-        }
-        destMappingFilePath = intent.getStringExtra(ACTION_FILE_PATH)
-        if (destMappingFilePath == null) {
-            destMappingFilePath = "/sdcard/Download/map_meta_sample.json" // for test
-        }
+        srcMapPgmFilePath = intent.getStringExtra("srcMapPgmFilePath") ?: "/sdcard/Download/office.pgm"
+        srcMapYamlFilePath = intent.getStringExtra("srcMapYamlFilePath") ?: "/sdcard/Download/office.yaml"
+        destMappingFilePath = intent.getStringExtra(ACTION_FILE_PATH) ?: "/sdcard/Download/map_meta_sample.json"
     }
 
     private fun loadYaml(filePath: String?): Boolean {
         // 내부 저장소에서 파일 스트림 열기
-
         try {
             FileInputStream(filePath).use { inputStream ->
                 val yaml = Yaml()
@@ -949,24 +841,24 @@ class MapEditorActivity : AppCompatActivity() {
                     val originAngle = origin[2]
 
                     if (originX is Number) {
-                        origin_x = originX.toDouble()
-                        Log.d(TAG, "origin_x : $origin_x")
+                        this.originX = originX.toDouble()
+                        Log.d(TAG, "origin_x : ${this.originX}")
                     } else {
                         Log.d(TAG, "origin_x is not a valid number.")
                     }
 
                     if (originY is Number) {
-                        origin_y = originY.toDouble()
-                        Log.d(TAG, "origin_y : $origin_y")
+                        this.originY = originY.toDouble()
+                        Log.d(TAG, "origin_y : ${this.originY}")
                     } else {
                         Log.d(TAG, "origin_y is not a valid number.")
                     }
 
                     if (originAngle is Number) {
-                        origin_angle = originAngle.toDouble()
+                        this.originAngle = originAngle.toDouble()
                         Log.d(
                             TAG,
-                            "origin_angle : $origin_angle"
+                            "origin_angle : ${this.originAngle}"
                         )
                     } else {
                         Log.d(TAG, "origin_angle is not a valid number.")
@@ -979,7 +871,7 @@ class MapEditorActivity : AppCompatActivity() {
                 if (lib_flag) {
                     // OpenCV 네이티브 라이브러리 로드
                     try {
-                        if (!OpenCVLoader.initDebug()) {
+                        if (!OpenCVLoader.initLocal()) {
                             Log.e("OpenCV", "Initialization failed.")
                         } else {
                             Log.d("OpenCV", "Initialization succeeded.")
@@ -1062,12 +954,12 @@ class MapEditorActivity : AppCompatActivity() {
     fun roiSaveToFile(strPath: String, strFileName: String, isSetTheta: Boolean) {
         val mapViewer = binding.mapViewer
         var j: Int
-        val image_width = mapViewer.GetBitmapWidth()
-        val image_height = mapViewer.GetBitmapHeight()
+        val imageWidth = mapViewer.getBitmapWidth()
+        val image_height = mapViewer.getBitmapHeight()
 
         Log.d(
             TAG,
-            "image width : $image_width , image_height : $image_height"
+            "image width : $imageWidth , image_height : $image_height"
         )
         var countId = 0
         var countIdRect = 0
@@ -1292,29 +1184,23 @@ class MapEditorActivity : AppCompatActivity() {
 
                 Log.d(
                     TAG,
-                    "image_height: $image_height, image width: $image_width"
+                    "image_height: $image_height, image width: $imageWidth"
                 )
 
                 countIdLine++
                 val roi = mapViewer.roiObjects[i]
-
                 strRoiJson += "{\"image_path\":["
 
                 // Add start point
-                strRoiJson += "{\"x\":" + roi.mMBR.left +
-                        ", \"y\":" + (roi.mMBR.top) + "}, "
+                strRoiJson += "{\"x\":" + roi.mMBR.left + ", \"y\":" + (roi.mMBR.top) + "}, "
 
                 // Add end point
-                strRoiJson += "{\"x\":" + roi.mMBR.right +
-                        ", \"y\":" + (roi.mMBR.bottom) + "}], "
-
+                strRoiJson += "{\"x\":" + roi.mMBR.right + ", \"y\":" + (roi.mMBR.bottom) + "}], "
                 strRoiJson += "\"robot_path\":["
 
                 // Convert image coordinates to robot coordinates
-                val startCoordinates =
-                    calculateCoordinate(roi.mMBR.left, roi.mMBR.top, image_height)
-                val endCoordinates =
-                    calculateCoordinate(roi.mMBR.right, roi.mMBR.bottom, image_height)
+                val startCoordinates = calculateCoordinate(roi.mMBR.left, roi.mMBR.top, image_height)
+                val endCoordinates = calculateCoordinate(roi.mMBR.right, roi.mMBR.bottom, image_height)
 
                 // Add start robot path
                 strRoiJson += "{\"x\":" + startCoordinates[0] + ", \"y\":" + startCoordinates[1] + "}, "
@@ -1424,11 +1310,11 @@ class MapEditorActivity : AppCompatActivity() {
 
         if (lib_flag) {
             val pt = transformToRobotCoordinates(x, y)
-            robot_x = pt.x * nResolution + origin_x
-            robot_y = (original_image_height - pt.y) * nResolution + origin_y
+            robot_x = pt.x * nResolution + originX
+            robot_y = (original_image_height - pt.y) * nResolution + originY
         } else {
-            robot_x = x * nResolution + origin_x
-            robot_y = (image_height - y) * nResolution + origin_y
+            robot_x = x * nResolution + originX
+            robot_y = (image_height - y) * nResolution + originY
         }
         return doubleArrayOf(robot_x, robot_y)
     }
