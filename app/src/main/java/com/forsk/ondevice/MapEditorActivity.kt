@@ -155,7 +155,6 @@ class MapEditorActivity : AppCompatActivity() {
             buttonBlockWall.setOnClickListener { blockWallClickEvent() }
             buttonBlockArea.setOnClickListener { blockAreaButtonClickEvent() }
             fabMain.setOnClickListener { fabMainClickEvent() }
-            fabMoveMap.setOnClickListener { fabMoveMapClickEvent() }
 
             toggleBar.apply {
                 fabMainBack.setOnClickListener { fabMainBackClickEvent() }
