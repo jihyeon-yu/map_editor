@@ -416,11 +416,10 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
         //Log.d(TAG, "ScreenWidth : " + ScreenWidth);
         //Log.d(TAG, "ScreenHeight : " + ScreenHeight);
-        if ((screenWidth < 1) || (screenHeight < 1)) return
+        if ((this.width < 1) || (this.height < 1)) return
 
         val viewWidth = this.width
         val viewHeight = this.height
-
 
         //Log.d(TAG, "viewWidth : " + viewWidth);
         //Log.d(TAG, "viewHeight : " + viewHeight);

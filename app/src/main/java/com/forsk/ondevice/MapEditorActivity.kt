@@ -1,7 +1,6 @@
 package com.forsk.ondevice
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,7 +9,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Point
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
@@ -19,8 +17,6 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
-import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
@@ -37,9 +33,13 @@ import com.caselab.forsk.MapOptimization
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_LINE
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POLYGON
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
+import com.forsk.ondevice.CommonUtil.debugLog
+import com.forsk.ondevice.CommonUtil.warnLog
 import com.forsk.ondevice.databinding.ActivityMapeditorBinding
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.Core
 import org.opencv.core.CvType
@@ -48,11 +48,11 @@ import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.Objects
 
 // opencv 추가
@@ -61,24 +61,16 @@ class MapEditorActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "MapEditorActivity"
         private const val NAME_LIBRARY_CASELAB_OPT = "mapoptimization_arm_v2_240117"
-
-        /*
-        PATH_FILE_MAP_ORG : 가공되지 않은 원본 pgm, yaml 파일이 존재하는 폴더
-        PATH_FILE_MAP_ROT : so 라이브리를 이용해서 가공된 pgm, yaml 결과 파일일 만들어질 폴더
-        NAME_FILE_MAP_ORG : 파일형식 확장자(pgm,yaml) 제외한 파일명
-        PATH_FILE_MAP_OPT : 옵티마이징한 결과를 저장할 폴더명
-        PATH_FILE_MAP_SEG : 세그멘트 결과를 저장할 폴더명
-        참고 : NAME_FILE_MAP_ORG의 파일명으로 각각 다른 폴더에 결과물이 나오면 최종 결과물은 PATH_FILE_MAP_ROT 폴더에 저장됨
-     */
-        private const val PATH_FILE_MAP_ORG = "/sdcard/Download/"
-        private const val PATH_FILE_MAP_ROT = "/sdcard/Download/map_test/rot/"
-        private const val NAME_FILE_MAP_ORG = "office" //"5py";
-        private const val PATH_FILE_MAP_OPT = "/sdcard/Download/map_test/opt/"
-        private const val PATH_FILE_MAP_SEG = "/sdcard/Download/map_test/seg/"
-
-        private const val PICK_PGM_FILE_REQUEST = 1
-
+        private const val PACKAGE_NAME = "com.sk.airbot.iotagent"
+        private const val ACTION_NAME = "sk.action.airbot.map.responseMapping"
+        private const val ACTION_FILE_PATH = "destMappingFilePath"
+        private const val ACTION_STATUS_NAME = "appStatus"
+        private const val ACTION_RESULT_CODE = "resultCode"
+        private const val ACTION_VALUE = "MRC_000"
+        private const val ACTION_START = "start"
+        private const val ACTION_STOP = "stop"
         private const val REQUEST_EXTERNAL_STORAGE = 1
+
         private val PERMISSIONS_STORAGE = arrayOf(
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -92,13 +84,16 @@ class MapEditorActivity : AppCompatActivity() {
         private const val MODE_EDIT_PIN = 4
     }
 
-    private var _binding: ActivityMapeditorBinding? = null
-    private val binding get() = _binding!!
+    init {
+        loadMapLibrary()
+    }
 
-    private var _viewModel: MapEditorViewModel? = null
-    private val viewModel get() = _viewModel!!
+    //TODO : 하드코딩 수정할 것
+    private val strFileName = "map_meta_sample.json"
+    private val strPath = "/sdcard/Download"
 
-    private val isFabOpen = false
+    private lateinit var binding: ActivityMapeditorBinding
+    private lateinit var viewModel: MapEditorViewModel
 
     var strMode: String = "Zoom"
     var srcMapPgmFilePath: String? = ""
@@ -131,8 +126,8 @@ class MapEditorActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setTheme(R.style.Theme_OnDevice)
 
-        _binding = ActivityMapeditorBinding.inflate(layoutInflater)
-        _viewModel = ViewModelProvider(this)[MapEditorViewModel::class.java]
+        binding = ActivityMapeditorBinding.inflate(layoutInflater)
+        viewModel = ViewModelProvider(this)[MapEditorViewModel::class.java]
 
         setContentView(binding.root)
     }
@@ -199,120 +194,81 @@ class MapEditorActivity : AppCompatActivity() {
             deleteToggleBar.deleteButton.setOnClickListener { deleteButtonClickEvent() }
 
             // X 버튼 클릭 이벤트
-            this.cancelButton.setOnClickListener { v: View? ->
+            deleteToggleBar.cancelButton.setOnClickListener { v: View? ->
                 mapViewer.clearSelection() // 선택 초기화 메서드
                 hideDeleteToggleBar()
             }
 
-            // 방법 1: ViewTreeObserver를 사용
             binding.mapViewer.apply {
-                getViewTreeObserver()?.addOnGlobalLayoutListener(object : OnGlobalLayoutListener {
+                viewTreeObserver.addOnGlobalLayoutListener(object : OnGlobalLayoutListener {
                     override fun onGlobalLayout() {
-                        // 가로와 세로 크기 얻기
-                        Log.d("ViewSize", "Width: $width, Height: $height")
-
-                        screenWidth = width
-                        screenHeight = height
-
-                        // 리스너 제거 (메모리 누수 방지)
-                        getViewTreeObserver().removeOnGlobalLayoutListener(this)
-
-                        try {
-                            // File 객체 생성
-                            val file = File(srcMapPgmFilePath)
-
-                            val path = file.parent + "/" // 디렉터리 경로
-                            val filename = file.name // 파일 이름
-                            val fileTitle =
-                                filename.substring(
-                                    0,
-                                    filename.lastIndexOf('.')
-                                ) // 확장자를 제외한 파일 제목
-
-                            val path_rot = path + "rot/"
-                            val file_rot = File(path_rot)
-                            // 폴더가 제대로 만들어졌는지 체크 ======
-                            if (!file_rot.mkdirs()) {
-                                Log.e("FILE", "Directory not created : $path_rot")
-                            }
-                            Log.d("SKOnDeviceService", "Run library-rotate!")
-                            //com.caselab.forsk.MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
-                            MapOptimization.mapRotation(path, path_rot, fileTitle)
-                            Log.d("SKOnDeviceService", "Library-rotate Finish!")
-
-                            val path_opt = path + "opt/"
-                            val file_opt = File(path_opt)
-                            // 폴더가 제대로 만들어졌는지 체크 ======
-                            if (!file_opt.mkdirs()) {
-                                Log.e("FILE", "Directory not created : $path_opt")
-                            }
-                            Log.d("SKOnDeviceService", "Run library-line opt!")
-                            //MapOptimization.lineOptimization(PATH_FILE_MAP_ROT, PATH_FILE_MAP_OPT, NAME_FILE_MAP_ORG);
-                            MapOptimization.lineOptimization(path_rot, path_opt, fileTitle)
-                            Log.d("SKOnDeviceService", "Library-line Finish!")
-
-                            val strPgmFile = "$path_opt$fileTitle.pgm"
-                            val strPngFile = "$path_opt$fileTitle.png"
-
-                            //Log.d(TAG, strPgmFile);
-                            lib_flag = true
-                            srcMapPgmFilePath = strPgmFile
-                            srcMapPngFilePath = strPngFile
-                            srcMapYamlFilePath = "$path_opt$fileTitle.yaml"
-                        } catch (e: UnsatisfiedLinkError) {
-                            Log.e(TAG, "Native library not loaded or linked properly", e)
-                        } catch (e: ExceptionInInitializerError) {
-                            Log.e(TAG, "Initialization error in native method", e)
-                        } catch (e: RuntimeException) {
-                            Log.e(TAG, "Runtime exception occurred", e)
-                        } catch (e: Throwable) {
-                            Log.e(TAG, "Unexpected error occurred", e)
-                        }
-
-                        try {
-                            //v2_240117.so
-                            val bitmap = loadPNG(srcMapPngFilePath)
-                            // 241217v11.so
-                            // Bitmap bitmap = loadPGM(srcMapPgmFilePath);
-                            if (bitmap != null) {
-                                setBitmap(bitmap)
-                            }
-                        } catch (e: IOException) {
-                            Log.e(TAG, "IOException error occurred", e)
-                        }
-
-                        if (!loadYaml(srcMapYamlFilePath)) {
-                            Log.d(
-                                TAG,
-                                "con not read $srcMapYamlFilePath"
-                            )
-                        }
-                        // 241218 성웅 맵 불러오기
-                        lifecycleScope.launch(IO) {
-                            if (!viewModel.loadJson(
-                                    mapViewer = mapViewer,
-                                    filePath = destMappingFilePath,
-                                    lib_flag = lib_flag
-                                )
-                            ) {
-                                Log.d(
-                                    TAG,
-                                    "con not read $destMappingFilePath"
-                                )
-                            }
-                        }
+                        processMapFiles()
+                        loadMapBitmap()
+                        loadYamlFile()
+                        loadJsonMap()
+                        viewTreeObserver.removeOnGlobalLayoutListener(this) // 리스너 제거 (메모리 누수 방지)
                     }
-                    /*
-                    for (int it = 0; it < MapViewer.m_RoiObjects.size(); it++) {
-                        Log.d(TAG,"Type: "+MapViewer.m_RoiObjects.get(it).roi_type);
-                        for (int j = 0; j < MapViewer.m_RoiObjects.get(it).m_Points.size(); j++) {
-                            Log.d(TAG, "\"x\":" + (int) (MapViewer.m_RoiObjects.get(it).m_Points.get(j).x));
-                            Log.d(TAG, ", \"y\":" + (int) (MapViewer.m_RoiObjects.get(it).m_Points.get(j).y));
-                        }
-                    }
-                    */
-
                 })
+            }
+        }
+    }
+
+    private fun processMapFiles() {
+        val file = File(srcMapPgmFilePath)
+        val path = file.parent + "/"
+        val fileTitle = file.name.substringBeforeLast('.') // 확장자 제외 파일명
+
+        val pathRot = "${path}rot/"
+        val pathOpt = "${path}opt/"
+
+        createDirectoryIfNeeded(pathRot)
+        createDirectoryIfNeeded(pathOpt)
+
+        try {
+            Log.d("SKOnDeviceService", "Run library-rotate!")
+            MapOptimization.mapRotation(path, pathRot, fileTitle)
+            Log.d("SKOnDeviceService", "Library-rotate Finish!")
+
+            Log.d("SKOnDeviceService", "Run library-line opt!")
+            MapOptimization.lineOptimization(pathRot, pathOpt, fileTitle)
+            Log.d("SKOnDeviceService", "Library-line Finish!")
+
+            srcMapPgmFilePath = "$pathOpt$fileTitle.pgm"
+            srcMapPngFilePath = "$pathOpt$fileTitle.png"
+            srcMapYamlFilePath = "$pathOpt$fileTitle.yaml"
+
+            lib_flag = true
+        } catch (e: Throwable) {
+            Log.e(TAG, "Error processing map files", e)
+        }
+    }
+
+    private fun createDirectoryIfNeeded(path: String) {
+        val directory = File(path)
+        if (!directory.exists() && !directory.mkdirs()) {
+            Log.e("FILE", "Directory not created: $path")
+        }
+    }
+
+    private fun loadMapBitmap() {
+        try {
+            val bitmap = loadPNG(srcMapPngFilePath)
+            bitmap.let { binding.mapViewer.setBitmap(it) }
+        } catch (e: IOException) {
+            Log.e(TAG, "IOException while loading bitmap", e)
+        }
+    }
+
+    private fun loadYamlFile() {
+        if (!loadYaml(srcMapYamlFilePath)) {
+            Log.d(TAG, "Cannot read $srcMapYamlFilePath")
+        }
+    }
+
+    private fun loadJsonMap() {
+        lifecycleScope.launch(IO) {
+            if (!viewModel.loadJson(binding.mapViewer, destMappingFilePath, lib_flag)) {
+                Log.d(TAG, "Cannot read $destMappingFilePath")
             }
         }
     }
@@ -548,108 +504,59 @@ class MapEditorActivity : AppCompatActivity() {
     }
 
     private fun finishButtonClickFunc() {
-        Log.d(
-            TAG,
-            "finshButton.setOnClickListener(...)"
+        debugLog(TAG, "finishButton.setOnClickListener(...)")
+        Log.d(TAG, "try roi_saveToFile()")
+        roiSaveToFile(
+            strPath = strPath,
+            strFileName = strFileName,
+            isSetTheta = true
         )
-        try {
-            val strFileName = "map_meta_sample.json"
-            val strPath = "/sdcard/Download"
-
-            // TODO 수정필요 srcMappingfilePath 경로로 확인해서 name, path구분
-
-            //String strSDCardPath = Environment.getExternalStorageDirectory().getAbsolutePath();   // 외부 저장소의 절대 경로를 자동으로 가져와 주는 메서드
-            Log.d(TAG, "try roi_saveToFile()")
-            if (roi_saveToFile(
-                    strPath = strPath,
-                    strFileName = strFileName,
-                    isSetTheta = true
-                )
-            ) {
-                sendFinishBroadcast(strPath, strFileName)
-            } else {
-                Toast.makeText(
-                    applicationContext,
-                    "can not save JSON data !",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        } catch (ie: InterruptedException) {
-            Log.e(
-                TAG,
-                "SendBroadcast Unexpected error: " + ie.message
-            )
-        }
     }
 
     private fun sendFinishBroadcast(strPath: String, strFileName: String) {
         lifecycleScope.launch {
-            launch {
+            withContext(Main) {
                 Log.d(TAG, "send broadcast... ")
-                val intent = Intent("sk.action.airbot.map.responseMapping").apply {
-                    setPackage("com.sk.airbot.iotagent")
-                    putExtra("destMappingFilePath", "$strPath/$strFileName")
-                    putExtra("resultCode", "MRC_000")
-                    putExtra("appStatus", "stop")
+                Intent(ACTION_NAME).apply {
+                    setPackage(PACKAGE_NAME)
+                    putExtra(ACTION_FILE_PATH, "$strPath/$strFileName")
+                    putExtra(ACTION_RESULT_CODE, ACTION_VALUE)
+                    putExtra(ACTION_STATUS_NAME, ACTION_STOP)
+                    sendBroadcast(this)
+                    Log.d(TAG, "sent broadcast. ")
                 }
-
-                sendBroadcast(intent)
-                Log.d(TAG, "sent broadcast. ")
-            }.join()
-            launch {
-                Log.d(TAG, "finish activity ")
                 finish()
+                Log.d(TAG, "finish activity ")
             }
         }
     }
 
     private fun goBackButtonClickFunc() {
-        Log.d(
-            TAG,
-            "canclebutton.setOnClickListener(...)"
-        )
-        try {
-            val strFileName = "map_meta_sample.json"
-            val strPath = "/sdcard/Download"
-            val destFile = File(strPath, strFileName)
-
-            if (!destFile.isFile) {
-                if (roi_saveToEmptyFile(strPath, strFileName)) Log.d(
-                    TAG,
-                    "Success create empty Json File"
-                )
-                else Log.d(
-                    TAG,
-                    "Fail create empty File"
-                )
-            } else {
-                Log.d(TAG, "Already Exist Json FIle")
-            }
-            sendCancelBroadcast(strPath, strFileName)
-        } catch (ie: InterruptedException) {
-            Log.e(
-                TAG,
-                "goBack Button InterruptedExtception: " + ie.message
-            )
+        Log.d(TAG, "cancelButton.setOnClickListener(...)")
+        val destFile = File(strPath, strFileName)
+        if (!destFile.isFile) {
+            roiSaveToEmptyFile(strPath, strFileName)
+        } else {
+            Log.d(TAG, "Already Exist Json FIle")
         }
+        sendCancelBroadcast(strPath, strFileName)
     }
 
     private fun sendCancelBroadcast(strPath: String, strFileName: String) {
         Log.d(TAG, "send broadcast... ")
         lifecycleScope.launch {
-            launch {
-                val intent = Intent("sk.action.airbot.map.responseMapping")
-                intent.setPackage("com.sk.airbot.iotagent")
-                intent.putExtra("destMappingFilePath", "$strPath/$strFileName")
-                intent.putExtra("resultCode", "MRC_000")
-                intent.putExtra("appStatus", "stop")
-                sendBroadcast(intent)
-                Log.d(TAG, "sent broadcast. ")
-            }.join()
+            withContext(Main) {
+                Intent(ACTION_NAME).apply {
+                    setPackage(PACKAGE_NAME)
+                    putExtra(ACTION_FILE_PATH, "$strPath/$strFileName")
+                    putExtra(ACTION_RESULT_CODE, ACTION_VALUE)
+                    putExtra(ACTION_STATUS_NAME, "stop")
+                    sendBroadcast(this)
+                    Log.d(TAG, "sent broadcast. ")
+                }
 
-            launch {
-                Log.d(TAG, "finish activity ")
                 finish()
+                Log.d(TAG, "finish activity ")
             }
         }
     }
@@ -657,42 +564,24 @@ class MapEditorActivity : AppCompatActivity() {
     private fun cancelButtonClickFunc() {
         Log.d(
             TAG,
-            "canclebutton.setOnClickListener(...)"
+            "cancelbutton.setOnClickListener(...)"
         )
-        try {
-            val strFileName = "map_meta_sample.json"
-            val strPath = "/sdcard/Download"
-            val destFile = File(strPath, strFileName)
 
-            if (!destFile.isFile) {
-                if (roi_saveToEmptyFile(strPath, strFileName)) Log.d(
-                    TAG,
-                    "Success create empty Json File"
-                )
-                else Log.d(
-                    TAG,
-                    "Fail create empty File"
-                )
-            } else {
-                Log.d(TAG, "Already Exist Json FIle")
-            }
-
-            sendCancelBroadcast(strPath, strFileName)
-
-        } catch (ie: InterruptedException) {
-            Log.e(
-                TAG,
-                "Cancel Button InterruptedExtception: " + ie.message
-            )
+        val destFile = File(strPath, strFileName)
+        if (!destFile.isFile) {
+            roiSaveToEmptyFile(strPath, strFileName)
+        } else {
+            Log.d(TAG, "Already Exist Json FIle")
         }
+        sendCancelBroadcast(strPath, strFileName)
     }
 
     private fun sendBroadcast() {
         Log.d(TAG, "send broadcast appStatus start... ")
 
-        Intent("sk.action.airbot.map.responseMapping").apply {
-            setPackage("com.sk.airbot.iotagent")
-            putExtra("appStatus", "start")
+        Intent(ACTION_NAME).apply {
+            setPackage(PACKAGE_NAME)
+            putExtra(ACTION_STATUS_NAME, ACTION_START)
             sendBroadcast(this)
         }
 
@@ -1014,85 +903,23 @@ class MapEditorActivity : AppCompatActivity() {
         return bitmap
     }
 
-    protected override fun onResume() {
+    override fun onResume() {
         super.onResume()
 
         setUI()
 
         sendBroadcast()
 
-//        // 추가된 TextView 참조
-//        var modeDescription: TextView? = null
-
-//        val fabMain = findViewById<Button>(R.id.fabMain)
-//        val fabMainBack = findViewById<View>(R.id.fabMainBack)
-//        val fabMainBackCS = findViewById<View>(R.id.fabMainBackCS)
-
-        // 맵 탐색 - 줌 인/아웃, 맵 이동
-        //val fabMoveMap = findViewById<View>(R.id.fabMoveMap)
-
-        // 공간생성,가상벽,금지구역,청저위치 - 객체 추가, 객체 이동, 선택, 제거, 이름 변경
-//        val fabAddObject = findViewById<View>(R.id.fabAddObject)
-//        val fabMoveObject = findViewById<View>(R.id.fabMoveObject)
-//        val fabSelectObject = findViewById<View>(R.id.fabSelectObject)
-//        val fabDeleteObject = findViewById<View>(R.id.fabDeleteObject)
-//        val fabMovePin = findViewById<View>(R.id.fabMovePin)
-//        val fabRotatePin = findViewById<View>(R.id.fabRotatePin)
-
-//        val fabAddObjectCS = findViewById<View>(R.id.fabAddObjectCS)
-//        val fabMoveObjectCS = findViewById<View>(R.id.fabMoveObjectCS)
-//        val fabSelectObjectCS = findViewById<View>(R.id.fabSelectObjectCS)
-//        val fabDeleteObjectCS = findViewById<View>(R.id.fabDeleteObjectCS)
-//        val fabRenameObjectCS = findViewById<View>(R.id.fabRenameObjectCS)
-//        val fabMovePinCS = findViewById<View>(R.id.fabMovePinCS)
-//        val fabRotatePinCS = findViewById<View>(R.id.fabRotatePinCS)
-
-//        val finishButton = findViewById<Button>(R.id.finish_button)
-//        val cancelButton = findViewById<Button>(R.id.cancel_button)
-//        val goBackButton = findViewById<Button>(R.id.goback_button)
-
-        // 메뉴 클릭 시 배경 생성 버튼
-//        val fabAddObjectClicked = findViewById<View>(R.id.fabAddObjectClicked)
-//        val fabSelectObjectClicked = findViewById<View>(R.id.fabSelectObjectClicked)
-//        val fabMoveObjectClicked = findViewById<View>(R.id.fabMoveObjectClicked)
-//        val fabMovePinClicked = findViewById<View>(R.id.fabMovePinClicked)
-//        val fabRotatePinClicked = findViewById<View>(R.id.fabRotatePinClicked)
-//        val fabDeleteObjectClicked = findViewById<View>(R.id.fabDeleteObjectClicked)
-//        val fabRenameObjectClicked = findViewById<View>(R.id.fabRenameObjectClicked)
-
-        // 삭제 버튼 초기화 (onCreate 메서드에서)
-//        deleteToggleBar = findViewById(R.id.delete_toggle_bar)
-//        deleteButton = deleteToggleBar?.findViewById(R.id.deleteButton)
-//        cancelButton = deleteToggleBar?.findViewById(R.id.cancelButton)
-
-
-        // 20241217 jihyeon
-        // 공간 생성, 가상벽, 금지공간 버튼 분리
-//        val buttonSpaceCreation = findViewById<Button>(R.id.button_space_creation)
-//        val buttonBlockWall = findViewById<Button>(R.id.button_block_wall)
-//        val buttonBlockArea = findViewById<Button>(R.id.button_block_area)
-
-        // Mode-specific TextView 초기화
-        //   modeDescription = findViewById(R.id.mode_description)
-
-        // Toggle Bar 레이아웃 가져오기
-//        toggleBar = findViewById(R.id.toggle_bar)
-//        toggleBar_CreateSpace = findViewById(R.id.toggle_bar_createspace)
-
         srcMapPgmFilePath = intent.getStringExtra("srcMapPgmFilePath")
         if (srcMapPgmFilePath == null) {
-            //srcMapPgmFilePath = "/storage/emulated/0/Download/caffe_map.pgm";   // for test
             srcMapPgmFilePath = "/sdcard/Download/office.pgm" // for test
         }
         srcMapYamlFilePath = intent.getStringExtra("srcMapYamlFilePath")
         if (srcMapYamlFilePath == null) {
-            //srcMapYamlFilePath = "/storage/emulated/0/Download/caffe_map.yaml";   // for test
-            //srcMapYamlFilePath = "/storage/emulated/0/Download/office.yaml";   // for test
             srcMapYamlFilePath = "/sdcard/Download/office.yaml"
         }
-        destMappingFilePath = intent.getStringExtra("destMappingFilePath")
+        destMappingFilePath = intent.getStringExtra(ACTION_FILE_PATH)
         if (destMappingFilePath == null) {
-            //srcMappingFilePath = "/storage/emulated/0/Download/map_meta_sample.json";   // for test
             destMappingFilePath = "/sdcard/Download/map_meta_sample.json" // for test
         }
     }
@@ -1106,9 +933,6 @@ class MapEditorActivity : AppCompatActivity() {
                 // YAML 파싱
                 val data = yaml.load<Map<String, Any>>(inputStream)
 
-                // nResolution = (double) data.get("resolution");
-                // nResolution 처리
-                //Log.d(TAG, "resolution : " + nResolution);
                 val resolutionValue = data["resolution"]
                 if (resolutionValue is Number) {
                     nResolution = resolutionValue.toDouble()
@@ -1151,18 +975,6 @@ class MapEditorActivity : AppCompatActivity() {
                     Log.d(TAG, "Origin data is incomplete or invalid.")
                 }
 
-                //            Log.d(TAG, "origin.get(0) : " + origin.get(0));
-//
-//            //origin_x = (double)Double.parseDouble(data.get(0).toString());
-//            origin_x = (double) origin.get(0);
-//
-//            Log.d(TAG, "origin_x : " + origin_x);
-//
-//            origin_y = (double) origin.get(1);
-//            origin_angle = (double) origin.get(2);
-//            Log.d(TAG, "origin_y : " + origin_y);
-//            Log.d(TAG, "origin_angle : " + origin_angle);
-
                 // 241222 최적화 라이브러리 읽을 경우 추가.
                 if (lib_flag) {
                     // OpenCV 네이티브 라이브러리 로드
@@ -1194,12 +1006,6 @@ class MapEditorActivity : AppCompatActivity() {
                         Log.d(TAG, "original_image_height is not a valid number.")
                     }
 
-                    // 추가: transformation_matrix 읽기
-                    //ArrayList<ArrayList<Double>> matrixList = (ArrayList<ArrayList<Double>>) data.get("transformation_matrix");
-                    //for (int i = 0; i < matrixList.size(); i++) {
-                    //    ArrayList<Double> row = matrixList.get(i);
-                    //    Log.d(TAG, "transformation_matrix row " + i + " : " + row);
-                    //}
                     val matrixList = data["transformation_matrix"] as ArrayList<ArrayList<*>>?
                     if (matrixList != null && !matrixList.isEmpty()) {
                         val rows = matrixList.size
@@ -1229,21 +1035,6 @@ class MapEditorActivity : AppCompatActivity() {
                         Log.d(TAG, "Transformation matrix data is invalid.")
                     }
 
-                    // 행과 열 크기 설정
-                    //int rows = matrixList.size();
-                    //int cols = matrixList.get(0).size();
-
-                    // OpenCV Mat 객체 생성
-                    //transformationMatrix = new Mat(rows, cols, CvType.CV_64F);
-
-                    // 데이터 복사
-//                for (int i = 0; i < rows; i++) {
-//                    ArrayList<?> row = matrixList.get(i); // 데이터를 제네릭으로 읽음
-//                    for (int j = 0; j < cols; j++) {
-//                        Number value = (Number) row.get(j); // Number로 캐스팅
-//                        transformationMatrix.put(i, j, value.doubleValue()); // Double로 변환하여 Mat에 추가
-//                    }
-//                }
                     val rotatedAngleValue = data["rotated_angle"]
                     if (rotatedAngleValue is Number) {
                         rotated_angle = rotatedAngleValue.toFloat()
@@ -1268,7 +1059,7 @@ class MapEditorActivity : AppCompatActivity() {
         }
     }
 
-    fun roi_saveToFile(strPath: String, strFileName: String, isSetTheta: Boolean): Boolean {
+    fun roiSaveToFile(strPath: String, strFileName: String, isSetTheta: Boolean) {
         val mapViewer = binding.mapViewer
         var j: Int
         val image_width = mapViewer.GetBitmapWidth()
@@ -1278,13 +1069,15 @@ class MapEditorActivity : AppCompatActivity() {
             TAG,
             "image width : $image_width , image_height : $image_height"
         )
-        var count_id = 0
-        var count_id_rect = 0
-        var count_id_line = 0
+        var countId = 0
+        var countIdRect = 0
+        var countIdLine = 0
 
         val now = Date()
+
         // 원하는 포맷으로 설정
-        @SuppressLint("SimpleDateFormat") val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault())
+
         // 날짜를 포맷팅
         val formattedDate = sdf.format(now)
         var strRoiJson = ""
@@ -1295,41 +1088,17 @@ class MapEditorActivity : AppCompatActivity() {
 
         Log.d(TAG, "MapViewer.m_RoiObjects.size() : " + mapViewer.roiObjects.size)
 
-        /* for test - hard cording
-        strRoiJson += "{";
-        strRoiJson += "\"id\": \""+ (count_id+1)+"\"";
-        strRoiJson += ", \"name\": \"공간"+(count_id+1)+"\"";
-        strRoiJson += ", \"color\":\"#47910f\", \"desc\":\"\"";
-        strRoiJson += ", \"robot_path\":[";
-        //strRoiJson += "{\"x\":-2.97,\"y\":7.15},{\"x\":-3.02,\"y\":7.1000004},{\"x\":-3.17,\"y\":7.1000004},{\"x\":-3.22,\"y\":7.05},{\"x\":-3.22,\"y\":6.9},{\"x\":-3.27,\"y\":6.8500004},{\"x\":-3.27,\"y\":4},{\"x\":-3.22,\"y\":3.95},{\"x\":-2.47,\"y\":3.95},{\"x\":-2.42,\"y\":4},{\"x\":-2.22,\"y\":4},{\"x\":-2.17,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.1},{\"x\":-1.67,\"y\":4.15},{\"x\":-1.67,\"y\":4.25},{\"x\":-1.62,\"y\":4.3},{\"x\":-1.62,\"y\":4.35},{\"x\":-1.5699999,\"y\":4.4},{\"x\":-1.5699999,\"y\":4.4500003},{\"x\":-1.52,\"y\":4.5},{\"x\":-1.52,\"y\":4.6},{\"x\":-1.4699999,\"y\":4.65},{\"x\":-1.4699999,\"y\":4.7000003},{\"x\":-1.42,\"y\":4.75},{\"x\":-1.42,\"y\":4.8500004},{\"x\":-1.37,\"y\":4.9},{\"x\":-1.37,\"y\":4.9500003},{\"x\":-1.3199999,\"y\":5},{\"x\":-1.3199999,\"y\":5.05},{\"x\":-1.27,\"y\":5.1000004},{\"x\":-1.27,\"y\":5.2000003},{\"x\":-1.2199999,\"y\":5.25},{\"x\":-1.2199999,\"y\":5.3},{\"x\":-1.17,\"y\":5.3500004},{\"x\":-1.17,\"y\":5.4500003},{\"x\":-1.12,\"y\":5.5},{\"x\":-1.12,\"y\":5.55},{\"x\":-1.0699999,\"y\":5.6000004},{\"x\":-1.0699999,\"y\":5.65},{\"x\":-1.02,\"y\":5.7000003},{\"x\":-1.02,\"y\":5.8},{\"x\":-0.96999997,\"y\":5.8500004},{\"x\":-0.96999997,\"y\":5.9},{\"x\":-0.91999996,\"y\":5.9500003},{\"x\":-0.91999996,\"y\":6.05},{\"x\":-0.86999995,\"y\":6.1000004},{\"x\":-0.86999995,\"y\":6.15},{\"x\":-0.81999993,\"y\":6.2000003},{\"x\":-0.81999993,\"y\":6.3},{\"x\":-0.77,\"y\":6.3500004},{\"x\":-0.77,\"y\":6.4},{\"x\":-1.27,\"y\":6.4},{\"x\":-1.37,\"y\":6.5},{\"x\":-1.37,\"y\":6.8},{\"x\":-1.42,\"y\":6.8500004},{\"x\":-1.42,\"y\":7},{\"x\":-1.5699999,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15}";
-        strRoiJson += "]";
-        strRoiJson += ", \"image_path\":[]";
-        strRoiJson += ", \"robot_position\":{";
-
-        // MapViewer.m_RoiObjects.get(i).m_MBR;
-
-
-        strRoiJson += "\"x\":" + 2.0;
-        strRoiJson += ", \"y\":" + 2.0;
-
-        strRoiJson += "}";
-
-        strRoiJson += ", \"image_position\":{}";
-
-        strRoiJson += "}";
-        */
         var i = 0
         while (i < mapViewer.roiObjects.size) {
             if (mapViewer.roiObjects[i].roiType == ROI_TYPE_POLYGON) {
-                if (count_id > 0) {
+                if (countId > 0) {
                     strRoiJson += ", "
                 }
 
-                count_id++ // 고유 id
-
+                countId++ // 고유 id
 
                 strRoiJson += "{"
-                strRoiJson += "\"id\": \"$count_id\""
+                strRoiJson += "\"id\": \"$countId\""
                 strRoiJson += ", \"name\": \"" + mapViewer.roiObjects[i].label + "\""
                 strRoiJson += ", \"color\":\"#47910f\", \"desc\":\"\""
                 strRoiJson += ", \"robot_path\":["
@@ -1376,16 +1145,7 @@ class MapEditorActivity : AppCompatActivity() {
                 }
                 strRoiJson += "]"
                 strRoiJson += ", \"robot_position\":{"
-                // Log.d(TAG, "xvw before : "+ xvw);
 
-                // MapViewer.m_RoiObjects.get(i).m_MBR;
-//                Log.d(TAG, "xvw : " + xvw);
-//                Log.d(TAG, "nResolution : " + nResolution);
-//                Log.d(TAG, "origin_x : " + origin_x);
-//                Log.d(TAG, "(xvw * nResolution + origin_x) : " + (xvw * nResolution + origin_x));
-
-                //Log.d(TAG,"height: " + image_height +", origin_y: "+ origin_y + ", imagey: " + MapViewer.m_RoiObjects.get(i).m_Points.get(j).y + ", real_y: "+ (float)((image_height-MapViewer.m_RoiObjects.get(i).m_Points.get(j).y)*nResolution + origin_y));
-                //Toast.makeText(getApplicationContext(), "X: " + (float)(xvw * nResolution + origin_x) +", Y: " + ((image_height - yvh) * nResolution + origin_y), Toast.LENGTH_SHORT).show();
                 val coordinates = calculateCoordinate(
                     mapViewer.roiObjects[i].mMBRCenter.x,
                     mapViewer.roiObjects[i].mMBRCenter.y,
@@ -1397,35 +1157,20 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "\"is_set_theta\":$isSetTheta, "
                 strRoiJson += "\"x\":$xvw"
                 strRoiJson += ", \"y\":$yvh"
-                var angle =
-                    mapViewer.roiObjects[i].angle - Math.toRadians(rotated_angle.toDouble())
+                var angle = mapViewer.roiObjects[i].angle - Math.toRadians(rotated_angle.toDouble())
 
-                // -pi ~ +pi 범위 검사
-//                if(angle > Math.PI)
-//                {
-//                    angle = -(2*Math.PI - angle);
-//                }else if (angle < - Math.PI){
-//                    angle = Math.PI*2 + angle;
-//                }
                 angle = ((angle + Math.PI) % (2 * Math.PI)) - Math.PI
                 strRoiJson += ", \"theta\":$angle"
 
                 strRoiJson += "}"
 
                 strRoiJson += ", \"image_position\":{"
-                var xvw_image = 0 // polygon의 무게중심 x
 
-                var yvh_image = 0 // polygon의 무게중심 x
+                val xvwImage = mapViewer.roiObjects[i].mMBRCenter.x // polygon의 무게중심 x
+                val yvhImage = mapViewer.roiObjects[i].mMBRCenter.y // polygon의 무게중심 y
 
-                // Log.d(TAG, "xvw before : "+ xvw);
-                xvw_image = mapViewer.roiObjects[i].mMBRCenter.x
-                yvh_image = mapViewer.roiObjects[i].mMBRCenter.y
-
-                // MapViewer.m_RoiObjects.get(i).m_MBR;
-                //Log.d(TAG,"height: " + image_height +", origin_y: "+ origin_y + ", imagey: " + MapViewer.m_RoiObjects.get(i).m_Points.get(j).y + ", real_y: "+ (float)((image_height-MapViewer.m_RoiObjects.get(i).m_Points.get(j).y)*nResolution + origin_y));
-                //Toast.makeText(getApplicationContext(), "X: " + (float)(xvw * nResolution + origin_x) +", Y: " + ((image_height - yvh) * nResolution + origin_y), Toast.LENGTH_SHORT).show();
-                strRoiJson += "\"x\":" + xvw_image
-                strRoiJson += ", \"y\":" + yvh_image
+                strRoiJson += "\"x\":" + xvwImage
+                strRoiJson += ", \"y\":" + yvhImage
                 strRoiJson += ", \"theta\":" + mapViewer.roiObjects[i].angle
                 strRoiJson += "}"
                 strRoiJson += "}"
@@ -1438,11 +1183,11 @@ class MapEditorActivity : AppCompatActivity() {
         i = 0
         while (i < mapViewer.roiObjects.size) {
             if (mapViewer.roiObjects[i].roiType == ROI_TYPE_RECT) {
-                if (count_id_rect > 0) {
+                if (countIdRect > 0) {
                     strRoiJson += ", "
                 }
 
-                count_id_rect++ // 고유 id
+                countIdRect++ // 고유 id
 
 
                 strRoiJson += "{"
@@ -1536,13 +1281,12 @@ class MapEditorActivity : AppCompatActivity() {
             i++
         }
         strRoiJson += "]"
-
         strRoiJson += ", \"block_wall\":["
 
         i = 0
         while (i < mapViewer.roiObjects.size) {
             if (mapViewer.roiObjects[i].roiType == ROI_TYPE_LINE) {
-                if (count_id_line > 0) {
+                if (countIdLine > 0) {
                     strRoiJson += ", "
                 }
 
@@ -1551,7 +1295,7 @@ class MapEditorActivity : AppCompatActivity() {
                     "image_height: $image_height, image width: $image_width"
                 )
 
-                count_id_line++
+                countIdLine++
                 val roi = mapViewer.roiObjects[i]
 
                 strRoiJson += "{\"image_path\":["
@@ -1590,85 +1334,22 @@ class MapEditorActivity : AppCompatActivity() {
         strRoiJson += "}"
         Log.d(TAG, strRoiJson)
 
-        //권한 상태 체크 팝업 띄우기
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                requestPermissions(
-                    arrayOf(
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                    ), 2
-                )
-            }
-        }
-
-        // 액션 바와 상태 바 숨기
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.setDecorFitsSystemWindows(false)
-            val controller = window.insetsController
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                controller.systemBarsBehavior =
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        } else {
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-        }
         // 파일 경로를 설정합니다.
-        //File file = new File(downloadDir, strFileName);
         val file = File(strPath, strFileName)
-        try {
-            FileOutputStream(file).use { fos ->
-                //strPath += "/";
-                //File directory = new File(strPath);
-                //if (!directory.exists()) {
-                //    boolean result = directory.mkdirs(); // 없으면 dir 경로 생성
-                //    Log.i("prop", "!!!" + result);
-                //    File file = new File(strPath,strFileName);
-                //    file.createNewFile();
-                //}
 
-                // File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                Log.d(TAG, "$strPath/$strFileName")
-
-                fos.write(strRoiJson.toByteArray())
-                fos.flush()
-                Thread.sleep(1000) // 파일쓰기가 완료될 까지 기다린다.
-                fos.close()
-
-
-                /*
-            FileOutputStream fos = new FileOutputStream(strFileName, true);
-            DataOutputStream dos = new DataOutputStream(fos);
-
-            dos.writeUTF(strRoiJson);
-            dos.flush();
-            dos.close();
-            */
-                return true
+        lifecycleScope.launch(IO) {
+            try {
+                file.writeText(strRoiJson)
+                sendFinishBroadcast(strPath, strFileName)
+            } catch (t: Throwable) {
+                warnLog(message = "Fail to save Json")
+                t.printStackTrace()
             }
-        } catch (fe: FileNotFoundException) {
-            Log.d(TAG, Objects.requireNonNull(fe.localizedMessage))
-            Toast.makeText(applicationContext, fe.localizedMessage, Toast.LENGTH_SHORT).show()
-        } catch (ie: InterruptedException) {
-            Log.d(TAG, Objects.requireNonNull(ie.localizedMessage))
-        } catch (ie: IOException) {
-            Log.d(TAG, Objects.requireNonNull(ie.localizedMessage))
         }
-
-        return false
     }
 
 
-    fun roi_saveToEmptyFile(strPath: String, strFileName: String): Boolean {
-        var i: Int
-        var j: Int
+    fun roiSaveToEmptyFile(strPath: String, strFileName: String) {
         var strRoiJson = ""
         strRoiJson += "{"
         strRoiJson += "\"uid\":\"Tybqxakqm2\",\"info\":{\"version\":\"1.0.0\",\"modified\":\"2024-11-13T20:47:41.739\"}"
@@ -1684,46 +1365,13 @@ class MapEditorActivity : AppCompatActivity() {
 
         Log.d(TAG, strRoiJson)
 
-        //권한 상태 체크 팝업 띄우기
-        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(
-                arrayOf(
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                ), 2
-            )
-        }
-
-        // 액션 바와 상태 바 숨기
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.setDecorFitsSystemWindows(false)
-            val controller = window.insetsController
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                controller.systemBarsBehavior =
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        } else {
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-        }
-
         val file = File(strPath, strFileName)
         try {
-            FileOutputStream(file).use { fos ->
-                Log.d(TAG, "$strPath/$strFileName")
-                // 파일 경로를 설정합니다.
-                //File file = new File(downloadDir, strFileName);
-                fos.write(strRoiJson.toByteArray())
-                fos.flush()
-                Thread.sleep(1000) // 파일쓰기가 완료될 까지 기다린다.
-                fos.close()
-                return true
+            debugLog(TAG, "$strPath/$strFileName")
+            lifecycleScope.launch(IO) {
+                withContext(IO) {
+                    file.writeText(strRoiJson)
+                }
             }
         } catch (ie: IOException) {
             Log.d(TAG, Objects.requireNonNull(ie.localizedMessage))
@@ -1731,10 +1379,7 @@ class MapEditorActivity : AppCompatActivity() {
         } catch (e: InterruptedException) {
             throw RuntimeException(e)
         }
-
-        return false
     }
-
 
     fun transformToRobotCoordinates(image_x: Int, image_y: Int): Point {
         // 1. 이미지 좌표를 3x1 행렬로 변환
@@ -1788,10 +1433,6 @@ class MapEditorActivity : AppCompatActivity() {
         return doubleArrayOf(robot_x, robot_y)
     }
 
-    init {
-        loadMapLibrary()
-    }
-
     private fun loadMapLibrary() {
         try {
             System.loadLibrary(NAME_LIBRARY_CASELAB_OPT)
@@ -1820,18 +1461,16 @@ class MapEditorActivity : AppCompatActivity() {
         return sb.toString()
     }
 
-    fun verifyStoragePermissions(activity: Activity) {
+    private fun verifyStoragePermissions(activity: Activity) {
         val permission = ActivityCompat.checkSelfPermission(
             activity,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-            intent.setData(Uri.parse("package:" + activity.packageName))
+        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+        intent.setData(Uri.parse("package:" + activity.packageName))
 
-            activity.startActivity(intent)
-        }
+        activity.startActivity(intent)
         if (permission != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
                 activity,
@@ -1841,4 +1480,3 @@ class MapEditorActivity : AppCompatActivity() {
         }
     }
 }
-
