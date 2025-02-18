@@ -222,7 +222,6 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
-
         <!-- Toggle Bar 추가 -->
         <include
             android:id="@+id/toggle_bar"
