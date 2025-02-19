@@ -26,6 +26,7 @@ public class CDrawObj {
 
     Rect m_MBR;
     Point m_MBR_center;
+    boolean isSetTheta = false;
     ArrayList<Point> m_Points;
     boolean	m_endroiflag;	// 객체의 생성이 끝났는가?
 

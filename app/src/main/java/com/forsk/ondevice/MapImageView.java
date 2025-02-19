@@ -650,7 +650,6 @@ public class MapImageView extends View {
 
     public void MouseDown(float x, float y) {
         //Log.d(TAG, "mouseDown("+x+","+y+")");
-
         nTouchUpPosX = nTouchDownPosX = (int) (x * zoom_rate);
         nTouchUpPosY = nTouchDownPosY = (int) (y * zoom_rate);
 
@@ -820,6 +819,7 @@ public class MapImageView extends View {
         }
         else if (strMenu.equals("핀 회전")){
             if(m_RoiCurIndex != -1) {
+                m_RoiCurObject.isSetTheta = true;
                 float iconCenterX = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.x * zoom_rate + StartPos_x)); // +30 - 30 상쇄됨
                 float iconCenterY = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.y * zoom_rate + StartPos_y)); // +40 - 40 상쇄됨
 
