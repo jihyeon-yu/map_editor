@@ -123,7 +123,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
     fun clearSelection() {
         currentSelectedIndex = -1
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
     }
 
     init {
@@ -430,7 +430,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         strMenu = str
-        //invalidate()
+        invalidate()
     }
 
     // 241222 jihyeon 핀 회전 모드 아이콘
@@ -466,7 +466,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         // 최대 5배 확대만 가능하게
         if (zoomRate > (aspectRate * 5.0)) zoomRate = aspectRate * 5.0
 
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
     }
 
     fun ZoomOut() {
@@ -474,7 +474,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         // 화면에 꽉차게
         if (aspectRate > zoomRate) zoomRate = aspectRate
 
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
     }
 
     fun MouseDown(x: Float, y: Float) {
@@ -562,7 +562,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     dnPoint.x = point.x
                     dnPoint.y = point.y
 
-                    //invalidate() // 화면을 다시 그리도록 요청
+                    invalidate() // 화면을 다시 그리도록 요청
                 }
             } else if (drawing == false) {
                 val pt = Point(
@@ -598,7 +598,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     //map_image_draw();
                     //CObject_Draw();
                 }
-                //invalidate() // 화면을 다시 그리도록 요청
+                invalidate() // 화면을 다시 그리도록 요청
             }
         }
         isMouseDown = true
@@ -638,7 +638,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 matrix.postTranslate(dx.toFloat(), dy.toFloat())
 
                 //Log.d(TAG,"check mouse move: ");
-                //invalidate() // 화면을 다시 그리도록 요청
+                invalidate() // 화면을 다시 그리도록 요청
             }
         } else if (strMenu == "핀 회전") {
             if (currentSelectedIndex != -1) {
@@ -662,7 +662,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 //                m_RoiObjects.get(m_RoiCurIndex).setAngle((float)anglef);
 
                 // 화면을 갱신해준다.
-                //invalidate()
+                invalidate()
             }
         } else {
             // 정수로 변환
@@ -713,7 +713,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                             CObject_MoveToRect(dnPoint, point)
 
 
-                            //invalidate() // 화면을 다시 그리도록 요청
+                            invalidate() // 화면을 다시 그리도록 요청
                         }
                     }
                     dnPoint.x = point.x
@@ -744,7 +744,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                         //CObject_MoveToRect(m_DnPoint, point);
                         dnPoint = point
 
-                        //invalidate() // 화면을 다시 그리도록 요청
+                        invalidate() // 화면을 다시 그리도록 요청
                     }
                 }
             }
@@ -846,7 +846,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
                     //map_image_draw();
                     //CObject_Draw();
-                    //invalidate() // 화면을 다시 그리도록 요청
+                    invalidate() // 화면을 다시 그리도록 요청
 
                     SetCursorType()
                 } else if (select != 0) {
@@ -854,7 +854,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     isSelected = true
 
                     //map_image_draw();
-                    //invalidate()
+                    invalidate()
 
                     //CObject_Draw();
                     SetCursorType()
@@ -882,7 +882,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
 
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
     }
 
 
@@ -942,7 +942,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             isCapture = false
             isSelected = true
 
-            //invalidate()
+            invalidate()
 
             return
         }
@@ -963,7 +963,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             isCapture = false
             isSelected = true
 
-            //invalidate()
+            invalidate()
 
             return
         }
@@ -993,12 +993,12 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                     isCapture = false
                     isSelected = true
 
-                    //invalidate()
+                    invalidate()
 
                     return
                 }
             }
-            //invalidate()
+            invalidate()
             SetCursorType()
         }
     }
@@ -1007,7 +1007,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         if (!drawStart && !drawing) {
             if (delCurObject()) {
                 //roomNum = CountRoomNum(); 공간 이름을 갱신할 것인가?
-                //invalidate()
+                invalidate()
             }
         }
     }
@@ -1124,7 +1124,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         currentSelectedIndex = -1
 
         //map_image_draw();
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
 
         //CObject_Draw();
         return true
@@ -1144,7 +1144,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             isSelected = false
 
             //map_image_draw();
-            //invalidate() // 화면을 다시 그리도록 요청
+            invalidate() // 화면을 다시 그리도록 요청
             //CObject_Draw();
         } else if (drawStart) {
             drawing = false
@@ -1193,7 +1193,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         //map_image_draw();
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
 
@@ -1229,7 +1229,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         //map_image_draw();
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
 
@@ -1270,7 +1270,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
 
         //map_image_draw();
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
 
@@ -1300,7 +1300,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         if (currentSelectedIndex > -1) {
             roiObjects[currentSelectedIndex] = roiCurObject!!
         }
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
     }
 
     // 마우스 좌표만큼 선택한 객체를 이동한다.
@@ -1355,7 +1355,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
         }
 
         //map_image_draw();
-        //invalidate() // 화면갱신
+        invalidate() // 화면갱신
         //CObject_Draw();
     }
 
@@ -1579,7 +1579,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
         // 중복이 아니면 라벨 설정
         roiCurObject!!.label = newLabel
-        //invalidate()
+        invalidate()
     }
 
 
@@ -1645,7 +1645,7 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
             roiObjects[currentSelectedIndex] = roiCurObject!!
         }
 
-        //invalidate() // 화면을 다시 그리도록 요청
+        invalidate() // 화면을 다시 그리도록 요청
     }
 
     private fun calculateAngle(x1: Float, y1: Float, x2: Float, y2: Float): Float {
