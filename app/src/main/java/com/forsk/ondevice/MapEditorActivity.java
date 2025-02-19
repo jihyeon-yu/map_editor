@@ -1437,7 +1437,7 @@ public class MapEditorActivity extends Activity {
                 strRoiJson += ", \"y\":" + (int) yvh_image;
                 strRoiJson += ", \"theta\":" + MapViewer.m_RoiObjects.get(i).getAngle();
                 strRoiJson += "}";
-                strRoiJson += ", \"isAssign\":true, ";
+                strRoiJson += ", \"isAssign\":true";
                 strRoiJson += "}";
             }
 
