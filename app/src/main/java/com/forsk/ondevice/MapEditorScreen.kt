@@ -1,107 +1,209 @@
 package com.forsk.ondevice
 
 
+import android.graphics.Bitmap
+import android.graphics.RectF
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material.Button
+import androidx.compose.material.Text
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-// 데이터 클래스 예시: 가상벽과 진입금지 영역
-data class VirtualWall(val start: Offset, val end: Offset)
-data class NoEntryArea(val topLeft: Offset, val size: Size)
 
 @Composable
-fun MapEditor(
-    image: ImageBitmap,  // pgm/png 이미지 파일은 외부에서 ImageBitmap으로 변환되어 전달된다고 가정 (→ 확실하지 않음)
-    modifier: Modifier = Modifier
-) {
-    // 화면 이동, 확대/축소, 90도 회전을 위한 상태
-    var scale by remember { mutableStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
-    var rotation by remember { mutableStateOf(0) } // 0, 90, 180, 270 등
+fun MapEditorScreen(imageBitmap: ImageBitmap) {
+    val context = LocalContext.current
 
-    // 터치된 포인트들 (예: 공간 분할을 위한 입력)
-    var touchPoints by remember { mutableStateOf(listOf<Offset>()) }
+    val scale = remember { mutableStateOf(1f) }
+    val offset = remember { mutableStateOf(Offset(0f, 0f)) }
+    val rotation = remember { mutableStateOf(0f) }
 
-    // 가상벽과 진입금지 영역 리스트 (필요시 추가/수정 기능 구현)
-    var virtualWalls by remember { mutableStateOf(listOf<VirtualWall>()) }
-    var noEntryAreas by remember { mutableStateOf(listOf<NoEntryArea>()) }
+    val points = remember { mutableStateListOf<Offset>() } // 공간 생성 포인트 저장
+    val walls = remember { mutableStateListOf<RectF>() } // 가상 벽 저장
+    val noEntryZones = remember { mutableStateListOf<RectF>() } // 진입 금지 영역 저장
+    var startWallPoint = remember { mutableStateOf<Offset?>(null) }
+    var currentWallPreview = remember { mutableStateOf<RectF?>(null) }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                // 핀치 투 줌과 드래그를 통한 이동 구현 (회전은 detectTransformGestures의 rotation 값은 무시)
-                detectTransformGestures { _, pan, zoom, _ ->
-                    scale *= zoom
-                    offset += pan
+    Column() {
+        Box(
+            modifier = Modifier
+                .wrapContentSize()
+                .weight(1f)
+                .clipToBounds()
+                .background(Color.Gray)
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        scale.value *= zoom
+                        offset.value += pan
+                    }
                 }
-            }
-    ) {
-        // 지도와 편집 요소들을 그릴 Canvas
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            withTransform({
-                translate(offset.x, offset.y)
-                //scale(scale)
-                rotate(rotation.toFloat())
-            }) {
-                // 지도 이미지 그리기
-                drawImage(image)
+                .graphicsLayer(
+                    scaleX = scale.value,
+                    scaleY = scale.value,
+                    translationX = offset.value.x,
+                    translationY = offset.value.y,
+                    rotationZ = rotation.value
+                )
+        ) {
+            // 지도 이미지
+            Image(
+                painter = BitmapPainter(imageBitmap), // 로드한 PGM 또는 PNG
+                contentDescription = "Map",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clipToBounds()
+            )
 
-                // [예시] 터치 포인트들을 기반으로 한 영역 표시
-                // (요구사항: 터치된 포인트의 최장 가장자리를 기준으로 사각형화 – 아래는 단순 축 정렬 바운딩 박스임 → 확실하지 않음)
-                if (touchPoints.isNotEmpty()) {
-                    val minX = touchPoints.minOf { it.x }
-                    val maxX = touchPoints.maxOf { it.x }
-                    val minY = touchPoints.minOf { it.y }
-                    val maxY = touchPoints.maxOf { it.y }
-                    drawRect(
-                        color = Color.Red.copy(alpha = 0.3f),
-                        topLeft = Offset(minX, minY),
-                        size = Size(maxX - minX, maxY - minY)
+            // 캔버스 그리기
+            Canvas(modifier = Modifier
+                .wrapContentSize()
+                //    .clipToBounds()
+//            .graphicsLayer(
+//                scaleX = scale.value,
+//                scaleY = scale.value,
+//                translationX = offset.value.x,
+//                translationY = offset.value.y,
+//                rotationZ = rotation.value
+//            )
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val position = event.changes.first().position
+                            when {
+                                event.changes.first().pressed -> {
+                                    startWallPoint.value = position
+                                }
+
+                                startWallPoint.value != null && event.changes.first().pressed -> {
+                                    val start = startWallPoint.value!!
+                                    currentWallPreview.value = RectF(
+                                        minOf(start.x, position.x),
+                                        minOf(start.y, position.y),
+                                        maxOf(start.x, position.x),
+                                        maxOf(start.y, position.y)
+                                    )
+                                }
+
+                                startWallPoint.value != null && !event.changes.first().pressed -> {
+                                    val start = startWallPoint.value!!
+                                    val end = position
+                                    walls.add(
+                                        RectF(
+                                            minOf(start.x, end.x),
+                                            minOf(start.y, end.y),
+                                            maxOf(start.x, end.x),
+                                            maxOf(start.y, end.y)
+                                        )
+                                    )
+                                    startWallPoint.value = null
+                                    currentWallPreview.value = null
+                                }
+                            }
+                        }
+                    }
+                }) {
+                // 공간 생성 포인트 시각화
+                points.forEach { point ->
+                    drawCircle(
+                        Color.Blue,
+                        radius = 10f * scale.value,
+                        center = (point + offset.value) * scale.value
                     )
                 }
 
-                // 가상벽 그리기
-                virtualWalls.forEach { wall ->
-                    drawLine(
-                        color = Color.Blue,
-                        start = wall.start,
-                        end = wall.end,
-                        strokeWidth = 4f
+                // 가상 벽(사각형) 시각화
+                walls.forEach { rect ->
+                    drawRect(
+                        color = Color.Red,
+                        topLeft = Offset(rect.left, rect.top),
+                        size = Size(rect.width(), rect.height())
                     )
                 }
 
-                // 진입금지 영역 그리기
-                noEntryAreas.forEach { area ->
+                // 진입 금지 영역 시각화
+                noEntryZones.forEach { rect ->
                     drawRect(
-                        color = Color.Black.copy(alpha = 0.2f),
-                        topLeft = area.topLeft,
-                        size = area.size,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)
+                        color = Color(0x80FF0000),
+                        topLeft = (Offset(
+                            rect.left,
+                            rect.top
+                        )),
+                        size = Size(rect.width(), rect.height())
                     )
                 }
             }
         }
-
-        // 90도 회전 버튼 (맵 전체를 90도씩 회전)
-        FloatingActionButton(
-            onClick = { rotation = (rotation + 90) % 360 },
+        // 편집 기능 버튼
+        Row(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            var selectedIndex by remember { mutableStateOf(-1) }
+            val buttonLabels = listOf("공간 생성", "가상벽 추가", "진입금지 영역 추가", "90도 회전")
 
+            buttonLabels.forEachIndexed { index, label ->
+                Button(
+                    onClick = {
+                        selectedIndex = index
+                        when (index) {
+                            0 -> points.clear()
+                            1 -> walls.clear()
+                            2 -> noEntryZones.add(RectF(200f, 200f, 400f, 400f))
+                            3 -> rotation.value += 90f
+                        }
+                    },
+                    modifier = Modifier.background(if (selectedIndex == index) Color.Gray else Color.LightGray)
+                ) {
+                    Text(text = label, color = Color.White)
+                }
+            }
         }
     }
+}
+
+fun createDummyImageBitmap(width: Int, height: Int): ImageBitmap {
+    val androidBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(androidBitmap)
+    val paint = android.graphics.Paint().apply { color = android.graphics.Color.RED }
+    canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+
+    return androidBitmap.asImageBitmap()
+}
+
+@Composable
+@Preview(showBackground = true)
+fun preview() {
+    MapEditorScreen(createDummyImageBitmap(100, 100))
 }

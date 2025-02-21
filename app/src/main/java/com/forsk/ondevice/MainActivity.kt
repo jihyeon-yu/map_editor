@@ -1,9 +1,15 @@
 package com.forsk.ondevice
 
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,16 +21,43 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
 import com.forsk.ondevice.ui.theme.OnDeviceTheme
 import java.io.File
 import java.io.IOException
 
 class MainActivity : ComponentActivity() {
+    private val PERMISSIONS_STORAGE = arrayOf(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
+    private val REQUEST_EXTERNAL_STORAGE = 1
+
+    private fun verifyStoragePermissions(activity: Activity) {
+        val permission = ActivityCompat.checkSelfPermission(
+            activity,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                activity,
+                PERMISSIONS_STORAGE,
+                REQUEST_EXTERNAL_STORAGE
+            )
+
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+            intent.setData(Uri.parse("package:" + activity.packageName))
+
+            activity.startActivity(intent)
+        }
+    }
+
     val TAG = ""
     @Throws(IOException::class)
     private fun loadPNG(filePath: String): Bitmap {
         Log.d(TAG, "loadPNG(\"$filePath\")")
-
+        verifyStoragePermissions(this)
         // 파일 이름 로깅(필수는 아님)
         val paths = filePath.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
         val fileName = paths[paths.size - 1]
@@ -81,8 +114,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             OnDeviceTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val bitmap = loadPNG("/sdcard/Download/opt/office.pgm")
-                    MapEditor(bitmap.asImageBitmap(), Modifier)
+                    val bitmap = loadPNG("/sdcard/Download/opt/office.png")
+                    MapEditorScreen(bitmap.asImageBitmap())
                 }
             }
         }
