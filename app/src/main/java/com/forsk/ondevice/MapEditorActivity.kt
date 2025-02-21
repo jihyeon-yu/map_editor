@@ -26,6 +26,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.caselab.forsk.MapOptimization
@@ -50,6 +51,8 @@ import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.Objects
@@ -100,10 +103,6 @@ class MapEditorActivity : AppCompatActivity() {
     private var srcMapYamlFilePath: String = ""
     private var destMappingFilePath: String = ""
 
-    var nResolution: Double = 0.0
-    var originX: Double = 0.0
-    var originY: Double = 0.0
-    var originAngle: Double = 0.0
 
     // 현재 모드 변수
     private var currentMode = MODE_MAP_EXPLORATION
@@ -112,12 +111,7 @@ class MapEditorActivity : AppCompatActivity() {
 
     // 선택된 버튼 저장 변수
     var selectedButton: TextView? = null
-    private var lib_flag = true
 
-    private var transformationMatrix: Mat? = null
-
-    private var rotated_angle = 0f
-    var original_image_height: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -164,19 +158,7 @@ class MapEditorActivity : AppCompatActivity() {
                 fabDeleteObject.setOnClickListener { toggleBarCreateSpaceClickEvent() }
                 fabMovePin.setOnClickListener { fabMovePinCSClickEvent() }
                 fabRotatePin.setOnClickListener { fabRotatePinCSClickEvent() }
-            }
-
-            // 241217 jihyeon
-            // 공간 생성 모드일 때 토글 버튼 설정
-            toggleBarCreatespace.apply {
-                fabMainBackCS.setOnClickListener { fabMainBackClickEvent() }
-                fabAddObjectCS.setOnClickListener { fabAddObjectClickEvent() }
-                fabMoveObjectCS.setOnClickListener { fabMoveObjectClickEvent() }
-                fabSelectObjectCS.setOnClickListener { fabSelectObjectClickEvent() }
-                fabDeleteObjectCS.setOnClickListener { toggleBarCreateSpaceClickEvent() }
-                fabMovePinCS.setOnClickListener { fabMovePinCSClickEvent() }
-                fabRotatePinCS.setOnClickListener { fabRotatePinCSClickEvent() }
-                fabRenameObjectCS.setOnClickListener { fabRenameObjectCSClickEvent() }
+                fabRenameObject.setOnClickListener { fabRenameObjectCSClickEvent() }
             }
 
             // 휴지통 버튼 클릭 이벤트
@@ -227,7 +209,7 @@ class MapEditorActivity : AppCompatActivity() {
             srcMapPngFilePath = "$pathOpt$fileTitle.png"
             srcMapYamlFilePath = "$pathOpt$fileTitle.yaml"
 
-            lib_flag = true
+            viewModel.lib_flag = true
         } catch (e: Throwable) {
             Log.e(TAG, "Error processing map files", e)
         }
@@ -242,7 +224,7 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun loadMapBitmap() {
         try {
-            val bitmap = loadPNG(srcMapPngFilePath)
+            val bitmap = viewModel.loadPNG(srcMapPngFilePath)
             bitmap.let { binding.mapViewer.setBitmap(it) }
         } catch (e: IOException) {
             Log.e(TAG, "IOException while loading bitmap", e)
@@ -250,14 +232,14 @@ class MapEditorActivity : AppCompatActivity() {
     }
 
     private fun loadYamlFile() {
-        if (!loadYaml(srcMapYamlFilePath)) {
+        if (!viewModel.loadYaml(srcMapYamlFilePath)) {
             Log.d(TAG, "Cannot read $srcMapYamlFilePath")
         }
     }
 
     private fun loadJsonMap() {
         lifecycleScope.launch(IO) {
-            if (!viewModel.loadJson(binding.mapViewer, destMappingFilePath, lib_flag)) {
+            if (!viewModel.loadJson(binding.mapViewer, destMappingFilePath, viewModel.lib_flag)) {
                 Log.d(TAG, "Cannot read $destMappingFilePath")
             }
         }
@@ -272,6 +254,37 @@ class MapEditorActivity : AppCompatActivity() {
         hideDeleteToggleBar()
     }
 
+    private fun setDefaultButtonBackground() {
+        binding.toggleBar.apply {
+            val defaultBackground =
+                ContextCompat.getDrawable(this@MapEditorActivity, R.color.button_default)
+            fabAddObject.background = defaultBackground
+            fabSelectObject.background = defaultBackground
+            fabMoveObject.background = defaultBackground
+            fabMovePin.background = defaultBackground
+            fabRotatePin.background = defaultBackground
+            fabDeleteObject.background = defaultBackground
+            fabRenameObject.background = defaultBackground
+        }
+    }
+
+    private fun setSelectedButtonBackground(id: Int) {
+        setDefaultButtonBackground()
+        binding.toggleBar.apply {
+            val selectedButtonBackground =
+                ContextCompat.getDrawable(this@MapEditorActivity, R.drawable.rounded_button_white)
+            when (id) {
+                fabAddObject.id -> fabAddObject.background = selectedButtonBackground
+                fabSelectObject.id -> fabSelectObject.background = selectedButtonBackground
+                fabMoveObject.id -> fabMoveObject.background = selectedButtonBackground
+                fabMovePin.id -> fabMovePin.background = selectedButtonBackground
+                fabRotatePin.id -> fabRotatePin.background = selectedButtonBackground
+                fabDeleteObject.id -> fabDeleteObject.background = selectedButtonBackground
+                fabRenameObject.id -> fabRenameObject.background = selectedButtonBackground
+            }
+        }
+    }
+
     private fun fabRenameObjectCSClickEvent() {
         strMode = "None"
         val oldPinName = pinName
@@ -284,13 +297,7 @@ class MapEditorActivity : AppCompatActivity() {
                 }
             })
 
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
+            setDefaultButtonBackground()
         }
 
         updateToggleBarVisibility()
@@ -300,13 +307,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun fabRotatePinCSClickEvent() {
         binding.apply {
             mapViewer.setMenu("핀 회전")
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.VISIBLE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
+            setSelectedButtonBackground(toggleBar.fabRotatePin.id)
             hideDeleteToggleBar()
         }
     }
@@ -314,13 +315,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun fabMovePinCSClickEvent() {
         binding.apply {
             mapViewer.setMenu("핀 이동")
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.VISIBLE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
+            setSelectedButtonBackground(toggleBar.fabMovePin.id)
             hideDeleteToggleBar()
         }
     }
@@ -328,13 +323,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun toggleBarCreateSpaceClickEvent() {
         binding.apply {
             mapViewer.setMenu("삭제")
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.VISIBLE
-            fabRenameObjectClicked.visibility = View.GONE
+            setSelectedButtonBackground(toggleBar.fabDeleteObject.id)
             Log.d(
                 TAG,
                 "current index: " + mapViewer.currentSelectedIndex
@@ -349,13 +338,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun fabSelectObjectClickEvent() {
         binding.apply {
             mapViewer.setMenu("선택")
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.VISIBLE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
+            setSelectedButtonBackground(toggleBar.fabSelectObject.id)
             hideDeleteToggleBar()
         }
     }
@@ -363,13 +346,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun fabMoveObjectClickEvent() {
         binding.apply {
             mapViewer.setMenu("수정")
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.VISIBLE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
+            setSelectedButtonBackground(toggleBar.fabMoveObject.id)
             hideDeleteToggleBar()
         }
     }
@@ -377,26 +354,13 @@ class MapEditorActivity : AppCompatActivity() {
     private fun fabAddObjectClickEvent() {
         binding.apply {
             mapViewer.setMenu("추가")
-            fabAddObjectClicked.visibility = View.VISIBLE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
+            setSelectedButtonBackground(toggleBar.fabAddObject.id)
             hideDeleteToggleBar()
         }
     }
 
     private fun fabMoveMapClickEvent() {
         binding.apply {
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
             if (mapViewer.strMenu === "이동") {
                 mapViewer.setMenu("이동")
                 //strMode = "Move";
@@ -412,26 +376,21 @@ class MapEditorActivity : AppCompatActivity() {
             toggleBar.root.visibility = View.GONE // toggle_bar 숨기기
             fabMain.visibility = View.VISIBLE // 열기 버튼 보이기
             toggleBar.fabMainBack.visibility = View.INVISIBLE // 닫기 버튼 숨기기
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
         }
     }
 
     private fun fabMainClickEvent() {
         binding.apply {
             if (currentMode == MODE_SPACE_CREATION) {
-                toggleBarCreatespace.root.visibility = View.VISIBLE // toggle_bar 보이기
+                toggleBar.root.visibility = View.VISIBLE // toggle_bar 보이기
                 fabMain.visibility = View.INVISIBLE // 열기 버튼 숨기기
-                toggleBarCreatespace.fabMainBackCS.visibility = View.VISIBLE // 닫기 버튼 보이기
+                toggleBar.fabMainBack.visibility = View.VISIBLE // 닫기 버튼 보이기
+                toggleBar.fabRenameObject.visibility = View.VISIBLE
             } else if (currentMode == MODE_BLOCK_WALL || currentMode == MODE_BLOCK_AREA) {
                 toggleBar.root.visibility = View.VISIBLE // toggle_bar 보이기
                 fabMain.visibility = View.INVISIBLE // 열기 버튼 숨기기
                 toggleBar.fabMainBack.visibility = View.VISIBLE // 닫기 버튼 보이기
+                toggleBar.fabRenameObject.visibility = View.GONE
             }
         }
     }
@@ -445,13 +404,7 @@ class MapEditorActivity : AppCompatActivity() {
             updateToggleBarVisibility()
             updateModeDescription()
             hideDeleteToggleBar()
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
+            setDefaultButtonBackground()
         }
     }
 
@@ -464,13 +417,7 @@ class MapEditorActivity : AppCompatActivity() {
             updateToggleBarVisibility()
             updateModeDescription()
             hideDeleteToggleBar()
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
+            setDefaultButtonBackground()
         }
     }
 
@@ -483,13 +430,7 @@ class MapEditorActivity : AppCompatActivity() {
             updateToggleBarVisibility()
             updateModeDescription()
             hideDeleteToggleBar()
-            fabAddObjectClicked.visibility = View.GONE
-            fabSelectObjectClicked.visibility = View.GONE
-            fabMoveObjectClicked.visibility = View.GONE
-            fabMovePinClicked.visibility = View.GONE
-            fabRotatePinClicked.visibility = View.GONE
-            fabDeleteObjectClicked.visibility = View.GONE
-            fabRenameObjectClicked.visibility = View.GONE
+            setDefaultButtonBackground()
         }
     }
 
@@ -525,7 +466,7 @@ class MapEditorActivity : AppCompatActivity() {
         Log.d(TAG, "cancelButton.setOnClickListener(...)")
         val destFile = File(strPath, strFileName)
         if (!destFile.isFile) {
-            roiSaveToEmptyFile(strPath, strFileName)
+            viewModel.roiSaveToEmptyFile(strPath, strFileName)
         } else {
             Log.d(TAG, "Already Exist Json FIle")
         }
@@ -559,7 +500,7 @@ class MapEditorActivity : AppCompatActivity() {
 
         val destFile = File(strPath, strFileName)
         if (!destFile.isFile) {
-            roiSaveToEmptyFile(strPath, strFileName)
+            viewModel.roiSaveToEmptyFile(strPath, strFileName)
         } else {
             Log.d(TAG, "Already Exist Json FIle")
         }
@@ -596,15 +537,12 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun updateToggleBarVisibility() {
         binding.apply {
-            if (currentMode == MODE_SPACE_CREATION) {
-                toggleBarCreatespace.root.visibility = View.VISIBLE
-                toggleBar.root.visibility = View.GONE
-            } else if (currentMode == MODE_BLOCK_WALL || currentMode == MODE_BLOCK_AREA) {
-                toggleBar.root.visibility = View.VISIBLE
-                toggleBarCreatespace.root.visibility = View.GONE
-            } else {
-                toggleBar.root.visibility = View.GONE
-                toggleBarCreatespace.root.visibility = View.GONE
+            when (currentMode) {
+                MODE_SPACE_CREATION, MODE_BLOCK_WALL, MODE_BLOCK_AREA -> {
+                    toggleBar.root.visibility = View.VISIBLE
+                }
+
+                else -> toggleBar.root.visibility = View.GONE
             }
         }
     }
@@ -752,57 +690,6 @@ class MapEditorActivity : AppCompatActivity() {
         }
     }
 
-    @Throws(IOException::class)
-    private fun loadPNG(filePath: String): Bitmap {
-        Log.d(TAG, "loadPNG(\"$filePath\")")
-
-        // 파일 이름 로깅(필수는 아님)
-        val paths = filePath.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        val fileName = paths[paths.size - 1]
-        Log.d(TAG, "fileName : $fileName")
-
-        val file = File(filePath)
-        if (!file.exists()) {
-            throw IOException("File not found: $filePath")
-        }
-
-        // PNG 디코딩
-        val originalBitmap = BitmapFactory.decodeFile(filePath)
-            ?: throw IOException("Failed to decode PNG file: $filePath")
-
-        val width = originalBitmap.width
-        val height = originalBitmap.height
-
-        // 결과를 담을 Bitmap
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-
-        // 각 픽셀을 순회하며 R 값만 확인
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val pixel = originalBitmap.getPixel(x, y)
-
-                // R 값 추출
-                val r = Color.red(pixel)
-                // r 값 기준으로 흰색/검은색/회색 매핑
-                var newGray = if (r == 255) {
-                    // 흰색
-                    150
-                } else if (r == 0) {
-                    // 검은색
-                    0
-                } else {
-                    // 회색
-                    51
-                }
-
-                // 새 픽셀 값
-                val newPixel = Color.rgb(newGray, newGray, newGray)
-                bitmap.setPixel(x, y, newPixel)
-            }
-        }
-
-        return bitmap
-    }
 
     override fun onResume() {
         super.onResume()
@@ -811,144 +698,14 @@ class MapEditorActivity : AppCompatActivity() {
 
         sendBroadcast()
 
-        srcMapPgmFilePath = intent.getStringExtra("srcMapPgmFilePath") ?: "/sdcard/Download/office.pgm"
-        srcMapYamlFilePath = intent.getStringExtra("srcMapYamlFilePath") ?: "/sdcard/Download/office.yaml"
-        destMappingFilePath = intent.getStringExtra(ACTION_FILE_PATH) ?: "/sdcard/Download/map_meta_sample.json"
+        srcMapPgmFilePath =
+            intent.getStringExtra("srcMapPgmFilePath") ?: "/sdcard/Download/office.pgm"
+        srcMapYamlFilePath =
+            intent.getStringExtra("srcMapYamlFilePath") ?: "/sdcard/Download/office.yaml"
+        destMappingFilePath =
+            intent.getStringExtra(ACTION_FILE_PATH) ?: "/sdcard/Download/map_meta_sample.json"
     }
 
-    private fun loadYaml(filePath: String?): Boolean {
-        // 내부 저장소에서 파일 스트림 열기
-        try {
-            FileInputStream(filePath).use { inputStream ->
-                val yaml = Yaml()
-                // YAML 파싱
-                val data = yaml.load<Map<String, Any>>(inputStream)
-
-                val resolutionValue = data["resolution"]
-                if (resolutionValue is Number) {
-                    nResolution = resolutionValue.toDouble()
-                    Log.d(TAG, "resolution : $nResolution")
-                } else {
-                    Log.d(TAG, "Resolution is not a valid number.")
-                }
-
-                //ArrayList<Double> origin = (ArrayList<Double>) data.get("origin");
-                val origin = data["origin"] as ArrayList<*>?
-                if (origin != null && origin.size >= 3) {
-                    val originX = origin[0]
-                    val originY = origin[1]
-                    val originAngle = origin[2]
-
-                    if (originX is Number) {
-                        this.originX = originX.toDouble()
-                        Log.d(TAG, "origin_x : ${this.originX}")
-                    } else {
-                        Log.d(TAG, "origin_x is not a valid number.")
-                    }
-
-                    if (originY is Number) {
-                        this.originY = originY.toDouble()
-                        Log.d(TAG, "origin_y : ${this.originY}")
-                    } else {
-                        Log.d(TAG, "origin_y is not a valid number.")
-                    }
-
-                    if (originAngle is Number) {
-                        this.originAngle = originAngle.toDouble()
-                        Log.d(
-                            TAG,
-                            "origin_angle : ${this.originAngle}"
-                        )
-                    } else {
-                        Log.d(TAG, "origin_angle is not a valid number.")
-                    }
-                } else {
-                    Log.d(TAG, "Origin data is incomplete or invalid.")
-                }
-
-                // 241222 최적화 라이브러리 읽을 경우 추가.
-                if (lib_flag) {
-                    // OpenCV 네이티브 라이브러리 로드
-                    try {
-                        if (!OpenCVLoader.initLocal()) {
-                            Log.e("OpenCV", "Initialization failed.")
-                        } else {
-                            Log.d("OpenCV", "Initialization succeeded.")
-                        }
-                    } catch (e: UnsatisfiedLinkError) {
-                        Log.e("OpenCV", "Native library not found or incompatible ABI: $e")
-                    } catch (e: SecurityException) {
-                        Log.e("OpenCV", "Security exception while loading OpenCV: $e")
-                    } catch (e: RuntimeException) {
-                        Log.e(
-                            "OpenCV",
-                            "Runtime exception during OpenCV initialization: $e"
-                        )
-                    }
-                    //original_image_height = (int)data.get("original_image_height");
-                    val originalImageHeightValue = data["original_image_height"]
-                    if (originalImageHeightValue is Number) {
-                        original_image_height = originalImageHeightValue.toInt()
-                        Log.d(
-                            TAG,
-                            "original_image_height: $original_image_height"
-                        )
-                    } else {
-                        Log.d(TAG, "original_image_height is not a valid number.")
-                    }
-
-                    val matrixList = data["transformation_matrix"] as ArrayList<ArrayList<*>>?
-                    if (matrixList != null && !matrixList.isEmpty()) {
-                        val rows = matrixList.size
-                        val cols = matrixList[0].size
-
-                        transformationMatrix = Mat(rows, cols, CvType.CV_64F)
-
-                        for (i in 0 until rows) {
-                            val row = matrixList[i]
-                            for (j in 0 until cols) {
-                                val cellValue = row[j]
-                                if (cellValue is Number) {
-                                    transformationMatrix!!.put(i, j, cellValue.toDouble())
-                                    Log.d(
-                                        TAG,
-                                        "transformation_matrix row " + i + " , " + j + " : " + cellValue.toDouble()
-                                    )
-                                } else {
-                                    Log.d(
-                                        TAG,
-                                        "Invalid value in transformation_matrix at ($i, $j)."
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        Log.d(TAG, "Transformation matrix data is invalid.")
-                    }
-
-                    val rotatedAngleValue = data["rotated_angle"]
-                    if (rotatedAngleValue is Number) {
-                        rotated_angle = rotatedAngleValue.toFloat()
-                        Log.d(
-                            TAG,
-                            "Converted to float: $rotated_angle"
-                        )
-                    } else {
-                        Log.d(TAG, "rotated_angle is not a valid number.")
-                    }
-                    //rotated_angle = (float) (double) data.get("rotated_angle");
-                    //Log.d(TAG,"rotated angle: " + rotated_angle);
-                }
-                return true
-            }
-        } catch (e: IOException) {
-            Log.e(TAG, "loadYaml Exception: " + e.message)
-            return false
-        } catch (e: NullPointerException) {
-            Log.e(TAG, "loadYaml Exception: " + e.message)
-            return false
-        }
-    }
 
     fun roiSaveToFile(strPath: String, strFileName: String, isSetTheta: Boolean) {
         val mapViewer = binding.mapViewer
@@ -1003,7 +760,7 @@ class MapEditorActivity : AppCompatActivity() {
 
                     strRoiJson += "{"
 
-                    val coordinates = calculateCoordinate(
+                    val coordinates = viewModel.calculateCoordinate(
                         mapViewer.roiObjects[i].mPoints[j]!!.x,
                         mapViewer.roiObjects[i].mPoints[j]!!.y,
                         image_height
@@ -1037,7 +794,7 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "]"
                 strRoiJson += ", \"robot_position\":{"
 
-                val coordinates = calculateCoordinate(
+                val coordinates = viewModel.calculateCoordinate(
                     mapViewer.roiObjects[i].mMBRCenter.x,
                     mapViewer.roiObjects[i].mMBRCenter.y,
                     image_height
@@ -1048,7 +805,8 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "\"is_set_theta\":$isSetTheta, "
                 strRoiJson += "\"x\":$xvw"
                 strRoiJson += ", \"y\":$yvh"
-                var angle = mapViewer.roiObjects[i].angle - Math.toRadians(rotated_angle.toDouble())
+                var angle =
+                    mapViewer.roiObjects[i].angle - Math.toRadians(viewModel.rotated_angle.toDouble())
 
                 angle = ((angle + Math.PI) % (2 * Math.PI)) - Math.PI
                 strRoiJson += ", \"theta\":$angle"
@@ -1113,7 +871,7 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "{"
 
                 // left top
-                var coordinates = calculateCoordinate(
+                var coordinates = viewModel.calculateCoordinate(
                     mapViewer.roiObjects[i].mMBR.left,
                     mapViewer.roiObjects[i].mMBR.bottom,
                     image_height
@@ -1126,7 +884,7 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "}, {"
 
                 // right top
-                coordinates = calculateCoordinate(
+                coordinates = viewModel.calculateCoordinate(
                     mapViewer.roiObjects[i].mMBR.right,
                     mapViewer.roiObjects[i].mMBR.bottom,
                     image_height
@@ -1139,7 +897,7 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "}, {"
 
                 // right bottom
-                coordinates = calculateCoordinate(
+                coordinates = viewModel.calculateCoordinate(
                     mapViewer.roiObjects[i].mMBR.right,
                     mapViewer.roiObjects[i].mMBR.top,
                     image_height
@@ -1152,7 +910,7 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "}, {"
 
                 // left bottom
-                coordinates = calculateCoordinate(
+                coordinates = viewModel.calculateCoordinate(
                     mapViewer.roiObjects[i].mMBR.left,
                     mapViewer.roiObjects[i].mMBR.top,
                     image_height
@@ -1198,8 +956,10 @@ class MapEditorActivity : AppCompatActivity() {
                 strRoiJson += "\"robot_path\":["
 
                 // Convert image coordinates to robot coordinates
-                val startCoordinates = calculateCoordinate(roi.mMBR.left, roi.mMBR.top, image_height)
-                val endCoordinates = calculateCoordinate(roi.mMBR.right, roi.mMBR.bottom, image_height)
+                val startCoordinates =
+                    viewModel.calculateCoordinate(roi.mMBR.left, roi.mMBR.top, image_height)
+                val endCoordinates =
+                    viewModel.calculateCoordinate(roi.mMBR.right, roi.mMBR.bottom, image_height)
 
                 // Add start robot path
                 strRoiJson += "{\"x\":" + startCoordinates[0] + ", \"y\":" + startCoordinates[1] + "}, "
@@ -1233,90 +993,6 @@ class MapEditorActivity : AppCompatActivity() {
         }
     }
 
-
-    fun roiSaveToEmptyFile(strPath: String, strFileName: String) {
-        var strRoiJson = ""
-        strRoiJson += "{"
-        strRoiJson += "\"uid\":\"Tybqxakqm2\",\"info\":{\"version\":\"1.0.0\",\"modified\":\"2024-11-13T20:47:41.739\"}"
-        strRoiJson += ", \"room_list\":["
-        strRoiJson += "]"
-        strRoiJson += ", \"block_area\":["
-        strRoiJson += "]"
-        strRoiJson += ", \"block_wall\":["
-        strRoiJson += "]"
-        strRoiJson += ", \"assign_info\":{}"
-        strRoiJson += ", \"user_angle\":0"
-        strRoiJson += "}"
-
-        Log.d(TAG, strRoiJson)
-
-        val file = File(strPath, strFileName)
-        try {
-            debugLog(TAG, "$strPath/$strFileName")
-            lifecycleScope.launch(IO) {
-                withContext(IO) {
-                    file.writeText(strRoiJson)
-                }
-            }
-        } catch (ie: IOException) {
-            Log.d(TAG, Objects.requireNonNull(ie.localizedMessage))
-            Toast.makeText(applicationContext, ie.localizedMessage, Toast.LENGTH_SHORT).show()
-        } catch (e: InterruptedException) {
-            throw RuntimeException(e)
-        }
-    }
-
-    fun transformToRobotCoordinates(image_x: Int, image_y: Int): Point {
-        // 1. 이미지 좌표를 3x1 행렬로 변환
-
-        val pointMat = Mat(3, 1, CvType.CV_64F)
-        pointMat.put(0, 0, image_x.toDouble()) // transformed_pixel_x
-        pointMat.put(1, 0, image_y.toDouble()) // transformed_pixel_y
-        pointMat.put(2, 0, 1.0) // Homogeneous coordinate
-
-        // 2. 변환 행렬의 역행렬 계산
-        val inverseTransformationMatrix = Mat()
-        Core.invert(transformationMatrix, inverseTransformationMatrix)
-
-        // 3. 역행렬 적용
-        val inverseTransformedPointMat = Mat()
-        Core.gemm(
-            inverseTransformationMatrix,
-            pointMat,
-            1.0,
-            Mat(),
-            0.0,
-            inverseTransformedPointMat
-        )
-
-        // 4. 원래 이미지 좌표 추출
-        // 241226 성웅 int의 오차가 얼마인지 확인 필요
-        val original_pixel_x = Math.round(inverseTransformedPointMat[0, 0][0]).toInt()
-        val original_pixel_y = Math.round(inverseTransformedPointMat[1, 0][0]).toInt()
-
-        //Log.d(TAG, "check dobule to int inversion. dobule: " + inverseTransformedPointMat.get(0, 0)[0] + ",int:  " + original_pixel_x);
-
-        // 5. 로봇 좌표로 변환
-        //double robot_x = (original_pixel_x * nResolution) + origin_x;
-        //double robot_y = (original_image_height - original_pixel_y) * nResolution + origin_y;
-        return Point(original_pixel_x, original_pixel_y)
-    }
-
-    fun calculateCoordinate(x: Int, y: Int, image_height: Int): DoubleArray {
-        // 계산 공식: (x * resolution + origin_x)
-        var robot_x = 0.0
-        var robot_y = 0.0
-
-        if (lib_flag) {
-            val pt = transformToRobotCoordinates(x, y)
-            robot_x = pt.x * nResolution + originX
-            robot_y = (original_image_height - pt.y) * nResolution + originY
-        } else {
-            robot_x = x * nResolution + originX
-            robot_y = (image_height - y) * nResolution + originY
-        }
-        return doubleArrayOf(robot_x, robot_y)
-    }
 
     private fun loadMapLibrary() {
         try {

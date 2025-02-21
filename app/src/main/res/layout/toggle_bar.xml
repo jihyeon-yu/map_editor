@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="420dp"
+    android:layout_width="wrap_content"
     android:layout_height="40dp"
     android:background="@drawable/rounded_toggle_bar"
     android:gravity="center_vertical"
@@ -113,6 +113,23 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="삭제"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
+
+    <!-- 구분선 -->
+    <View
+        android:layout_width="2dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="10dp"
+        android:background="#7D7D7D" />
+
+    <!-- 삭제 -->
+    <TextView
+        android:id="@+id/fabRenameObject"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="10dp"
+        android:text="이름 편집"
         android:textColor="#FFFFFF"
         android:textSize="14sp" />
 </LinearLayout>

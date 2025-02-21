@@ -126,116 +126,11 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- 토글바 클릭 버튼 레이아웃 -->
-        <LinearLayout
-            android:id="@+id/layoutToggleBarClick"
-            android:layout_width="wrap_content"
-            android:layout_height="0dp"
-            android:layout_marginTop="6dp"
-            android:visibility="visible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0"
-            app:layout_constraintStart_toEndOf="@id/fabMain"
-            app:layout_constraintTop_toTopOf="parent">
-            <!-- 공간 생성 -->
-            <TextView
-                android:id="@+id/fabAddObjectClicked"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_gravity="center"
-                android:background="@drawable/rounded_button_white"
-                android:gravity="center"
-                android:text="+"
-                android:textSize="20sp" />
-
-            <!-- 생성 완료 -->
-            <TextView
-                android:id="@+id/fabSelectObjectClicked"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_button_white"
-                android:gravity="center"
-                android:paddingHorizontal="@dimen/margin_26"
-                android:paddingVertical="@dimen/margin_36"
-                android:text="생성 완료"
-                android:textSize="14sp" />
-
-            <!-- 영역 수정 -->
-            <TextView
-                android:id="@+id/fabMoveObjectClicked"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_button_white"
-                android:gravity="center"
-                android:paddingHorizontal="@dimen/margin_26"
-                android:paddingVertical="@dimen/margin_36"
-                android:text="영역 수정"
-                android:textSize="14sp" />
-
-            <!-- 핀 이동 -->
-            <!-- 핀 이동 새로 연결 필요 -->
-            <TextView
-                android:id="@+id/fabMovePinClicked"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_button_white"
-                android:gravity="center"
-                android:paddingHorizontal="@dimen/margin_26"
-                android:paddingVertical="@dimen/margin_36"
-                android:text="핀 이동"
-                android:textSize="14sp" />
-
-            <!-- 핀 회전 -->
-            <TextView
-                android:id="@+id/fabRotatePinClicked"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_button_white"
-                android:gravity="center"
-                android:paddingHorizontal="@dimen/margin_26"
-                android:paddingVertical="@dimen/margin_36"
-                android:text="핀 회전"
-                android:textSize="14sp" />
-
-            <!-- 삭제 -->
-            <TextView
-                android:id="@+id/fabDeleteObjectClicked"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_button_white"
-                android:gravity="center"
-                android:paddingHorizontal="@dimen/margin_26"
-                android:paddingVertical="@dimen/margin_36"
-                android:text="삭제"
-                android:textSize="14sp" />
-
-            <!-- 이름 편집 -->
-            <TextView
-                android:id="@+id/fabRenameObjectClicked"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_button_white"
-                android:gravity="center"
-                android:paddingHorizontal="@dimen/margin_26"
-                android:paddingVertical="@dimen/margin_36"
-                android:text="이름 편집"
-                android:textSize="14sp" />
-        </LinearLayout>
 
         <!-- Toggle Bar 추가 -->
         <include
             android:id="@+id/toggle_bar"
             layout="@layout/toggle_bar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="30dp"
-            android:layout_marginTop="80dp"
-            android:visibility="gone" />
-
-        <!-- Toggle Bar Create Space 추가 -->
-        <include
-            android:id="@+id/toggle_bar_createspace"
-            layout="@layout/toggle_bar_createspace"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="30dp"

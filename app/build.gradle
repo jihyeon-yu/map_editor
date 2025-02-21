@@ -71,6 +71,7 @@ android {
 
 dependencies {
 
+
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity
@@ -78,9 +79,9 @@ dependencies {
     implementation project(':sdk')
     implementation libs.core.ktx
     testImplementation libs.junit
+    implementation(libs.lifecycle.viewmodel.ktx)
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
-
     implementation 'org.yaml:snakeyaml:2.0'
 
     implementation libs.core.splashscreen

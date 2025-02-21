@@ -16,6 +16,7 @@ import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.SimpleOnScaleGestureListener
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.res.ResourcesCompat
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_LINE
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POINT
@@ -266,12 +267,12 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
                 x = (mbr.x * roiObjects[i].zoom + pt.x).toInt()
                 y = (mbr.y * roiObjects[i].zoom + pt.y).toInt()
                 // 배경으로 VectorDrawable 그리기
-                val drawable_ic = resources.getDrawable(R.drawable.ic_location, null)
-                drawable_ic.setBounds(x - 30, y - 80, x + 30, y + 10) //(60, 90)
+                val drawable_ic = AppCompatResources.getDrawable(context, R.drawable.ic_location)
+                drawable_ic?.setBounds(x - 30, y - 80, x + 30, y + 10) //(60, 90)
 
-                val drawable = resources.getDrawable(R.drawable.pin_name, null)
-                drawable.setBounds(x - 65, y - 146, x + 64, y - 80) //(129, 66)
-                drawable.draw(canvas)
+                val drawable = AppCompatResources.getDrawable(context, R.drawable.pin_name)
+                drawable?.setBounds(x - 65, y - 146, x + 64, y - 80) //(129, 66)
+                drawable?.draw(canvas)
 
                 // 텍스트 추가
                 val paint = Paint()
@@ -281,15 +282,15 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
                 // 선택할 경우 하얀 화면에 검은색 굴자, 선택이 안될 경우 검은색 화면에 하얀색 글자
                 if (i == currentSelectedIndex) {
-                    drawable.setColorFilter(Color.parseColor("#FFFFFF"), PorterDuff.Mode.SRC_IN)
+                    drawable?.setColorFilter(Color.parseColor("#FFFFFF"), PorterDuff.Mode.SRC_IN)
                     paint.color = Color.BLACK
                 } else {
                     // default black color
                     paint.color = Color.WHITE
                 }
 
-                drawable_ic.draw(canvas)
-                drawable.draw(canvas)
+                drawable_ic?.draw(canvas)
+                drawable?.draw(canvas)
                 canvas.drawText(roiObjects[i].label, x.toFloat(), (y - 100).toFloat(), paint)
             }
             i++
@@ -435,7 +436,8 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
 
     // 241222 jihyeon 핀 회전 모드 아이콘
     private fun rotatePinIcon() {
-        val iconDrawable = ResourcesCompat.getDrawable(resources, R.drawable.benjamin_direction, null)
+        val iconDrawable =
+            ResourcesCompat.getDrawable(resources, R.drawable.benjamin_direction, null)
         val rotateDrawable = ResourcesCompat.getDrawable(resources, R.drawable.ic_rotate, null)
 
         for (roiObject in roiObjects) {
