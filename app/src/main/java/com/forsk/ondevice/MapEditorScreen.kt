@@ -3,9 +3,11 @@ package com.forsk.ondevice
 
 import android.graphics.Bitmap
 import android.graphics.RectF
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +40,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.os.bundleOf
+import org.opencv.core.Point
+import org.opencv.core.Rect
+import kotlin.math.abs
+import kotlin.math.min
 
 
 @Composable
@@ -53,6 +61,16 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
     var startWallPoint = remember { mutableStateOf<Offset?>(null) }
     var currentWallPreview = remember { mutableStateOf<RectF?>(null) }
 
+    var startPoint by remember { mutableStateOf<Offset?>(null) }
+    var currentPoint by remember { mutableStateOf<Offset?>(null) }
+    var finalRect by remember { mutableStateOf<RectF?>(null) }
+    var finalLine by remember { mutableStateOf<Pair<Offset, Offset>?>(null) }
+    var selectedIndex by remember { mutableStateOf(-1) }
+    val buttonLabels = listOf("공간 생성", "가상벽 추가", "금지 공간 추가", "90도 회전")
+    LaunchedEffect(startPoint, currentPoint) {
+        Log.w(">>>", "$startPoint $currentPoint")
+    }
+
     Column() {
         Box(
             modifier = Modifier
@@ -60,11 +78,106 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                 .weight(1f)
                 .clipToBounds()
                 .background(Color.Gray)
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        scale.value *= zoom
-                        offset.value += pan
+                .pointerInput(selectedIndex) {
+                    when (selectedIndex) {
+                        -1 -> {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                scale.value *= zoom
+                                offset.value += pan
+                            }
+                        }
+
+                        1 -> {
+                            detectDragGestures(
+                                onDragStart = { offset ->
+                                    startPoint = offset
+                                    currentPoint = offset
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    currentPoint = change.position
+                                    finalLine = Pair(
+                                        Offset(startPoint?.x ?: 0f, startPoint?.y ?: 0f),
+                                        Offset(currentPoint?.x ?: 0f, currentPoint?.y ?: 0f)
+                                    )
+                                },
+                                onDragEnd = {
+
+                                    startPoint = null
+                                    currentPoint = null
+                                }
+                            )
+                        }
+
+                        2 -> {
+                            detectDragGestures(
+                                onDragStart = { offset ->
+                                    startPoint = offset
+                                    currentPoint = offset
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    currentPoint = change.position
+
+                                    finalRect = RectF(
+                                        (startPoint?.x ?: 0f),
+                                        (startPoint?.y ?: 0f),
+                                        (currentPoint?.x ?: 0f),
+                                        (currentPoint?.y ?: 0f)
+                                    )
+                                },
+                                onDragEnd = {
+//                                    finalRect = RectF(
+//                                        (startPoint?.x ?: 0f),
+//                                        (startPoint?.y ?: 0f),
+//                                        (currentPoint?.x ?: 0f),
+//                                        (currentPoint?.y ?: 0f)
+//                                    )
+                                    startPoint = null
+                                    currentPoint = null
+                                }
+                            )
+                        }
                     }
+
+//
+//                    awaitPointerEventScope {
+//                        while (true) {
+//                            val event = awaitPointerEvent()
+//                            val position = event.changes.first().position
+//                            when {
+//                                event.changes.first().pressed -> {
+//                                    Log.w(">>>", "$event")
+//                                    startWallPoint.value = position
+//                                }
+//
+//                                startWallPoint.value != null && event.changes.first().pressed -> {
+//                                    val start = startWallPoint.value!!
+//                                    currentWallPreview.value = RectF(
+//                                        minOf(start.x, position.x),
+//                                        minOf(start.y, position.y),
+//                                        maxOf(start.x, position.x),
+//                                        maxOf(start.y, position.y)
+//                                    )
+//                                }
+//
+//                                startWallPoint.value != null && !event.changes.first().pressed -> {
+//                                    val start = startWallPoint.value!!
+//                                    val end = position
+//                                    walls.add(
+//                                        RectF(
+//                                            minOf(start.x, end.x),
+//                                            minOf(start.y, end.y),
+//                                            maxOf(start.x, end.x),
+//                                            maxOf(start.y, end.y)
+//                                        )
+//                                    )
+//                                    startWallPoint.value = null
+//                                    currentWallPreview.value = null
+//                                }
+//                            }
+//                        }
+//                    }
                 }
                 .graphicsLayer(
                     scaleX = scale.value,
@@ -84,60 +197,51 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
             )
 
             // 캔버스 그리기
-            Canvas(modifier = Modifier
-                .wrapContentSize()
-                //    .clipToBounds()
-//            .graphicsLayer(
-//                scaleX = scale.value,
-//                scaleY = scale.value,
-//                translationX = offset.value.x,
-//                translationY = offset.value.y,
-//                rotationZ = rotation.value
-//            )
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            val position = event.changes.first().position
-                            when {
-                                event.changes.first().pressed -> {
-                                    startWallPoint.value = position
-                                }
+            Canvas(
+                modifier = Modifier
+                    .wrapContentSize()
+            ) {
+                finalRect?.let {
+                    drawRect(
+                        color = Color(0x80FF0000),
+                        topLeft = (Offset(
+                            it.left,
+                            it.top
+                        )),
+                        size = Size(it.width(), it.height())
+                    )
+                }
 
-                                startWallPoint.value != null && event.changes.first().pressed -> {
-                                    val start = startWallPoint.value!!
-                                    currentWallPreview.value = RectF(
-                                        minOf(start.x, position.x),
-                                        minOf(start.y, position.y),
-                                        maxOf(start.x, position.x),
-                                        maxOf(start.y, position.y)
-                                    )
-                                }
-
-                                startWallPoint.value != null && !event.changes.first().pressed -> {
-                                    val start = startWallPoint.value!!
-                                    val end = position
-                                    walls.add(
-                                        RectF(
-                                            minOf(start.x, end.x),
-                                            minOf(start.y, end.y),
-                                            maxOf(start.x, end.x),
-                                            maxOf(start.y, end.y)
-                                        )
-                                    )
-                                    startWallPoint.value = null
-                                    currentWallPreview.value = null
-                                }
-                            }
-                        }
-                    }
-                }) {
+                finalLine?.let {
+                    drawLine(
+                        color = Color(0x80FF0000),
+                        start = it.first,
+                        end = it.second,
+                        strokeWidth = 4f
+                    )
+                }
+//
+//                startPoint?.let { sp ->
+//                    currentPoint?.let { cp ->
+//                        drawRect(
+//                            color = Color.Red.copy(alpha = 0.5f),
+//                            topLeft = Offset(
+//                                min(sp.x, cp.x),
+//                                min(sp.y, cp.y)
+//                            ),
+//                            size = Size(
+//                                abs(sp.x - cp.x),
+//                                abs(sp.y - cp.y)
+//                            )
+//                        )
+//                    }
+//                }
                 // 공간 생성 포인트 시각화
                 points.forEach { point ->
                     drawCircle(
                         Color.Blue,
-                        radius = 10f * scale.value,
-                        center = (point + offset.value) * scale.value
+                        radius = 10f,
+                        center = (point + offset.value)
                     )
                 }
 
@@ -170,17 +274,17 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            var selectedIndex by remember { mutableStateOf(-1) }
-            val buttonLabels = listOf("공간 생성", "가상벽 추가", "진입금지 영역 추가", "90도 회전")
-
             buttonLabels.forEachIndexed { index, label ->
                 Button(
                     onClick = {
-                        selectedIndex = index
+                        selectedIndex = if (selectedIndex == index) -1 else index
                         when (index) {
-                            0 -> points.clear()
-                            1 -> walls.clear()
-                            2 -> noEntryZones.add(RectF(200f, 200f, 400f, 400f))
+                            0 -> makePoints()
+                            1 -> makeWalls()
+                            2 -> {
+                                noEntryZones.add(RectF(200f, 200f, 400f, 400f))
+                            }
+
                             3 -> rotation.value += 90f
                         }
                     },
@@ -193,12 +297,19 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
     }
 }
 
+fun makePoints() {
+}
+
+fun makeWalls() {}
+fun makeNoEntryZone() {
+
+}
+
 fun createDummyImageBitmap(width: Int, height: Int): ImageBitmap {
     val androidBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = android.graphics.Canvas(androidBitmap)
     val paint = android.graphics.Paint().apply { color = android.graphics.Color.RED }
     canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
-
     return androidBitmap.asImageBitmap()
 }
 

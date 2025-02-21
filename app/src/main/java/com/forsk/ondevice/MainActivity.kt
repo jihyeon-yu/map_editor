@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
     @Throws(IOException::class)
     private fun loadPNG(filePath: String): Bitmap {
         Log.d(TAG, "loadPNG(\"$filePath\")")
-        verifyStoragePermissions(this)
+        //verifyStoragePermissions(this)
         // 파일 이름 로깅(필수는 아님)
         val paths = filePath.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
         val fileName = paths[paths.size - 1]
