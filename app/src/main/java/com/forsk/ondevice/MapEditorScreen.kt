@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.graphics.vector.Path
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -154,6 +156,7 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                     rotationZ = rotation.value
                 )
         ) {
+
             // 지도 이미지
             Image(
                 painter = BitmapPainter(imageBitmap), // 로드한 PGM 또는 PNG
@@ -168,6 +171,39 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                 modifier = Modifier
                     .wrapContentSize()
             ) {
+
+                val pixelMap = imageBitmap.toPixelMap() // 이미지 픽셀 데이터 가져오기
+
+                fun getOriginalColor(x: Float, y: Float): Color {
+                    return if (x.toInt() in 0 until pixelMap.width && y.toInt() in 0 until pixelMap.height) {
+                        pixelMap[x.toInt(), y.toInt()]
+                    } else {
+                        Color.Transparent
+                    }
+                }
+                val ignoreColor = Color(51, 51, 51).toArgb()
+
+                fun shouldReplaceWithImageColor(rect: RectF): Boolean {
+                    for (x in rect.left.toInt() until rect.right.toInt()) {
+                        for (y in rect.top.toInt() until rect.bottom.toInt()) {
+                            if (x in 0 until pixelMap.width && y in 0 until pixelMap.height) {
+                                Log.w(">>>", "shouldReplaceWithImageColor4")
+                                val pixelColor = pixelMap[x, y].toArgb()
+                                Log.w(">>>", "pixelColor : $pixelColor ${pixelColor == ignoreColor}" )
+                                if (pixelColor == ignoreColor) {
+                                    Log.w(">>>", "shouldReplaceWithImageColor5")
+                                    return true // 특정 색상이 포함된 경우, 원본 이미지 색상을 유지해야 함
+                                }
+                            }
+                            else {
+                                Log.w(">>>", "shouldReplaceWithImageColor6 $x $y ${pixelMap.width} $pixelMap")
+                            }
+                        }
+                    }
+                    return false
+                }
+
+
                 finalRect?.let {
                     drawRect(
                         color = Color(0x80FF0000),
@@ -188,16 +224,29 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                     )
                 }
 
-                areaRect.forEach {
-                    Log.w(">>>>", "$it")
-                    drawRect(
-                        color = Color.Yellow,
-                        topLeft = (Offset(
-                            it.left,
-                            it.top
-                        )),
-                        size = Size(it.width(), it.height())
-                    )
+                // 특정 색상이 포함된 경우, 원래 이미지 색상을 유지
+                areaRect.forEach { rect ->
+                    if (shouldReplaceWithImageColor(rect)) {
+                        Log.w(">>>", "true 여기옴?")
+                        for (x in rect.left.toInt() until rect.right.toInt()) {
+                            for (y in rect.top.toInt() until rect.bottom.toInt()) {
+                                val originalColor = getOriginalColor(x.toFloat(), y.toFloat())
+                                drawRect(
+                                    color = originalColor,
+                                    topLeft = Offset(x.toFloat(), y.toFloat()),
+                                    size = Size(1f, 1f) // 픽셀 단위로 복구
+                                )
+                            }
+                        }
+                    } else {
+                        Log.w(">>>", "else 여기옴?")
+                        drawRect(
+                            alpha = 0.3f,
+                            color = Color.Yellow,
+                            topLeft = Offset(rect.left, rect.top),
+                            size = Size(rect.width(), rect.height())
+                        )
+                    }
                 }
 
                 finalLine?.let {
