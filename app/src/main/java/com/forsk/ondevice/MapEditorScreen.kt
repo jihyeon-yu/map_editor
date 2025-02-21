@@ -8,6 +8,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,17 +35,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.vector.Path
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.os.bundleOf
-import org.opencv.core.Point
-import org.opencv.core.Rect
-import kotlin.math.abs
-import kotlin.math.min
 
 
 @Composable
@@ -55,7 +53,6 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
     val offset = remember { mutableStateOf(Offset(0f, 0f)) }
     val rotation = remember { mutableStateOf(0f) }
 
-    val points = remember { mutableStateListOf<Offset>() } // 공간 생성 포인트 저장
     val walls = remember { mutableStateListOf<RectF>() } // 가상 벽 저장
     val noEntryZones = remember { mutableStateListOf<RectF>() } // 진입 금지 영역 저장
     var startWallPoint = remember { mutableStateOf<Offset?>(null) }
@@ -70,6 +67,7 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
     LaunchedEffect(startPoint, currentPoint) {
         Log.w(">>>", "$startPoint $currentPoint")
     }
+    var points by remember { mutableStateOf<List<Offset>>(emptyList()) }
 
     Column() {
         Box(
@@ -84,6 +82,12 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                             detectTransformGestures { _, pan, zoom, _ ->
                                 scale.value *= zoom
                                 offset.value += pan
+                            }
+                        }
+
+                        0 -> {
+                            detectTapGestures { offset ->
+                                points = points + offset
                             }
                         }
 
@@ -220,6 +224,20 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                         strokeWidth = 4f
                     )
                 }
+
+                for (point in points) {
+                    drawCircle(
+                        color = Color.Red,
+                        radius = 10f,
+                        center = point
+                    )
+                }
+
+                // 3개 이상의 점이 있을 때 다각형 그리기
+                if (points.size >= 3) {
+                    drawPolygon(points, Color.Blue)
+                }
+
 //
 //                startPoint?.let { sp ->
 //                    currentPoint?.let { cp ->
@@ -313,6 +331,21 @@ fun createDummyImageBitmap(width: Int, height: Int): ImageBitmap {
     return androidBitmap.asImageBitmap()
 }
 
+/**
+ * 다각형을 그리는 함수
+ */
+fun DrawScope.drawPolygon(points: List<Offset>, color: Color) {
+    for (i in points.indices) {
+        val start = points[i]
+        val end = points[(i + 1) % points.size] // 마지막 점에서 첫 번째 점으로 연결
+        drawLine(
+            color = color,
+            start = start,
+            end = end,
+            strokeWidth = 4f
+        )
+    }
+}
 @Composable
 @Preview(showBackground = true)
 fun preview() {
