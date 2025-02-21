@@ -54,20 +54,21 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
     val rotation = remember { mutableStateOf(0f) }
 
     val walls = remember { mutableStateListOf<RectF>() } // 가상 벽 저장
+    val virtualWall = remember { mutableStateListOf<Pair<Offset, Offset>>() }
+    val areaRect = remember { mutableStateListOf<RectF>() } // 공간 저장
     val noEntryZones = remember { mutableStateListOf<RectF>() } // 진입 금지 영역 저장
-    var startWallPoint = remember { mutableStateOf<Offset?>(null) }
-    var currentWallPreview = remember { mutableStateOf<RectF?>(null) }
 
     var startPoint by remember { mutableStateOf<Offset?>(null) }
     var currentPoint by remember { mutableStateOf<Offset?>(null) }
     var finalRect by remember { mutableStateOf<RectF?>(null) }
     var finalLine by remember { mutableStateOf<Pair<Offset, Offset>?>(null) }
+
     var selectedIndex by remember { mutableStateOf(-1) }
     val buttonLabels = listOf("공간 생성", "가상벽 추가", "금지 공간 추가", "90도 회전")
     LaunchedEffect(startPoint, currentPoint) {
         Log.w(">>>", "$startPoint $currentPoint")
     }
-    var points by remember { mutableStateOf<List<Offset>>(emptyList()) }
+    val points = remember { mutableStateListOf<Offset>() }
 
     Column() {
         Box(
@@ -87,7 +88,7 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
 
                         0 -> {
                             detectTapGestures { offset ->
-                                points = points + offset
+                                points.add(offset)
                             }
                         }
 
@@ -106,9 +107,12 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                                     )
                                 },
                                 onDragEnd = {
-
                                     startPoint = null
                                     currentPoint = null
+                                    finalLine?.let {
+                                        virtualWall.add(it)
+                                    }
+                                    finalLine = null
                                 }
                             )
                         }
@@ -131,57 +135,16 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                                     )
                                 },
                                 onDragEnd = {
-//                                    finalRect = RectF(
-//                                        (startPoint?.x ?: 0f),
-//                                        (startPoint?.y ?: 0f),
-//                                        (currentPoint?.x ?: 0f),
-//                                        (currentPoint?.y ?: 0f)
-//                                    )
                                     startPoint = null
                                     currentPoint = null
+                                    finalRect?.let {
+                                        noEntryZones.add(it)
+                                    }
+                                    finalRect = null
                                 }
                             )
                         }
                     }
-
-//
-//                    awaitPointerEventScope {
-//                        while (true) {
-//                            val event = awaitPointerEvent()
-//                            val position = event.changes.first().position
-//                            when {
-//                                event.changes.first().pressed -> {
-//                                    Log.w(">>>", "$event")
-//                                    startWallPoint.value = position
-//                                }
-//
-//                                startWallPoint.value != null && event.changes.first().pressed -> {
-//                                    val start = startWallPoint.value!!
-//                                    currentWallPreview.value = RectF(
-//                                        minOf(start.x, position.x),
-//                                        minOf(start.y, position.y),
-//                                        maxOf(start.x, position.x),
-//                                        maxOf(start.y, position.y)
-//                                    )
-//                                }
-//
-//                                startWallPoint.value != null && !event.changes.first().pressed -> {
-//                                    val start = startWallPoint.value!!
-//                                    val end = position
-//                                    walls.add(
-//                                        RectF(
-//                                            minOf(start.x, end.x),
-//                                            minOf(start.y, end.y),
-//                                            maxOf(start.x, end.x),
-//                                            maxOf(start.y, end.y)
-//                                        )
-//                                    )
-//                                    startWallPoint.value = null
-//                                    currentWallPreview.value = null
-//                                }
-//                            }
-//                        }
-//                    }
                 }
                 .graphicsLayer(
                     scaleX = scale.value,
@@ -216,6 +179,27 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
                     )
                 }
 
+                virtualWall.forEach {
+                    drawLine(
+                        color = Color(0x80FF0000),
+                        start = it.first,
+                        end = it.second,
+                        strokeWidth = 4f
+                    )
+                }
+
+                areaRect.forEach {
+                    Log.w(">>>>", "$it")
+                    drawRect(
+                        color = Color.Yellow,
+                        topLeft = (Offset(
+                            it.left,
+                            it.top
+                        )),
+                        size = Size(it.width(), it.height())
+                    )
+                }
+
                 finalLine?.let {
                     drawLine(
                         color = Color(0x80FF0000),
@@ -235,32 +219,8 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
 
                 // 3개 이상의 점이 있을 때 다각형 그리기
                 if (points.size >= 3) {
+                    points.sortedBy { it.x }
                     drawPolygon(points, Color.Blue)
-                }
-
-//
-//                startPoint?.let { sp ->
-//                    currentPoint?.let { cp ->
-//                        drawRect(
-//                            color = Color.Red.copy(alpha = 0.5f),
-//                            topLeft = Offset(
-//                                min(sp.x, cp.x),
-//                                min(sp.y, cp.y)
-//                            ),
-//                            size = Size(
-//                                abs(sp.x - cp.x),
-//                                abs(sp.y - cp.y)
-//                            )
-//                        )
-//                    }
-//                }
-                // 공간 생성 포인트 시각화
-                points.forEach { point ->
-                    drawCircle(
-                        Color.Blue,
-                        radius = 10f,
-                        center = (point + offset.value)
-                    )
                 }
 
                 // 가상 벽(사각형) 시각화
@@ -295,12 +255,24 @@ fun MapEditorScreen(imageBitmap: ImageBitmap) {
             buttonLabels.forEachIndexed { index, label ->
                 Button(
                     onClick = {
-                        selectedIndex = if (selectedIndex == index) -1 else index
+                        selectedIndex = if (selectedIndex == index) {
+                            when (selectedIndex) {
+                                0 -> {
+                                    val left = points.minOf { it.x }
+                                    val right = points.maxOf { it.x }
+                                    val top = points.minOf { it.y }
+                                    val bottom = points.maxOf { it.y }
+                                    areaRect.add(RectF(left, top, right, bottom))
+                                    points.clear()
+                                }
+                            }
+                            -1
+                        } else index
                         when (index) {
                             0 -> makePoints()
                             1 -> makeWalls()
                             2 -> {
-                                noEntryZones.add(RectF(200f, 200f, 400f, 400f))
+
                             }
 
                             3 -> rotation.value += 90f
@@ -346,6 +318,7 @@ fun DrawScope.drawPolygon(points: List<Offset>, color: Color) {
         )
     }
 }
+
 @Composable
 @Preview(showBackground = true)
 fun preview() {
