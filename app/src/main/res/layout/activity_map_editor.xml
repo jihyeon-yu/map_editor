@@ -2,10 +2,9 @@
 
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layout_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:paddingBottom="@dimen/margin_30">
 
     <LinearLayout
@@ -28,7 +27,7 @@
 
         <!-- Cancle Floating Action Button -->
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1">
 
@@ -94,12 +93,12 @@
         android:layout_marginTop="@dimen/margin_40"
         android:background="@drawable/rounded_corners_background"
         android:gravity="center"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@id/layout_button"
+        app:layout_constraintBottom_toTopOf="@id/layout_button_list"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/divider_top">
 
+        <!-- Toggle Bar 추가 -->
         <com.forsk.ondevice.MapImageView
             android:id="@+id/mapViewer"
             android:layout_width="match_parent"
@@ -111,31 +110,16 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.0" />
 
-        <ImageView
-            android:id="@+id/fabMain"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="@dimen/margin_24"
-            android:layout_marginTop="@dimen/margin_24"
-            android:background="@drawable/rounded_toggle_bar"
-            android:contentDescription="@null"
-            android:gravity="center"
-            android:padding="10dp"
-            android:src="@drawable/baseline_arrow_forward_ios_24"
-            android:visibility="visible"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-
-        <!-- Toggle Bar 추가 -->
         <include
             android:id="@+id/toggle_bar"
             layout="@layout/toggle_bar"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="30dp"
-            android:layout_marginTop="80dp"
-            android:visibility="gone" />
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- 삭제 토글바 -->
         <include
@@ -143,11 +127,11 @@
             layout="@layout/delete_toggle_bar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:visibility="invisible" />
+            android:visibility="gone" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/layout_button"
+        android:id="@+id/layout_button_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/margin_60"

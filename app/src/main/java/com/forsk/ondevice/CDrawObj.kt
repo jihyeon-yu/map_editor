@@ -934,7 +934,7 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         }
     }
 
-    fun MoveHandleTo(pt1: Point, pt2: Point, nHandle: Int) {
+    fun moveHandleTo(pt1: Point, pt2: Point, nHandle: Int) {
         //console.log(pt1);
         // 실수 좌표계로 변환하여 대입한다.
         val zoom = this.zoom
@@ -997,8 +997,8 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         val dy = (pt1.y - pt2.y)
 
         when (roiType) {
-            ROI_TYPE_LINE -> MoveHandleTo(pt1, pt2, nHandle)
-            ROI_TYPE_RECT -> MoveHandleTo(pt1, pt2, nHandle)
+            ROI_TYPE_LINE -> moveHandleTo(pt1, pt2, nHandle)
+            ROI_TYPE_RECT -> moveHandleTo(pt1, pt2, nHandle)
             ROI_TYPE_POLYGON -> if (nHandle <= mPoints.size) {
                 mPoints[nHandle - 1]!!.x += dx
                 mPoints[nHandle - 1]!!.y += dy

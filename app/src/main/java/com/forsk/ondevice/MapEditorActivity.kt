@@ -4,29 +4,19 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.Point
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.util.Pair
-import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.WindowManager
-import android.widget.LinearLayout
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.caselab.forsk.MapOptimization
@@ -35,27 +25,17 @@ import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POLYGON
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
 import com.forsk.ondevice.CommonUtil.debugLog
 import com.forsk.ondevice.CommonUtil.warnLog
-import com.forsk.ondevice.databinding.ActivityMapeditorBinding
-import com.forsk.ondevice.databinding.DialogScrollableWithButtonsBinding
+import com.forsk.ondevice.databinding.ActivityMapEditorBinding
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.opencv.android.OpenCVLoader
-import org.opencv.core.Core
-import org.opencv.core.CvType
-import org.opencv.core.Mat
-import org.yaml.snakeyaml.Yaml
 import java.io.File
-import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
-import java.util.Objects
 
 // opencv 추가
 class MapEditorActivity : AppCompatActivity() {
@@ -94,7 +74,7 @@ class MapEditorActivity : AppCompatActivity() {
     private val strFileName = "map_meta_sample.json"
     private val strPath = "/sdcard/Download"
 
-    private lateinit var binding: ActivityMapeditorBinding
+    private lateinit var binding: ActivityMapEditorBinding
     private lateinit var viewModel: MapEditorViewModel
 
     private var strMode: String = "Zoom"
@@ -117,8 +97,9 @@ class MapEditorActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setTheme(R.style.Theme_OnDevice)
 
-        binding = ActivityMapeditorBinding.inflate(layoutInflater)
+        binding = ActivityMapEditorBinding.inflate(layoutInflater)
         viewModel = ViewModelProvider(this)[MapEditorViewModel::class.java]
+        verifyStoragePermissions(this@MapEditorActivity)
 
         setContentView(binding.root)
     }
@@ -148,10 +129,10 @@ class MapEditorActivity : AppCompatActivity() {
             spaceCreationButton.setOnClickListener { spaceCreationButtonClickFunc() }
             buttonBlockWall.setOnClickListener { blockWallClickEvent() }
             buttonBlockArea.setOnClickListener { blockAreaButtonClickEvent() }
-            fabMain.setOnClickListener { fabMainClickEvent() }
+            //fabMain.setOnClickListener { fabMainClickEvent() }
 
             toggleBar.apply {
-                fabMainBack.setOnClickListener { fabMainBackClickEvent() }
+                fabMain.setOnClickListener { fabMainBackClickEvent() }
                 fabAddObject.setOnClickListener { fabAddObjectClickEvent() }
                 fabMoveObject.setOnClickListener { fabMoveObjectClickEvent() }//  move Object
                 fabSelectObject.setOnClickListener { fabSelectObjectClickEvent() }//  Select Object
@@ -247,7 +228,7 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun deleteButtonClickEvent() {
         binding.apply {
-            mapViewer.roi_RemoveObject()
+            mapViewer.removeObject()
             mapViewer.cancelCurObject()
             mapViewer.clearSelection() // 선택 초기화 메서드
         }
@@ -257,7 +238,7 @@ class MapEditorActivity : AppCompatActivity() {
     private fun setDefaultButtonBackground() {
         binding.toggleBar.apply {
             val defaultBackground =
-                ContextCompat.getDrawable(this@MapEditorActivity, R.color.button_default)
+                AppCompatResources.getDrawable(this@MapEditorActivity, R.color.button_default)
             fabAddObject.background = defaultBackground
             fabSelectObject.background = defaultBackground
             fabMoveObject.background = defaultBackground
@@ -272,7 +253,7 @@ class MapEditorActivity : AppCompatActivity() {
         setDefaultButtonBackground()
         binding.toggleBar.apply {
             val selectedButtonBackground =
-                ContextCompat.getDrawable(this@MapEditorActivity, R.drawable.rounded_button_white)
+                AppCompatResources.getDrawable(this@MapEditorActivity, R.drawable.rounded_button_white)
             when (id) {
                 fabAddObject.id -> fabAddObject.background = selectedButtonBackground
                 fabSelectObject.id -> fabSelectObject.background = selectedButtonBackground
@@ -292,7 +273,7 @@ class MapEditorActivity : AppCompatActivity() {
             showCustomDialog(object : DialogCallback {
                 override fun onConfirm(selectedText: String?) {
                     if ((mapViewer.roiCurObject != null)) {
-                        mapViewer.SetLabel(pinName)
+                        mapViewer.setLabel(pinName)
                     }
                 }
             })
@@ -373,24 +354,24 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun fabMainBackClickEvent() {
         binding.apply {
-            toggleBar.root.visibility = View.GONE // toggle_bar 숨기기
-            fabMain.visibility = View.VISIBLE // 열기 버튼 보이기
-            toggleBar.fabMainBack.visibility = View.INVISIBLE // 닫기 버튼 숨기기
-        }
-    }
-
-    private fun fabMainClickEvent() {
-        binding.apply {
-            if (currentMode == MODE_SPACE_CREATION) {
-                toggleBar.root.visibility = View.VISIBLE // toggle_bar 보이기
-                fabMain.visibility = View.INVISIBLE // 열기 버튼 숨기기
-                toggleBar.fabMainBack.visibility = View.VISIBLE // 닫기 버튼 보이기
-                toggleBar.fabRenameObject.visibility = View.VISIBLE
-            } else if (currentMode == MODE_BLOCK_WALL || currentMode == MODE_BLOCK_AREA) {
-                toggleBar.root.visibility = View.VISIBLE // toggle_bar 보이기
-                fabMain.visibility = View.INVISIBLE // 열기 버튼 숨기기
-                toggleBar.fabMainBack.visibility = View.VISIBLE // 닫기 버튼 보이기
-                toggleBar.fabRenameObject.visibility = View.GONE
+            toggleBar.apply {
+                if (layoutToggleButton.visibility == View.VISIBLE) {
+                    fabMain.setImageDrawable(
+                        AppCompatResources.getDrawable(
+                            this@MapEditorActivity,
+                            R.drawable.baseline_arrow_forward_ios_24
+                        )
+                    )
+                    layoutToggleButton.visibility = View.GONE
+                } else {
+                    fabMain.setImageDrawable(
+                        AppCompatResources.getDrawable(
+                            this@MapEditorActivity,
+                            R.drawable.baseline_arrow_back_ios_new_24
+                        )
+                    )
+                    layoutToggleButton.visibility = View.VISIBLE
+                }
             }
         }
     }
@@ -580,114 +561,114 @@ class MapEditorActivity : AppCompatActivity() {
     }
 
     private fun showCustomDialog(callback: DialogCallback) {
-        val dialogBinding = DialogScrollableWithButtonsBinding.inflate(layoutInflater)
-        val dialogView = dialogBinding.root
-        val builder = AlertDialog.Builder(this, R.style.CustomDialogTheme)
-        builder.setView(dialogView)
-
-        val dialog = builder.create()
-
-        dialogBinding.radioGroup
-        // Find views
-
-        // Layout for items
-        val layout = arrayOf(
-            arrayOf("거실", "게스트룸", "드레스룸", "발코니"),  // 첫 번째 행
-            arrayOf("복도", "서재", "아이방1", "아이방2"),  // 두 번째 행
-            arrayOf("안방", "욕실1", "욕실2", "주방"),  // 세 번째 행
-            arrayOf("침실", "현관", "", "") // 네 번째 행
-        )
-
-        // List to manage all RadioButtons
-        val allRadioButtons = ArrayList<RadioButton>()
-        // 선택된 라디오 버튼의 텍스트를 추적하기 위한 변수
-        val selectedText = arrayOf<String>("")
-        // Dynamically add rows
-        for (row in layout) {
-            // Create a horizontal LinearLayout for each row
-            val rowLayout = LinearLayout(this)
-            rowLayout.orientation = LinearLayout.HORIZONTAL
-            rowLayout.layoutParams = RadioGroup.LayoutParams(
-                RadioGroup.LayoutParams.MATCH_PARENT,
-                RadioGroup.LayoutParams.WRAP_CONTENT
-            )
-            var idCounter = 0 // 고유 ID 생성기
-            // Add items to the row
-            for (item in row) {
-                if (!item.isEmpty()) {
-                    // Create and style the RadioButton
-                    val radioButton = RadioButton(this)
-                    radioButton.text = item
-                    radioButton.id = idCounter++
-                    radioButton.setTextColor(resources.getColor(android.R.color.white))
-                    radioButton.textSize = 20f
-
-                    // Set LayoutParams with margins
-                    val layoutParams = LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f // 균등 분배
-                    )
-                    layoutParams.setMargins(10, 20, 10, 20) // 위아래 마진 추가
-                    radioButton.layoutParams = layoutParams
-
-                    radioButton.gravity = Gravity.LEFT // 왼쪽 정렬
-
-                    // Add to the list
-                    allRadioButtons.add(radioButton)
-
-                    // Add click listener to uncheck others
-                    radioButton.setOnClickListener { v: View ->
-                        for (rb in allRadioButtons) {
-                            if (rb !== v) {
-                                rb.isChecked = false // 다른 버튼은 해제
-                            } else selectedText[0] = item
-                        }
-                    }
-
-                    // Add RadioButton to the row
-                    rowLayout.addView(radioButton)
-                } else {
-                    // Add empty space for empty slots
-                    val space = View(this)
-                    space.layoutParams = LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f // 빈 공간도 균등 분배
-                    )
-                    rowLayout.addView(space)
-                }
-            }
-
-            // Add the row to the RadioGroup
-            dialogBinding.radioGroup.addView(rowLayout)
-        }
-
-        // Set button listeners
-        dialogBinding.renamePinCancelButton.setOnClickListener { v: View? -> dialog.dismiss() }
-        dialogBinding.renamePinConfirmButton.setOnClickListener { v: View? ->
-            pinName = selectedText[0]
-            callback.onConfirm(selectedText[0])
-            dialog.dismiss()
-        }
-
-        // Show the dialog
-        dialog.show()
-
-        // Adjust dialog size
-        val window = dialog.window
-        if (window != null) {
-            window.setLayout(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            val params = window.attributes
-            params.width = WindowManager.LayoutParams.MATCH_PARENT // 너비
-            params.height = WindowManager.LayoutParams.WRAP_CONTENT // 높이
-            params.horizontalMargin = 0.05f // 좌우 마진 (화면 비율로 계산)
-            params.verticalMargin = 0.1f // 상하 마진
-            window.attributes = params
-        }
+//        val dialogBinding = DialogScrollableWithButtonsBinding.inflate(layoutInflater)
+//        val dialogView = dialogBinding.root
+//        val builder = AlertDialog.Builder(this, R.style.CustomDialogTheme)
+//        builder.setView(dialogView)
+//
+//        val dialog = builder.create()
+//
+//        dialogBinding.radioGroup
+//        // Find views
+//
+//        // Layout for items
+//        val layout = arrayOf(
+//            arrayOf("거실", "게스트룸", "드레스룸", "발코니"),  // 첫 번째 행
+//            arrayOf("복도", "서재", "아이방1", "아이방2"),  // 두 번째 행
+//            arrayOf("안방", "욕실1", "욕실2", "주방"),  // 세 번째 행
+//            arrayOf("침실", "현관", "", "") // 네 번째 행
+//        )
+//
+//        // List to manage all RadioButtons
+//        val allRadioButtons = ArrayList<RadioButton>()
+//        // 선택된 라디오 버튼의 텍스트를 추적하기 위한 변수
+//        val selectedText = arrayOf<String>("")
+//        // Dynamically add rows
+//        for (row in layout) {
+//            // Create a horizontal LinearLayout for each row
+//            val rowLayout = LinearLayout(this)
+//            rowLayout.orientation = LinearLayout.HORIZONTAL
+//            rowLayout.layoutParams = RadioGroup.LayoutParams(
+//                RadioGroup.LayoutParams.MATCH_PARENT,
+//                RadioGroup.LayoutParams.WRAP_CONTENT
+//            )
+//            var idCounter = 0 // 고유 ID 생성기
+//            // Add items to the row
+//            for (item in row) {
+//                if (!item.isEmpty()) {
+//                    // Create and style the RadioButton
+//                    val radioButton = RadioButton(this)
+//                    radioButton.text = item
+//                    radioButton.id = idCounter++
+//                    radioButton.setTextColor(resources.getColor(android.R.color.white))
+//                    radioButton.textSize = 20f
+//
+//                    // Set LayoutParams with margins
+//                    val layoutParams = LinearLayout.LayoutParams(
+//                        0,
+//                        LinearLayout.LayoutParams.WRAP_CONTENT,
+//                        1f // 균등 분배
+//                    )
+//                    layoutParams.setMargins(10, 20, 10, 20) // 위아래 마진 추가
+//                    radioButton.layoutParams = layoutParams
+//
+//                    radioButton.gravity = Gravity.LEFT // 왼쪽 정렬
+//
+//                    // Add to the list
+//                    allRadioButtons.add(radioButton)
+//
+//                    // Add click listener to uncheck others
+//                    radioButton.setOnClickListener { v: View ->
+//                        for (rb in allRadioButtons) {
+//                            if (rb !== v) {
+//                                rb.isChecked = false // 다른 버튼은 해제
+//                            } else selectedText[0] = item
+//                        }
+//                    }
+//
+//                    // Add RadioButton to the row
+//                    rowLayout.addView(radioButton)
+//                } else {
+//                    // Add empty space for empty slots
+//                    val space = View(this)
+//                    space.layoutParams = LinearLayout.LayoutParams(
+//                        0,
+//                        LinearLayout.LayoutParams.WRAP_CONTENT,
+//                        1f // 빈 공간도 균등 분배
+//                    )
+//                    rowLayout.addView(space)
+//                }
+//            }
+//
+//            // Add the row to the RadioGroup
+//            dialogBinding.radioGroup.addView(rowLayout)
+//        }
+//
+//        // Set button listeners
+//        dialogBinding.renamePinCancelButton.setOnClickListener { v: View? -> dialog.dismiss() }
+//        dialogBinding.renamePinConfirmButton.setOnClickListener { v: View? ->
+//            pinName = selectedText[0]
+//            callback.onConfirm(selectedText[0])
+//            dialog.dismiss()
+//        }
+//
+//        // Show the dialog
+//        dialog.show()
+//
+//        // Adjust dialog size
+//        val window = dialog.window
+//        if (window != null) {
+//            window.setLayout(
+//                ViewGroup.LayoutParams.MATCH_PARENT,
+//                ViewGroup.LayoutParams.WRAP_CONTENT
+//            )
+//            val params = window.attributes
+//            params.width = WindowManager.LayoutParams.MATCH_PARENT // 너비
+//            params.height = WindowManager.LayoutParams.WRAP_CONTENT // 높이
+//            params.horizontalMargin = 0.05f // 좌우 마진 (화면 비율로 계산)
+//            params.verticalMargin = 0.1f // 상하 마진
+//            window.attributes = params
+//        }
     }
 
 

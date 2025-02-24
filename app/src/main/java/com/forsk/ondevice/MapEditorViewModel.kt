@@ -7,13 +7,11 @@ import android.graphics.Color
 import android.graphics.Point
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_LINE
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POLYGON
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
 import com.forsk.ondevice.CommonUtil.debugLog
-import androidx.lifecycle.viewModelScope
-import com.forsk.ondevice.MapEditorActivity.Companion
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -104,7 +102,7 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
                                 //MapViewer.m_RoiCurObject.m_MBR = new Rect(left, top, right, bottom);
                                 mapViewer.roiCurObject!!.mMBRCenter.x = mbr_x
                                 mapViewer.roiCurObject!!.mMBRCenter.y = mbr_y
-                                mapViewer.SetLabel(name)
+                                mapViewer.setLabel(name)
                                 if (lib_flag) {
                                     val theta = imagePosition.getDouble("theta").toFloat()
                                     mapViewer.roiCurObject?.angle = theta
@@ -123,15 +121,16 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
                                 val point = imagePathArray.getJSONObject(0)
                                 x = point.getInt("x")
                                 y = point.getInt("y")
+
                                 val pt1 = Point(x, y)
                                 Log.d(TAG, "    Point: ($x, $y)")
+
                                 val point2 = imagePathArray.getJSONObject(2)
                                 x = point2.getInt("x")
                                 y = point2.getInt("y")
                                 val pt2 = Point(x, y)
 
                                 Log.d(TAG, "    Point: ($x, $y)")
-
                                 mapViewer.loadObject(ROI_TYPE_RECT, pt1)
                                 mapViewer.loadRect(pt1, pt2)
                                 mapViewer.roiAddObject()
@@ -164,7 +163,7 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
                                 mapViewer.roiAddObject()
                             }
 
-                            mapViewer?.currentSelectedIndex = -1
+                            mapViewer.currentSelectedIndex = -1
                             mapViewer.roiCurObject = null
                             Log.d(TAG, "Read Json Success")
                             return@withContext true
@@ -222,15 +221,10 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
                 // R 값 추출
                 val r = Color.red(pixel)
                 // r 값 기준으로 흰색/검은색/회색 매핑
-                var newGray = if (r == 255) {
-                    // 흰색
-                    150
-                } else if (r == 0) {
-                    // 검은색
-                    0
-                } else {
-                    // 회색
-                    51
+                val newGray = when (r) {
+                    255 -> 150 // 흰색
+                    0 -> 0 // 검은색
+                    else -> 51 // 회색
                 }
 
                 // 새 픽셀 값
@@ -307,8 +301,6 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
         //Log.d(TAG, "check dobule to int inversion. dobule: " + inverseTransformedPointMat.get(0, 0)[0] + ",int:  " + original_pixel_x);
 
         // 5. 로봇 좌표로 변환
-        //double robot_x = (original_pixel_x * nResolution) + origin_x;
-        //double robot_y = (original_image_height - original_pixel_y) * nResolution + origin_y;
         return Point(original_pixel_x, original_pixel_y)
     }
 
