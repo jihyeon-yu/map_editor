@@ -12,6 +12,11 @@ import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_LINE
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POLYGON
 import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
 import com.forsk.ondevice.CommonUtil.debugLog
+import com.forsk.ondevice.domain.BlockArea
+import com.forsk.ondevice.domain.BlockWall
+import com.forsk.ondevice.domain.MapMapping
+import com.forsk.ondevice.domain.Room
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,158 +40,111 @@ import java.util.Objects
 class MapEditorViewModel(application: Application) : AndroidViewModel(application = application) {
     val TAG = "loadJson"
 
-    suspend fun loadJson(mapViewer: MapImageView, filePath: String?, lib_flag: Boolean): Boolean {
+    suspend fun loadJson(mapViewer: MapImageView, filePath: String?, libFlag: Boolean): Boolean {
         Log.d(TAG, "Exist Json File")
-        val jsonStringBuilder = StringBuilder()
 
-        // 내부 저장소에서 파일 스트림 열기
-        // InputStream 데이터를 문자열로 변환
-        try {
+        return try {
             withContext(IO) {
-                FileInputStream(filePath).use { inputStream ->
+                val jsonString = FileInputStream(filePath).use { inputStream ->
                     InputStreamReader(inputStream).use { inputStreamReader ->
-                        BufferedReader(inputStreamReader).use { bufferedReader ->
-                            var line: String?
-                            while ((bufferedReader.readLine().also { line = it }) != null) {
-                                jsonStringBuilder.append(line)
-                            }
-
-                            // JSON 문자열로 변환
-                            val jsonString = jsonStringBuilder.toString()
-
-                            // JSON 파싱
-                            val jsonObject = JSONObject(jsonString)
-
-                            var x = 0
-                            var y = 0
-                            var left = 0
-                            var right = 0
-                            var bottom = 0
-                            var top = 0
-                            // 1. room_list 데이터 읽기
-                            println("Room List:")
-                            val roomList = jsonObject.getJSONArray("room_list")
-                            for (i in 0 until roomList.length()) {
-                                val room = roomList.getJSONObject(i)
-                                val id = room.getString("id")
-                                val name = room.getString("name")
-                                val imagePathArray = room.getJSONArray("image_path")
-                                val imagePosition = room.getJSONObject("image_position")
-                                val mbr_x = imagePosition.getInt("x")
-                                val mbr_y = imagePosition.getInt("y")
-                                Log.d(TAG, "  Room ID: $id")
-                                Log.d(TAG, "  Name: $name")
-                                Log.d(TAG, "  Image Path:")
-                                Log.d(
-                                    TAG,
-                                    "  ImagePosition: $mbr_x $mbr_y"
-                                )
-                                for (j in 0 until imagePathArray.length()) {
-                                    val point = imagePathArray.getJSONObject(j)
-                                    x = point.getInt("x")
-                                    y = point.getInt("y")
-                                    Log.d(TAG, "    Point: ($x, $y)")
-                                    if (j == 0) {
-                                        mapViewer.loadObject(ROI_TYPE_POLYGON, Point(x, y))
-                                    } else {
-                                        mapViewer.addPointPolygon(Point(x, y))
-                                    }
-                                    if (left > x) left = x
-                                    if (right < x) right = x
-                                    if (top > y) top = y
-                                    if (bottom < y) bottom = y
-                                }
-                                mapViewer.drawing = true
-                                mapViewer.roiAddObject()
-                                // 241222 seongwoong 현재 버그 있음 확인 필요
-                                //MapViewer.m_RoiCurObject.m_MBR = new Rect(left, top, right, bottom);
-                                mapViewer.roiCurObject!!.mMBRCenter.x = mbr_x
-                                mapViewer.roiCurObject!!.mMBRCenter.y = mbr_y
-                                mapViewer.setLabel(name)
-                                if (lib_flag) {
-                                    val theta = imagePosition.getDouble("theta").toFloat()
-                                    mapViewer.roiCurObject?.angle = theta
-                                }
-                            }
-
-
-                            // 2. block_area 데이터 읽기
-                            Log.d(TAG, "\nBlock Area:")
-                            val blockAreaArray = jsonObject.getJSONArray("block_area")
-                            for (i in 0 until blockAreaArray.length()) {
-                                val block = blockAreaArray.getJSONObject(i)
-                                val imagePathArray = block.getJSONArray("image_path")
-
-                                Log.d(TAG, "  Block Area Image Path:")
-                                val point = imagePathArray.getJSONObject(0)
-                                x = point.getInt("x")
-                                y = point.getInt("y")
-
-                                val pt1 = Point(x, y)
-                                Log.d(TAG, "    Point: ($x, $y)")
-
-                                val point2 = imagePathArray.getJSONObject(2)
-                                x = point2.getInt("x")
-                                y = point2.getInt("y")
-                                val pt2 = Point(x, y)
-
-                                Log.d(TAG, "    Point: ($x, $y)")
-                                mapViewer.loadObject(ROI_TYPE_RECT, pt1)
-                                mapViewer.loadRect(pt1, pt2)
-                                mapViewer.roiAddObject()
-                            }
-
-                            // 3. block_wall 데이터 읽기
-                            Log.d(TAG, "\nBlock Wall:")
-                            val blockWallArray = jsonObject.getJSONArray("block_wall")
-                            for (i in 0 until blockWallArray.length()) {
-                                val block = blockWallArray.getJSONObject(i)
-                                val imagePathArray = block.getJSONArray("image_path")
-
-                                Log.d(TAG, "  Block Wall Image Path:")
-                                val point = imagePathArray.getJSONObject(0)
-                                x = point.getInt("x")
-                                y = point.getInt("y")
-                                val pt1 = Point(x, y)
-
-                                Log.d(TAG, "    Point: ($x, $y)")
-
-                                val point2 = imagePathArray.getJSONObject(1)
-                                x = point2.getInt("x")
-                                y = point2.getInt("y")
-                                val pt2 = Point(x, y)
-
-                                Log.d(TAG, "    Point: ($x, $y)")
-
-                                mapViewer.loadObject(ROI_TYPE_LINE, pt1)
-                                mapViewer.loadRect(pt1, pt2)
-                                mapViewer.roiAddObject()
-                            }
-
-                            mapViewer.currentSelectedIndex = -1
-                            mapViewer.roiCurObject = null
-                            Log.d(TAG, "Read Json Success")
-                            return@withContext true
-                        }
+                        BufferedReader(inputStreamReader).use { it.readText() }
                     }
                 }
+
+                val jsonObject = Gson().fromJson(jsonString, MapMapping::class.java)
+                parseRoomList(jsonObject.room_list, mapViewer, libFlag)
+                parseBlockArea(jsonObject.block_area, mapViewer)
+                parseBlockWall(jsonObject.block_wall, mapViewer)
+
+                mapViewer.currentSelectedIndex = -1
+                mapViewer.roiCurObject = null
+                Log.d(TAG, "Read Json Success")
+                true
             }
-        } catch (fe: FileNotFoundException) {
-            Log.e(TAG, "Read Json FileNotFoundException: " + filePath + " " + fe.message)
-            return false
+        } catch (e: FileNotFoundException) {
+            Log.e(TAG, "Read Json FileNotFoundException: $filePath ${e.message}")
+            false
         } catch (e: JSONException) {
-            Log.e(TAG, "Read Json JSON, IO Exception: " + e.message)
-            return false
+            Log.e(TAG, "Read Json JSONException: ${e.message}")
+            false
         } catch (e: IOException) {
-            Log.e(TAG, "Read Json JSON, IO Exception: " + e.message)
-            return false
+            Log.e(TAG, "Read Json IOException: ${e.message}")
+            false
         } finally {
-            // 자원이 자동으로 닫히는지 확인할 필요가 없지만 명시적으로 로깅 가능
-            Log.d(TAG, "loadjson end")
+            Log.d(TAG, "loadJson end")
         }
-        return true
     }
 
+    private fun parseRoomList(roomList: List<Room>, mapViewer: MapImageView, libFlag: Boolean) {
+        Log.d(TAG, "Room List:")
+
+        roomList.forEach {
+            val name = it.name
+            val imagePathArray = it.image_path
+            val imagePosition = it.image_position
+            val x = it.image_position.x
+            val y = it.image_position.y
+
+            Log.d(TAG, "  Image Position: $x, $y")
+
+            var left = Int.MAX_VALUE
+            var right = Int.MIN_VALUE
+            var top = Int.MAX_VALUE
+            var bottom = Int.MIN_VALUE
+
+            imagePathArray.forEachIndexed { index, imagePath ->
+                if (index == 0) {
+                    mapViewer.loadObject(ROI_TYPE_POLYGON, Point(imagePath.x, imagePath.y))
+                } else {
+                    mapViewer.addPointPolygon(Point(imagePath.x, imagePath.y))
+                }
+
+                left = minOf(left, x)
+                right = maxOf(right, x)
+                top = minOf(top, y)
+                bottom = maxOf(bottom, y)
+            }
+
+            mapViewer.drawing = true
+            mapViewer.addROIObject()
+            mapViewer.roiCurObject?.mMBRCenter = Point(x, y)
+            mapViewer.setLabel(name)
+
+            if (libFlag) {
+                mapViewer.roiCurObject?.angle = imagePosition.theta.toFloat()
+            }
+        }
+    }
+
+    private fun parseBlockArea(blockAreaList: List<BlockArea>, mapViewer: MapImageView) {
+        Log.d(TAG, "\nBlock Area:")
+
+        blockAreaList.forEach {
+            val imagePathArray = it.image_path
+            val pt1 = Point(imagePathArray[0].x, imagePathArray[0].y)
+            val pt2 = Point(imagePathArray[2].x, imagePathArray[2].y)
+
+            Log.d(TAG, "  Block Area Points: $pt1, $pt2")
+            mapViewer.loadObject(ROI_TYPE_RECT, pt1)
+            mapViewer.loadRect(pt1, pt2)
+            mapViewer.addROIObject()
+        }
+    }
+
+    private fun parseBlockWall(blockWall: List<BlockWall>, mapViewer: MapImageView) {
+        Log.d(TAG, "\nBlock Wall:")
+        blockWall.forEach {
+            val imagePathArray = it.image_path
+
+            val pt1 = Point(imagePathArray[0].x, imagePathArray[0].y)
+            val pt2 = Point(imagePathArray[1].x, imagePathArray[1].y)
+
+            Log.d(TAG, "  Block Wall Points: $pt1, $pt2")
+            mapViewer.loadObject(ROI_TYPE_LINE, pt1)
+            mapViewer.loadRect(pt1, pt2)
+            mapViewer.addROIObject()
+        }
+    }
 
     @Throws(IOException::class)
     fun loadPNG(filePath: String): Bitmap {

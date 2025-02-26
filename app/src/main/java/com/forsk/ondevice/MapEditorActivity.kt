@@ -719,91 +719,93 @@ class MapEditorActivity : AppCompatActivity() {
 
         var i = 0
         while (i < mapViewer.roiObjects.size) {
-            if (mapViewer.roiObjects[i].roiType == ROI_TYPE_POLYGON) {
-                if (countId > 0) {
-                    strRoiJson += ", "
-                }
-
-                countId++ // 고유 id
-
-                strRoiJson += "{"
-                strRoiJson += "\"id\": \"$countId\""
-                strRoiJson += ", \"name\": \"" + mapViewer.roiObjects[i].label + "\""
-                strRoiJson += ", \"color\":\"#47910f\", \"desc\":\"\""
-                strRoiJson += ", \"robot_path\":["
-
-                //strRoiJson += "{\"x\":-2.97,\"y\":7.15},{\"x\":-3.02,\"y\":7.1000004},{\"x\":-3.17,\"y\":7.1000004},{\"x\":-3.22,\"y\":7.05},{\"x\":-3.22,\"y\":6.9},{\"x\":-3.27,\"y\":6.8500004},{\"x\":-3.27,\"y\":4},{\"x\":-3.22,\"y\":3.95},{\"x\":-2.47,\"y\":3.95},{\"x\":-2.42,\"y\":4},{\"x\":-2.22,\"y\":4},{\"x\":-2.17,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.1},{\"x\":-1.67,\"y\":4.15},{\"x\":-1.67,\"y\":4.25},{\"x\":-1.62,\"y\":4.3},{\"x\":-1.62,\"y\":4.35},{\"x\":-1.5699999,\"y\":4.4},{\"x\":-1.5699999,\"y\":4.4500003},{\"x\":-1.52,\"y\":4.5},{\"x\":-1.52,\"y\":4.6},{\"x\":-1.4699999,\"y\":4.65},{\"x\":-1.4699999,\"y\":4.7000003},{\"x\":-1.42,\"y\":4.75},{\"x\":-1.42,\"y\":4.8500004},{\"x\":-1.37,\"y\":4.9},{\"x\":-1.37,\"y\":4.9500003},{\"x\":-1.3199999,\"y\":5},{\"x\":-1.3199999,\"y\":5.05},{\"x\":-1.27,\"y\":5.1000004},{\"x\":-1.27,\"y\":5.2000003},{\"x\":-1.2199999,\"y\":5.25},{\"x\":-1.2199999,\"y\":5.3},{\"x\":-1.17,\"y\":5.3500004},{\"x\":-1.17,\"y\":5.4500003},{\"x\":-1.12,\"y\":5.5},{\"x\":-1.12,\"y\":5.55},{\"x\":-1.0699999,\"y\":5.6000004},{\"x\":-1.0699999,\"y\":5.65},{\"x\":-1.02,\"y\":5.7000003},{\"x\":-1.02,\"y\":5.8},{\"x\":-0.96999997,\"y\":5.8500004},{\"x\":-0.96999997,\"y\":5.9},{\"x\":-0.91999996,\"y\":5.9500003},{\"x\":-0.91999996,\"y\":6.05},{\"x\":-0.86999995,\"y\":6.1000004},{\"x\":-0.86999995,\"y\":6.15},{\"x\":-0.81999993,\"y\":6.2000003},{\"x\":-0.81999993,\"y\":6.3},{\"x\":-0.77,\"y\":6.3500004},{\"x\":-0.77,\"y\":6.4},{\"x\":-1.27,\"y\":6.4},{\"x\":-1.37,\"y\":6.5},{\"x\":-1.37,\"y\":6.8},{\"x\":-1.42,\"y\":6.8500004},{\"x\":-1.42,\"y\":7},{\"x\":-1.5699999,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15}";
-                j = 0
-                while (j < mapViewer.roiObjects[i].mPoints.size) {
-                    if (j > 0) {
+            when (mapViewer.roiObjects[i].roiType) {
+                ROI_TYPE_POLYGON -> {
+                    if (countId > 0) {
                         strRoiJson += ", "
                     }
 
+                    countId++ // 고유 id
+
                     strRoiJson += "{"
+                    strRoiJson += "\"id\": \"$countId\""
+                    strRoiJson += ", \"name\": \"" + mapViewer.roiObjects[i].label + "\""
+                    strRoiJson += ", \"color\":\"#47910f\", \"desc\":\"\""
+                    strRoiJson += ", \"robot_path\":["
+
+                    //strRoiJson += "{\"x\":-2.97,\"y\":7.15},{\"x\":-3.02,\"y\":7.1000004},{\"x\":-3.17,\"y\":7.1000004},{\"x\":-3.22,\"y\":7.05},{\"x\":-3.22,\"y\":6.9},{\"x\":-3.27,\"y\":6.8500004},{\"x\":-3.27,\"y\":4},{\"x\":-3.22,\"y\":3.95},{\"x\":-2.47,\"y\":3.95},{\"x\":-2.42,\"y\":4},{\"x\":-2.22,\"y\":4},{\"x\":-2.17,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.1},{\"x\":-1.67,\"y\":4.15},{\"x\":-1.67,\"y\":4.25},{\"x\":-1.62,\"y\":4.3},{\"x\":-1.62,\"y\":4.35},{\"x\":-1.5699999,\"y\":4.4},{\"x\":-1.5699999,\"y\":4.4500003},{\"x\":-1.52,\"y\":4.5},{\"x\":-1.52,\"y\":4.6},{\"x\":-1.4699999,\"y\":4.65},{\"x\":-1.4699999,\"y\":4.7000003},{\"x\":-1.42,\"y\":4.75},{\"x\":-1.42,\"y\":4.8500004},{\"x\":-1.37,\"y\":4.9},{\"x\":-1.37,\"y\":4.9500003},{\"x\":-1.3199999,\"y\":5},{\"x\":-1.3199999,\"y\":5.05},{\"x\":-1.27,\"y\":5.1000004},{\"x\":-1.27,\"y\":5.2000003},{\"x\":-1.2199999,\"y\":5.25},{\"x\":-1.2199999,\"y\":5.3},{\"x\":-1.17,\"y\":5.3500004},{\"x\":-1.17,\"y\":5.4500003},{\"x\":-1.12,\"y\":5.5},{\"x\":-1.12,\"y\":5.55},{\"x\":-1.0699999,\"y\":5.6000004},{\"x\":-1.0699999,\"y\":5.65},{\"x\":-1.02,\"y\":5.7000003},{\"x\":-1.02,\"y\":5.8},{\"x\":-0.96999997,\"y\":5.8500004},{\"x\":-0.96999997,\"y\":5.9},{\"x\":-0.91999996,\"y\":5.9500003},{\"x\":-0.91999996,\"y\":6.05},{\"x\":-0.86999995,\"y\":6.1000004},{\"x\":-0.86999995,\"y\":6.15},{\"x\":-0.81999993,\"y\":6.2000003},{\"x\":-0.81999993,\"y\":6.3},{\"x\":-0.77,\"y\":6.3500004},{\"x\":-0.77,\"y\":6.4},{\"x\":-1.27,\"y\":6.4},{\"x\":-1.37,\"y\":6.5},{\"x\":-1.37,\"y\":6.8},{\"x\":-1.42,\"y\":6.8500004},{\"x\":-1.42,\"y\":7},{\"x\":-1.5699999,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15}";
+                    j = 0
+                    while (j < mapViewer.roiObjects[i].mPoints.size) {
+                        if (j > 0) {
+                            strRoiJson += ", "
+                        }
+
+                        strRoiJson += "{"
+
+                        val coordinates = viewModel.calculateCoordinate(
+                            mapViewer.roiObjects[i].mPoints[j]!!.x,
+                            mapViewer.roiObjects[i].mPoints[j]!!.y,
+                            image_height
+                        )
+
+                        val path_x = coordinates[0]
+                        val path_y = coordinates[1]
+
+                        strRoiJson += "\"x\":$path_x"
+                        strRoiJson += ", \"y\":$path_y"
+
+                        strRoiJson += "}"
+                        j++
+                    }
+                    strRoiJson += "]"
+                    strRoiJson += ", \"image_path\":["
+                    j = 0
+                    while (j < mapViewer.roiObjects[i].mPoints.size) {
+                        if (j > 0) {
+                            strRoiJson += ", "
+                        }
+
+                        strRoiJson += "{"
+
+                        strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].mPoints[j]!!.x)
+                        strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].mPoints[j]!!.y)
+
+                        strRoiJson += "}"
+                        j++
+                    }
+                    strRoiJson += "]"
+                    strRoiJson += ", \"robot_position\":{"
 
                     val coordinates = viewModel.calculateCoordinate(
-                        mapViewer.roiObjects[i].mPoints[j]!!.x,
-                        mapViewer.roiObjects[i].mPoints[j]!!.y,
+                        mapViewer.roiObjects[i].mMBRCenter.x,
+                        mapViewer.roiObjects[i].mMBRCenter.y,
                         image_height
                     )
 
-                    val path_x = coordinates[0]
-                    val path_y = coordinates[1]
+                    val xvw = coordinates[0]
+                    val yvh = coordinates[1]
+                    strRoiJson += "\"is_set_theta\":$isSetTheta, "
+                    strRoiJson += "\"x\":$xvw"
+                    strRoiJson += ", \"y\":$yvh"
+                    var angle =
+                        mapViewer.roiObjects[i].angle - Math.toRadians(viewModel.rotated_angle.toDouble())
 
-                    strRoiJson += "\"x\":$path_x"
-                    strRoiJson += ", \"y\":$path_y"
-
-                    strRoiJson += "}"
-                    j++
-                }
-                strRoiJson += "]"
-                strRoiJson += ", \"image_path\":["
-                j = 0
-                while (j < mapViewer.roiObjects[i].mPoints.size) {
-                    if (j > 0) {
-                        strRoiJson += ", "
-                    }
-
-                    strRoiJson += "{"
-
-                    strRoiJson += "\"x\":" + (mapViewer.roiObjects[i].mPoints[j]!!.x)
-                    strRoiJson += ", \"y\":" + (mapViewer.roiObjects[i].mPoints[j]!!.y)
+                    angle = ((angle + Math.PI) % (2 * Math.PI)) - Math.PI
+                    strRoiJson += ", \"theta\":$angle"
 
                     strRoiJson += "}"
-                    j++
+
+                    strRoiJson += ", \"image_position\":{"
+
+                    val xvwImage = mapViewer.roiObjects[i].mMBRCenter.x // polygon의 무게중심 x
+                    val yvhImage = mapViewer.roiObjects[i].mMBRCenter.y // polygon의 무게중심 y
+
+                    strRoiJson += "\"x\":" + xvwImage
+                    strRoiJson += ", \"y\":" + yvhImage
+                    strRoiJson += ", \"theta\":" + mapViewer.roiObjects[i].angle
+                    strRoiJson += "}"
+                    strRoiJson += "}"
                 }
-                strRoiJson += "]"
-                strRoiJson += ", \"robot_position\":{"
-
-                val coordinates = viewModel.calculateCoordinate(
-                    mapViewer.roiObjects[i].mMBRCenter.x,
-                    mapViewer.roiObjects[i].mMBRCenter.y,
-                    image_height
-                )
-
-                val xvw = coordinates[0]
-                val yvh = coordinates[1]
-                strRoiJson += "\"is_set_theta\":$isSetTheta, "
-                strRoiJson += "\"x\":$xvw"
-                strRoiJson += ", \"y\":$yvh"
-                var angle =
-                    mapViewer.roiObjects[i].angle - Math.toRadians(viewModel.rotated_angle.toDouble())
-
-                angle = ((angle + Math.PI) % (2 * Math.PI)) - Math.PI
-                strRoiJson += ", \"theta\":$angle"
-
-                strRoiJson += "}"
-
-                strRoiJson += ", \"image_position\":{"
-
-                val xvwImage = mapViewer.roiObjects[i].mMBRCenter.x // polygon의 무게중심 x
-                val yvhImage = mapViewer.roiObjects[i].mMBRCenter.y // polygon의 무게중심 y
-
-                strRoiJson += "\"x\":" + xvwImage
-                strRoiJson += ", \"y\":" + yvhImage
-                strRoiJson += ", \"theta\":" + mapViewer.roiObjects[i].angle
-                strRoiJson += "}"
-                strRoiJson += "}"
             }
 
             i++

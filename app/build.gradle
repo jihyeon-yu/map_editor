@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
 }
 
 android {
@@ -70,19 +71,20 @@ android {
 }
 
 dependencies {
-
+    implementation project(':sdk')
+    implementation libs.kotlinx.serialization.json
 
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity
     implementation libs.constraintlayout
-    implementation project(':sdk')
     implementation libs.core.ktx
+    implementation libs.core.splashscreen
+    implementation libs.lifecycle.viewmodel.ktx
+    implementation libs.snakeyaml
+    implementation(libs.gson)
+
     testImplementation libs.junit
-    implementation(libs.lifecycle.viewmodel.ktx)
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
-    implementation 'org.yaml:snakeyaml:2.0'
-
-    implementation libs.core.splashscreen
 }

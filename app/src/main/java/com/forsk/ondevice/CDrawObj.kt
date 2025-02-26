@@ -555,7 +555,7 @@ class CDrawObj(// roi_point, roi_line, roi_rect
         mMBRCenter.y = ((mMBR.top + mMBR.bottom) / 2)
     }
 
-    fun AddEndPoint(point: Point?, flag: Boolean) {
+    fun addEndPoint(point: Point?, flag: Boolean) {
         //Log.d(TAG, "AddEndPoint(...)");
         // 마지막 점은 제외하고 시작 포인트와 끝 포인트를 같게 함
         if (flag) {
