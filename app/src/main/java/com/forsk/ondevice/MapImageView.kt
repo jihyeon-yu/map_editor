@@ -1269,4 +1269,8 @@ class MapImageView(context: Context, attrs: AttributeSet?) : View(context, attrs
     companion object {
         private const val TAG = "MapImageView"
     }
+    override fun invalidate() {
+        Log.w(">>>>>>", "invalidate 호출호출")
+        super.invalidate()
+    }
 }

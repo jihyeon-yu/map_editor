@@ -8,20 +8,15 @@ import android.graphics.Point
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_LINE
-import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_POLYGON
-import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
 import com.forsk.ondevice.CommonUtil.debugLog
-import com.forsk.ondevice.domain.BlockArea
-import com.forsk.ondevice.domain.BlockWall
 import com.forsk.ondevice.domain.MapMapping
-import com.forsk.ondevice.domain.Room
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONException
-import org.json.JSONObject
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.Core
 import org.opencv.core.CvType
@@ -40,7 +35,10 @@ import java.util.Objects
 class MapEditorViewModel(application: Application) : AndroidViewModel(application = application) {
     val TAG = "loadJson"
 
-    suspend fun loadJson(mapViewer: MapImageView, filePath: String?, libFlag: Boolean): Boolean {
+    private val _mapMappingData = MutableStateFlow<MapMapping?>(null)
+    val mapMappingData: StateFlow<MapMapping?> get() = _mapMappingData
+
+    suspend fun loadJson(filePath: String?): Boolean {
         Log.d(TAG, "Exist Json File")
 
         return try {
@@ -50,14 +48,8 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
                         BufferedReader(inputStreamReader).use { it.readText() }
                     }
                 }
+                _mapMappingData.emit(Gson().fromJson(jsonString, MapMapping::class.java))
 
-                val jsonObject = Gson().fromJson(jsonString, MapMapping::class.java)
-                parseRoomList(jsonObject.room_list, mapViewer, libFlag)
-                parseBlockArea(jsonObject.block_area, mapViewer)
-                parseBlockWall(jsonObject.block_wall, mapViewer)
-
-                mapViewer.currentSelectedIndex = -1
-                mapViewer.roiCurObject = null
                 Log.d(TAG, "Read Json Success")
                 true
             }
@@ -75,76 +67,6 @@ class MapEditorViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun parseRoomList(roomList: List<Room>, mapViewer: MapImageView, libFlag: Boolean) {
-        Log.d(TAG, "Room List:")
-
-        roomList.forEach {
-            val name = it.name
-            val imagePathArray = it.image_path
-            val imagePosition = it.image_position
-            val x = it.image_position.x
-            val y = it.image_position.y
-
-            Log.d(TAG, "  Image Position: $x, $y")
-
-            var left = Int.MAX_VALUE
-            var right = Int.MIN_VALUE
-            var top = Int.MAX_VALUE
-            var bottom = Int.MIN_VALUE
-
-            imagePathArray.forEachIndexed { index, imagePath ->
-                if (index == 0) {
-                    mapViewer.loadObject(ROI_TYPE_POLYGON, Point(imagePath.x, imagePath.y))
-                } else {
-                    mapViewer.addPointPolygon(Point(imagePath.x, imagePath.y))
-                }
-
-                left = minOf(left, x)
-                right = maxOf(right, x)
-                top = minOf(top, y)
-                bottom = maxOf(bottom, y)
-            }
-
-            mapViewer.drawing = true
-            mapViewer.addROIObject()
-            mapViewer.roiCurObject?.mMBRCenter = Point(x, y)
-            mapViewer.setLabel(name)
-
-            if (libFlag) {
-                mapViewer.roiCurObject?.angle = imagePosition.theta.toFloat()
-            }
-        }
-    }
-
-    private fun parseBlockArea(blockAreaList: List<BlockArea>, mapViewer: MapImageView) {
-        Log.d(TAG, "\nBlock Area:")
-
-        blockAreaList.forEach {
-            val imagePathArray = it.image_path
-            val pt1 = Point(imagePathArray[0].x, imagePathArray[0].y)
-            val pt2 = Point(imagePathArray[2].x, imagePathArray[2].y)
-
-            Log.d(TAG, "  Block Area Points: $pt1, $pt2")
-            mapViewer.loadObject(ROI_TYPE_RECT, pt1)
-            mapViewer.loadRect(pt1, pt2)
-            mapViewer.addROIObject()
-        }
-    }
-
-    private fun parseBlockWall(blockWall: List<BlockWall>, mapViewer: MapImageView) {
-        Log.d(TAG, "\nBlock Wall:")
-        blockWall.forEach {
-            val imagePathArray = it.image_path
-
-            val pt1 = Point(imagePathArray[0].x, imagePathArray[0].y)
-            val pt2 = Point(imagePathArray[1].x, imagePathArray[1].y)
-
-            Log.d(TAG, "  Block Wall Points: $pt1, $pt2")
-            mapViewer.loadObject(ROI_TYPE_LINE, pt1)
-            mapViewer.loadRect(pt1, pt2)
-            mapViewer.addROIObject()
-        }
-    }
 
     @Throws(IOException::class)
     fun loadPNG(filePath: String): Bitmap {

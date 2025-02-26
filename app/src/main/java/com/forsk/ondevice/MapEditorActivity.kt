@@ -2,17 +2,24 @@ package com.forsk.ondevice
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.Point
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.util.Pair
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.WindowManager
+import android.widget.LinearLayout
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
@@ -26,8 +33,13 @@ import com.forsk.ondevice.CDrawObj.Companion.ROI_TYPE_RECT
 import com.forsk.ondevice.CommonUtil.debugLog
 import com.forsk.ondevice.CommonUtil.warnLog
 import com.forsk.ondevice.databinding.ActivityMapEditorBinding
+import com.forsk.ondevice.databinding.DialogScrollableWithButtonsBinding
+import com.forsk.ondevice.domain.BlockArea
+import com.forsk.ondevice.domain.BlockWall
+import com.forsk.ondevice.domain.Room
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -220,8 +232,85 @@ class MapEditorActivity : AppCompatActivity() {
 
     private fun loadJsonMap() {
         lifecycleScope.launch(IO) {
-            if (!viewModel.loadJson(binding.mapViewer, destMappingFilePath, viewModel.lib_flag)) {
+            if (!viewModel.loadJson(destMappingFilePath)) {
                 Log.d(TAG, "Cannot read $destMappingFilePath")
+            }
+        }
+    }
+
+    private fun parseRoomList(roomList: List<Room>) {
+        Log.d(TAG, "Room List:")
+
+        roomList.forEach {
+            val name = it.name
+            val imagePathArray = it.image_path
+            val imagePosition = it.image_position
+            val x = it.image_position.x
+            val y = it.image_position.y
+
+            Log.d(TAG, "  Image Position: $x, $y")
+
+            var left = Int.MAX_VALUE
+            var right = Int.MIN_VALUE
+            var top = Int.MAX_VALUE
+            var bottom = Int.MIN_VALUE
+
+            binding.mapViewer.apply {
+                imagePathArray.forEachIndexed { index, imagePath ->
+                    if (index == 0) {
+                        loadObject(ROI_TYPE_POLYGON, Point(imagePath.x, imagePath.y))
+                    } else {
+                        addPointPolygon(Point(imagePath.x, imagePath.y))
+                    }
+
+                    left = minOf(left, x)
+                    right = maxOf(right, x)
+                    top = minOf(top, y)
+                    bottom = maxOf(bottom, y)
+                }
+
+                drawing = true
+                addROIObject()
+                roiCurObject?.mMBRCenter = Point(x, y)
+                setLabel(name)
+
+                if (viewModel.lib_flag) {
+                    roiCurObject?.angle = imagePosition.theta.toFloat()
+                }
+            }
+        }
+    }
+
+    private fun parseBlockArea(blockAreaList: List<BlockArea>) {
+        Log.d(TAG, "\nBlock Area:")
+
+        blockAreaList.forEach {
+            val imagePathArray = it.image_path
+            val pt1 = Point(imagePathArray[0].x, imagePathArray[0].y)
+            val pt2 = Point(imagePathArray[2].x, imagePathArray[2].y)
+
+            Log.d(TAG, "  Block Area Points: $pt1, $pt2")
+            binding.mapViewer.apply {
+                loadObject(ROI_TYPE_RECT, pt1)
+                loadRect(pt1, pt2)
+                addROIObject()
+            }
+        }
+    }
+
+    private fun parseBlockWall(blockWall: List<BlockWall>) {
+        Log.d(TAG, "\nBlock Wall:")
+        blockWall.forEach {
+            val imagePathArray = it.image_path
+
+            val pt1 = Point(imagePathArray[0].x, imagePathArray[0].y)
+            val pt2 = Point(imagePathArray[1].x, imagePathArray[1].y)
+
+            Log.d(TAG, "  Block Wall Points: $pt1, $pt2")
+            binding.mapViewer.apply {
+                loadObject(ROI_TYPE_LINE, pt1)
+                loadRect(pt1, pt2)
+                addROIObject()
             }
         }
     }
@@ -253,7 +342,10 @@ class MapEditorActivity : AppCompatActivity() {
         setDefaultButtonBackground()
         binding.toggleBar.apply {
             val selectedButtonBackground =
-                AppCompatResources.getDrawable(this@MapEditorActivity, R.drawable.rounded_button_white)
+                AppCompatResources.getDrawable(
+                    this@MapEditorActivity,
+                    R.drawable.rounded_button_white
+                )
             when (id) {
                 fabAddObject.id -> fabAddObject.background = selectedButtonBackground
                 fabSelectObject.id -> fabSelectObject.background = selectedButtonBackground
@@ -561,114 +653,114 @@ class MapEditorActivity : AppCompatActivity() {
     }
 
     private fun showCustomDialog(callback: DialogCallback) {
-//        val dialogBinding = DialogScrollableWithButtonsBinding.inflate(layoutInflater)
-//        val dialogView = dialogBinding.root
-//        val builder = AlertDialog.Builder(this, R.style.CustomDialogTheme)
-//        builder.setView(dialogView)
-//
-//        val dialog = builder.create()
-//
-//        dialogBinding.radioGroup
-//        // Find views
-//
-//        // Layout for items
-//        val layout = arrayOf(
-//            arrayOf("거실", "게스트룸", "드레스룸", "발코니"),  // 첫 번째 행
-//            arrayOf("복도", "서재", "아이방1", "아이방2"),  // 두 번째 행
-//            arrayOf("안방", "욕실1", "욕실2", "주방"),  // 세 번째 행
-//            arrayOf("침실", "현관", "", "") // 네 번째 행
-//        )
-//
-//        // List to manage all RadioButtons
-//        val allRadioButtons = ArrayList<RadioButton>()
-//        // 선택된 라디오 버튼의 텍스트를 추적하기 위한 변수
-//        val selectedText = arrayOf<String>("")
-//        // Dynamically add rows
-//        for (row in layout) {
-//            // Create a horizontal LinearLayout for each row
-//            val rowLayout = LinearLayout(this)
-//            rowLayout.orientation = LinearLayout.HORIZONTAL
-//            rowLayout.layoutParams = RadioGroup.LayoutParams(
-//                RadioGroup.LayoutParams.MATCH_PARENT,
-//                RadioGroup.LayoutParams.WRAP_CONTENT
-//            )
-//            var idCounter = 0 // 고유 ID 생성기
-//            // Add items to the row
-//            for (item in row) {
-//                if (!item.isEmpty()) {
-//                    // Create and style the RadioButton
-//                    val radioButton = RadioButton(this)
-//                    radioButton.text = item
-//                    radioButton.id = idCounter++
-//                    radioButton.setTextColor(resources.getColor(android.R.color.white))
-//                    radioButton.textSize = 20f
-//
-//                    // Set LayoutParams with margins
-//                    val layoutParams = LinearLayout.LayoutParams(
-//                        0,
-//                        LinearLayout.LayoutParams.WRAP_CONTENT,
-//                        1f // 균등 분배
-//                    )
-//                    layoutParams.setMargins(10, 20, 10, 20) // 위아래 마진 추가
-//                    radioButton.layoutParams = layoutParams
-//
-//                    radioButton.gravity = Gravity.LEFT // 왼쪽 정렬
-//
-//                    // Add to the list
-//                    allRadioButtons.add(radioButton)
-//
-//                    // Add click listener to uncheck others
-//                    radioButton.setOnClickListener { v: View ->
-//                        for (rb in allRadioButtons) {
-//                            if (rb !== v) {
-//                                rb.isChecked = false // 다른 버튼은 해제
-//                            } else selectedText[0] = item
-//                        }
-//                    }
-//
-//                    // Add RadioButton to the row
-//                    rowLayout.addView(radioButton)
-//                } else {
-//                    // Add empty space for empty slots
-//                    val space = View(this)
-//                    space.layoutParams = LinearLayout.LayoutParams(
-//                        0,
-//                        LinearLayout.LayoutParams.WRAP_CONTENT,
-//                        1f // 빈 공간도 균등 분배
-//                    )
-//                    rowLayout.addView(space)
-//                }
-//            }
-//
-//            // Add the row to the RadioGroup
-//            dialogBinding.radioGroup.addView(rowLayout)
-//        }
-//
-//        // Set button listeners
-//        dialogBinding.renamePinCancelButton.setOnClickListener { v: View? -> dialog.dismiss() }
-//        dialogBinding.renamePinConfirmButton.setOnClickListener { v: View? ->
-//            pinName = selectedText[0]
-//            callback.onConfirm(selectedText[0])
-//            dialog.dismiss()
-//        }
-//
-//        // Show the dialog
-//        dialog.show()
-//
-//        // Adjust dialog size
-//        val window = dialog.window
-//        if (window != null) {
-//            window.setLayout(
-//                ViewGroup.LayoutParams.MATCH_PARENT,
-//                ViewGroup.LayoutParams.WRAP_CONTENT
-//            )
-//            val params = window.attributes
-//            params.width = WindowManager.LayoutParams.MATCH_PARENT // 너비
-//            params.height = WindowManager.LayoutParams.WRAP_CONTENT // 높이
-//            params.horizontalMargin = 0.05f // 좌우 마진 (화면 비율로 계산)
-//            params.verticalMargin = 0.1f // 상하 마진
-//            window.attributes = params
-//        }
+        val dialogBinding = DialogScrollableWithButtonsBinding.inflate(layoutInflater)
+        val dialogView = dialogBinding.root
+        val builder = AlertDialog.Builder(this, R.style.CustomDialogTheme)
+        builder.setView(dialogView)
+
+        val dialog = builder.create()
+
+        dialogBinding.radioGroup
+        // Find views
+
+        // Layout for items
+        val layout = arrayOf(
+            arrayOf("거실", "게스트룸", "드레스룸", "발코니"),  // 첫 번째 행
+            arrayOf("복도", "서재", "아이방1", "아이방2"),  // 두 번째 행
+            arrayOf("안방", "욕실1", "욕실2", "주방"),  // 세 번째 행
+            arrayOf("침실", "현관", "", "") // 네 번째 행
+        )
+
+        // List to manage all RadioButtons
+        val allRadioButtons = ArrayList<RadioButton>()
+        // 선택된 라디오 버튼의 텍스트를 추적하기 위한 변수
+        val selectedText = arrayOf<String>("")
+        // Dynamically add rows
+        for (row in layout) {
+            // Create a horizontal LinearLayout for each row
+            val rowLayout = LinearLayout(this)
+            rowLayout.orientation = LinearLayout.HORIZONTAL
+            rowLayout.layoutParams = RadioGroup.LayoutParams(
+                RadioGroup.LayoutParams.MATCH_PARENT,
+                RadioGroup.LayoutParams.WRAP_CONTENT
+            )
+            var idCounter = 0 // 고유 ID 생성기
+            // Add items to the row
+            for (item in row) {
+                if (!item.isEmpty()) {
+                    // Create and style the RadioButton
+                    val radioButton = RadioButton(this)
+                    radioButton.text = item
+                    radioButton.id = idCounter++
+                    radioButton.setTextColor(resources.getColor(android.R.color.white))
+                    radioButton.textSize = 20f
+
+                    // Set LayoutParams with margins
+                    val layoutParams = LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f // 균등 분배
+                    )
+                    layoutParams.setMargins(10, 20, 10, 20) // 위아래 마진 추가
+                    radioButton.layoutParams = layoutParams
+
+                    radioButton.gravity = Gravity.LEFT // 왼쪽 정렬
+
+                    // Add to the list
+                    allRadioButtons.add(radioButton)
+
+                    // Add click listener to uncheck others
+                    radioButton.setOnClickListener { v: View ->
+                        for (rb in allRadioButtons) {
+                            if (rb !== v) {
+                                rb.isChecked = false // 다른 버튼은 해제
+                            } else selectedText[0] = item
+                        }
+                    }
+
+                    // Add RadioButton to the row
+                    rowLayout.addView(radioButton)
+                } else {
+                    // Add empty space for empty slots
+                    val space = View(this)
+                    space.layoutParams = LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f // 빈 공간도 균등 분배
+                    )
+                    rowLayout.addView(space)
+                }
+            }
+
+            // Add the row to the RadioGroup
+            dialogBinding.radioGroup.addView(rowLayout)
+        }
+
+        // Set button listeners
+        dialogBinding.renamePinCancelButton.setOnClickListener { v: View? -> dialog.dismiss() }
+        dialogBinding.renamePinConfirmButton.setOnClickListener { v: View? ->
+            pinName = selectedText[0]
+            callback.onConfirm(selectedText[0])
+            dialog.dismiss()
+        }
+
+        // Show the dialog
+        dialog.show()
+
+        // Adjust dialog size
+        val window = dialog.window
+        if (window != null) {
+            window.setLayout(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            val params = window.attributes
+            params.width = WindowManager.LayoutParams.MATCH_PARENT // 너비
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT // 높이
+            params.horizontalMargin = 0.05f // 좌우 마진 (화면 비율로 계산)
+            params.verticalMargin = 0.1f // 상하 마진
+            window.attributes = params
+        }
     }
 
 
@@ -685,6 +777,16 @@ class MapEditorActivity : AppCompatActivity() {
             intent.getStringExtra("srcMapYamlFilePath") ?: "/sdcard/Download/office.yaml"
         destMappingFilePath =
             intent.getStringExtra(ACTION_FILE_PATH) ?: "/sdcard/Download/map_meta_sample.json"
+
+        lifecycleScope.launch {
+            viewModel.mapMappingData.collectLatest {
+                if (it == null) return@collectLatest
+
+                parseRoomList(it.room_list)
+                parseBlockWall(it.block_wall)
+                parseBlockArea(it.block_area)
+            }
+        }
     }
 
 
