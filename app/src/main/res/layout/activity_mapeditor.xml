@@ -41,6 +41,7 @@
         />
 
     <!-- Move Map Floating Action Button -->
+    <!--
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabMoveMap"
         android:layout_width="44dp"
@@ -54,11 +55,27 @@
         android:backgroundTint="#969696"
         android:layout_gravity="bottom|start"
         />
+    -->
 
-
+    <!-- Rotate Map Floating Action Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabRotateMap"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginBottom="78dp"
+        android:layout_marginEnd="30dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_rotate"
+        app:fabSize="mini"
+        app:fabCustomSize="44dp"
+        app:roundPercent="1"
+        android:backgroundTint="#777777"
+        android:layout_gravity="bottom|end"
+        />
 
     <!-- 메인 레이아웃 -->
     <LinearLayout
+        android:id="@+id/linearLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -67,8 +84,8 @@
         <LinearLayout
             android:layout_width="640dp"
             android:layout_height="60dp"
-            android:orientation="vertical"
-            android:background="#000000">
+            android:background="#000000"
+            android:orientation="vertical">
             <!-- 상단 텍스트 -->
             <TextView
                 android:id="@+id/title"
@@ -76,11 +93,10 @@
                 android:layout_height="24dp"
                 android:layout_marginStart="292dp"
                 android:layout_marginTop="5dp"
-                android:text="맵 편집"
-                android:textSize="20sp"
-                android:textColor="#FFFFFF"
                 android:fontFamily="@font/pretendard"
-                />
+                android:text="맵 편집"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp" />
 
             <!-- 하단 텍스트 -->
             <TextView
@@ -88,32 +104,32 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
-                android:textSize="14sp"
-                android:textColor="#80FFFFFF"
-                android:gravity="center"
                 android:alpha="0.8"
-                android:text="" />
+                android:gravity="center"
+                android:text=""
+                android:textColor="#80FFFFFF"
+                android:textSize="14sp" />
 
             <!-- Divider -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="2dp"
-                android:background="#FFFFFF"
                 android:layout_marginTop="5dp"
-                android:alpha="0.4"/>
+                android:alpha="0.4"
+                android:background="#FFFFFF" />
         </LinearLayout>
 
         <!-- 중간 LinearLayout -->
         <LinearLayout
+            android:id="@+id/LayoutMain"
             android:layout_width="600dp"
             android:layout_height="262dp"
-            android:background="@drawable/rounded_corners_background"
-            android:id="@+id/LayoutMain"
-            android:gravity="center"
             android:layout_gravity="center"
             android:layout_marginLeft="20dp"
+            android:layout_marginTop="10dp"
             android:layout_marginRight="20dp"
-            android:layout_marginTop="10dp">
+            android:background="@drawable/rounded_corners_background"
+            android:gravity="center">
 
             <com.forsk.ondevice.MapImageView
                 android:id="@+id/imageView"
@@ -124,8 +140,8 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="77dp"
-            android:background="#000000"
-            android:layout_gravity="bottom">
+            android:layout_gravity="bottom"
+            android:background="#000000">
 
             <!-- 공간 생성 -->
             <Button
@@ -134,10 +150,10 @@
                 android:layout_height="47dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="10dp"
+                android:background="@drawable/rounded_button"
                 android:text="공간 생성"
-                android:textSize="18sp"
                 android:textColor="#FFFFFF"
-                android:background="@drawable/rounded_button" />
+                android:textSize="18sp" />
 
             <!-- 가상벽 -->
             <Button
@@ -146,10 +162,10 @@
                 android:layout_height="47dp"
                 android:layout_marginStart="111dp"
                 android:layout_marginTop="10dp"
+                android:background="@drawable/rounded_button"
                 android:text="가상벽 추가"
-                android:textSize="18sp"
                 android:textColor="#FFFFFF"
-                android:background="@drawable/rounded_button" />
+                android:textSize="18sp" />
 
             <!-- 금지공간 -->
             <Button
@@ -158,10 +174,10 @@
                 android:layout_height="47dp"
                 android:layout_marginStart="235dp"
                 android:layout_marginTop="10dp"
+                android:background="@drawable/rounded_button"
                 android:text="금지 공간 추가"
-                android:textSize="18sp"
                 android:textColor="#FFFFFF"
-                android:background="@drawable/rounded_button" />
+                android:textSize="18sp" />
 
             <!-- 완료 버튼 -->
             <Button
@@ -170,12 +186,12 @@
                 android:layout_height="47dp"
                 android:layout_marginStart="535dp"
                 android:layout_marginTop="10dp"
-                android:text="저장"
+                android:background="@drawable/rounded_button"
                 android:drawableStart="@drawable/ic_complete"
                 android:gravity="center"
-                android:textSize="18sp"
+                android:text="저장"
                 android:textColor="#FFFFFF"
-                android:background="@drawable/rounded_button" />
+                android:textSize="18sp" />
 
         </FrameLayout>
 
@@ -209,110 +225,59 @@
         android:layout_height="wrap_content"
         android:visibility="invisible"/>
 
+    <!-- roi complete 토글바 -->
+    <include
+        android:id="@+id/roi_complete_toggle_bar"
+        layout="@layout/roi_complete_toggle_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"/>
 
     <!-- 토글바 클릭 버튼 레이아웃 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        app:layout_anchor="@+id/linearLayout"
+        app:layout_anchorGravity="center">
 
         <!-- 공간 생성 -->
         <TextView
             android:id="@+id/fabAddObjectClicked"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:text="+"
-            android:visibility="invisible"
-            android:gravity="center"
-            android:textSize="20sp"
-            android:background="@drawable/rounded_button_white"
             android:layout_marginStart="72dp"
-            android:layout_marginTop="80dp"/>
-
-        <!-- 생성 완료 -->
-        <TextView
-            android:id="@+id/fabSelectObjectClicked"
-            android:layout_width="74dp"
-            android:layout_height="40dp"
-            android:text="생성 완료"
-            android:visibility="invisible"
-            android:gravity="center"
-            android:textSize="14sp"
-            android:background="@drawable/rounded_button_white"
-            android:layout_marginStart="115dp"
             android:layout_marginTop="80dp"
-            />
-
-        <!-- 영역 수정 -->
-        <TextView
-            android:id="@+id/fabMoveObjectClicked"
-            android:layout_width="74dp"
-            android:layout_height="40dp"
-            android:text="영역 수정"
-            android:visibility="invisible"
-            android:gravity="center"
-            android:textSize="14sp"
             android:background="@drawable/rounded_button_white"
-            android:layout_marginStart="192dp"
-            android:layout_marginTop="80dp"
-            />
-
-        <!-- 핀 이동 -->
-        <!-- 핀 이동 새로 연결 필요 -->
-        <TextView
-            android:id="@+id/fabMovePinClicked"
-            android:layout_width="60dp"
-            android:layout_height="40dp"
-            android:text="핀 이동"
-            android:visibility="invisible"
             android:gravity="center"
-            android:textSize="14sp"
-            android:background="@drawable/rounded_button_white"
-            android:layout_marginStart="270dp"
-            android:layout_marginTop="80dp"
-            />
+            android:text="+"
+            android:textSize="20sp"
+            android:visibility="invisible" />
 
         <!-- 핀 회전 -->
         <TextView
             android:id="@+id/fabRotatePinClicked"
             android:layout_width="60dp"
             android:layout_height="40dp"
-            android:text="핀 회전"
-            android:visibility="invisible"
-            android:gravity="center"
-            android:textSize="14sp"
-            android:background="@drawable/rounded_button_white"
             android:layout_marginStart="334dp"
             android:layout_marginTop="80dp"
-            />
-
-        <!-- 삭제 -->
-        <TextView
-            android:id="@+id/fabDeleteObjectClicked"
-            android:layout_width="44dp"
-            android:layout_height="40dp"
-            android:text="삭제"
-            android:visibility="invisible"
-            android:gravity="center"
-            android:textSize="14sp"
             android:background="@drawable/rounded_button_white"
-            android:layout_marginStart="399dp"
-            android:layout_marginTop="80dp"
-            />
+            android:gravity="center"
+            android:text="핀 회전"
+            android:textSize="14sp"
+            android:visibility="invisible" />
 
         <!-- 이름 편집 -->
         <TextView
             android:id="@+id/fabRenameObjectClicked"
             android:layout_width="72dp"
             android:layout_height="40dp"
-            android:text="이름 편집"
-            android:visibility="invisible"
-            android:gravity="center"
-            android:textSize="14sp"
-            android:background="@drawable/rounded_button_white"
             android:layout_marginStart="450dp"
             android:layout_marginTop="80dp"
-            />
-
+            android:background="@drawable/rounded_button_white"
+            android:gravity="center"
+            android:text="이름 편집"
+            android:textSize="14sp"
+            android:visibility="invisible" />
 
 
     </LinearLayout>

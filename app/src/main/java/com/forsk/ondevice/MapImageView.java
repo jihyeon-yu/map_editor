@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import android.graphics.Matrix;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 public class MapImageView extends View {
@@ -32,7 +33,7 @@ public class MapImageView extends View {
     String strMenu = "Zoom";
 
     private Bitmap bitmap; // 표시할 비트맵
-    private Bitmap scaledBitmap;
+    private Bitmap bitmapRotate;
 
     int ScreenWidth = 0;
     int ScreenHeight = 0;
@@ -92,6 +93,7 @@ public class MapImageView extends View {
 
     private ScaleGestureDetector scaleGestureDetector;
     private Matrix matrix;
+    private int nRotateAngle = 0;
 
     private float scaleFactor = 1.0f;
     private float translateX = 0;     // X축 이동
@@ -107,12 +109,16 @@ public class MapImageView extends View {
     // 공간 개수
     int roomNum = 0;
 
+    private OnRoiSelectedListener RoiSelectedListener;
+    private OnRoiCreateListener RoiCreateListener;
+    private OnRoiChangedListener RoiChangedListener;
+
     public int getCurrentSelectedIndex() {
         return m_RoiCurIndex;
     }
 
     public Pair<Integer, Integer> getSelectedObjectPosition() {
-        if (m_RoiCurIndex != -1 && m_RoiCurIndex < m_RoiObjects.size()) {
+        if ( (m_RoiCurIndex != -1) && (m_RoiCurIndex < m_RoiObjects.size()) ) {
             int x;
             int y;
             if (m_RoiCurObject.roi_type.equals("roi_polygon")) {
@@ -134,6 +140,8 @@ public class MapImageView extends View {
 
     public void clearSelection() {
         m_RoiCurIndex = -1;
+        // 선택 안된 것을 activity에 전달
+        RoiSelectedListener.onRoiSelected(m_RoiCurIndex);
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
@@ -260,6 +268,10 @@ public class MapImageView extends View {
         }
     }
 
+    public void reDraw()
+    {
+        this.invalidate();
+    }
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -269,18 +281,38 @@ public class MapImageView extends View {
         float[] values = new float[9];
         matrix.getValues(values);
         // 변환된 이미지의 시작 좌표
-        StartPos_x = (int) (values[Matrix.MTRANS_X]);
-        StartPos_y = (int) (values[Matrix.MTRANS_Y]);
+        //StartPos_x = (int) (values[Matrix.MTRANS_X]);
+        //StartPos_y = (int) (values[Matrix.MTRANS_Y]);
+        Log.d(TAG, "StartPos_x : "+StartPos_x);
+        Log.d(TAG, "StartPos_y : "+StartPos_y);
 
         //Log.d(TAG, "values[Matrix.MTRANS_X] : "+values[Matrix.MTRANS_X]);
         //Log.d(TAG, "values[Matrix.MTRANS_Y] : "+values[Matrix.MTRANS_Y]);
 
         // 이미지 비율을 유지하면서 화면에 꽉차게 그려준다.
-        if (bitmap != null) {
+        if(bitmapRotate != null)
+        {
+
+            // View 크기 가져오기
+            int viewWidth = getWidth();
+            int viewHeight = getHeight();
+
+            // 원본 비트맵의 특정 영역
+            Rect srcRect = new Rect(0, 0, bitmapRotate.getWidth(), bitmap.getHeight());
+
+            // View 전체에 이미지를 확대해서 표시
+            Rect destRect = new Rect(StartPos_x, StartPos_y, (int) (StartPos_x + bitmapRotate.getWidth() * zoom_rate), (int) (StartPos_y + bitmap.getHeight() * zoom_rate));
+
+
+            // 캔버스에 그리기
+            canvas.drawBitmap(bitmapRotate, srcRect, destRect, null);
+        }
+        else if (bitmap != null) {
 
             // Matrix 변환을 사용하여 Bitmap 그리기
-            canvas.drawBitmap(bitmap, matrix, null);
-            /*
+            //canvas.drawBitmap(bitmap, matrix, null);
+
+
             // View 크기 가져오기
             int viewWidth = getWidth();
             int viewHeight = getHeight();
@@ -295,7 +327,7 @@ public class MapImageView extends View {
             // 캔버스에 그리기
             canvas.drawBitmap(bitmap, srcRect, destRect, null);
 
-            */
+
         }
 
         //Log.d(TAG, "m_RoiObjects.size() : " + (int)(m_RoiObjects.size()));
@@ -332,17 +364,43 @@ public class MapImageView extends View {
             m_RoiObjects.get(i).SetZoom(zoom_rate);
             if (strMenu.equals("수정")) {
                 if (m_CurType.equals(m_RoiObjects.get(i).roi_type) && i == m_RoiCurIndex) {
-                    m_RoiObjects.get(i).Draw(canvas, pt, bitmap, true, true);
+                    if(bitmapRotate != null)
+                    {
+                        m_RoiObjects.get(i).Draw(canvas, pt, bitmapRotate, true, true);
+                    }
+                    else if(bitmap != null) {
+                        m_RoiObjects.get(i).Draw(canvas, pt, bitmap, true, true);
+                    }
                 } else {
-                    m_RoiObjects.get(i).Draw(canvas, pt, bitmap, false, false);
+                    if(bitmapRotate != null)
+                    {
+                        m_RoiObjects.get(i).Draw(canvas, pt, bitmapRotate, false, false);
+                    }
+                    else if(bitmap != null) {
+                        m_RoiObjects.get(i).Draw(canvas, pt, bitmap, false, false);
+                    }
                 }
             } else {
                 if (i == m_RoiCurIndex)
                 {
-                    m_RoiObjects.get(i).Draw(canvas, pt, bitmap, true, false);
+                    if(bitmapRotate != null)
+                    {
+                        m_RoiObjects.get(i).Draw(canvas, pt, bitmapRotate, true, false);
+                    }
+                    else if(bitmap != null)
+                    {
+                        m_RoiObjects.get(i).Draw(canvas, pt, bitmap, true, false);
+                    }
+
                 }
                 else {
-                    m_RoiObjects.get(i).Draw(canvas, pt, bitmap, false, false);
+                    if(bitmapRotate != null)
+                    {
+                        m_RoiObjects.get(i).Draw(canvas, pt, bitmapRotate, false, false);
+                    }
+                    else if(bitmap != null) {
+                        m_RoiObjects.get(i).Draw(canvas, pt, bitmap, false, false);
+                    }
                 }
             }
             //m_RoiObjects.get(i).DrawLabel(canvas);
@@ -405,9 +463,23 @@ public class MapImageView extends View {
             if(strMenu.equals("수정"))
             {
                 if(m_CurType.equals(m_RoiCurObject.roi_type)) {
-                    m_RoiCurObject.Draw(canvas, pt, bitmap, true, true);
+                    if(bitmapRotate != null)
+                    {
+                        m_RoiCurObject.Draw(canvas, pt, bitmapRotate, true, true);
+                    }
+                    if(bitmap != null)
+                    {
+                        m_RoiCurObject.Draw(canvas, pt, bitmap, true, true);
+                    }
+
                 } else {
-                    m_RoiCurObject.Draw(canvas, pt, bitmap, false, false);
+                    if(bitmapRotate != null)
+                    {
+                        m_RoiCurObject.Draw(canvas, pt, bitmapRotate, false, false);
+                    }
+                    else if(bitmap != null) {
+                        m_RoiCurObject.Draw(canvas, pt, bitmap, false, false);
+                    }
                 }
             } else {
                 m_RoiCurObject.Draw(canvas, pt, bitmap, false, false);
@@ -529,6 +601,7 @@ public class MapImageView extends View {
 
             this.m_CurType = "roi_polygon";
 
+
         } else if (strMode.equals("가상벽")) {
 
             this.m_CurType = "roi_line";
@@ -579,6 +652,8 @@ public class MapImageView extends View {
         }
 
         strMenu = str;
+        roi_CreateObject(); // 새로운 roi를 만든다.
+
         invalidate();
     }
 
@@ -649,7 +724,8 @@ public class MapImageView extends View {
     }
 
     public void MouseDown(float x, float y) {
-        //Log.d(TAG, "mouseDown("+x+","+y+")");
+        Log.d(TAG, "mouseDown("+x+","+y+")");
+
         nTouchUpPosX = nTouchDownPosX = (int) (x * zoom_rate);
         nTouchUpPosY = nTouchDownPosY = (int) (y * zoom_rate);
 
@@ -734,6 +810,15 @@ public class MapImageView extends View {
                     m_DnPoint.x = point.x;
                     m_DnPoint.y = point.y;
 
+
+                    if(m_RoiCurObject != null)
+                    {
+                        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+
+                        // 현재 그려지는 객체의 위치가 변경되었다는 것을 통보해준다.
+                        RoiCreateListener.onRoiCreate();
+                    }
                     invalidate(); // 화면을 다시 그리도록 요청
                 }
             }
@@ -747,10 +832,12 @@ public class MapImageView extends View {
 
                 SetCursorType();
 
+                m_DnPoint.x = point.x;
+                m_DnPoint.y = point.y;
+
                 // 현재 좌표가 ROI 객체 내부이면 이동시작
                 if ((m_objSelect != -1) && (m_roiviewflag == true)) {
-                    m_DnPoint.x = point.x;
-                    m_DnPoint.y = point.y;
+
 
                     m_isselected = true;
 
@@ -772,6 +859,13 @@ public class MapImageView extends View {
                     //CObject_Draw();
 
                 }
+                if(this.m_RoiCurIndex > -1)
+                {
+                    // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                    m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                }
+                RoiSelectedListener.onRoiSelected(m_RoiCurIndex);
+
                 invalidate(); // 화면을 다시 그리도록 요청
             }
         }
@@ -781,6 +875,7 @@ public class MapImageView extends View {
     public void MouseMove(float x, float y) {
         //Log.d(TAG, "MouseMove( "+x+","+y+" )");
 
+        /*
         if (strMenu.equals("이동"))
         //if(strMode.equals("맵 탐색") )
         {
@@ -813,13 +908,21 @@ public class MapImageView extends View {
                 matrix.postTranslate((float) dx, (float) dy);
                 //Log.d(TAG,"check mouse move: ");
 
+                if(this.m_RoiCurIndex > -1)
+                {
+                    // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                    m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                    // 변경된 것을 Activity에 전달해준다.
+                    RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                }
+
                 invalidate(); // 화면을 다시 그리도록 요청
             }
 
         }
-        else if (strMenu.equals("핀 회전")){
+        */
+        if (strMenu.equals("핀 회전")){
             if(m_RoiCurIndex != -1) {
-                m_RoiCurObject.isSetTheta = true;
                 float iconCenterX = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.x * zoom_rate + StartPos_x)); // +30 - 30 상쇄됨
                 float iconCenterY = (float) ((m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.y * zoom_rate + StartPos_y)); // +40 - 40 상쇄됨
 
@@ -832,9 +935,7 @@ public class MapImageView extends View {
 
                 //Log.d(TAG,"Delta Angle:" +  Math.toDegrees(deltaAngle));
                 m_RoiObjects.get(m_RoiCurIndex).setAngle(deltaAngle);
-//                double anglef = deltaAngle - Math.toRadians(-60.9810);
-//              Log.d(TAG,"Raddain:" +  Math.toDegrees(anglef));
-//                m_RoiObjects.get(m_RoiCurIndex).setAngle((float)anglef);
+
 
                 // 화면을 갱신해준다.
                 invalidate();
@@ -864,6 +965,13 @@ public class MapImageView extends View {
                 if (m_drawing == true) {
                     if (m_CurType.equals("roi_line") || m_CurType.equals("roi_rect")) {
                         CObject_MoveToRect(m_DnPoint, point);
+
+                        if(m_RoiCurObject != null) {
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                            // 현재 그리고 있는 것이 변경되었다고 알려준다.
+                            RoiCreateListener.onRoiCreate();
+                        }
                     }
                 } else {
                     if (m_objSelect == 0) {
@@ -871,6 +979,7 @@ public class MapImageView extends View {
                         // 여기에서 선택된 객체의 위치 이동을 구현해야 한다.
                         // 20241212 jihyeon 좌표 이동 시 반대 방향으로 이동하는 경우가 있어 CObject_MoveToRect를 CObject_MoveTo로 바꾸어 실행
                         //Log.d(TAG, "m_objSelect == 0")
+
                         CObject_MoveTo(m_DnPoint, point);
 
 
@@ -888,8 +997,13 @@ public class MapImageView extends View {
                             }
                         } else if (!m_RoiObjects.get(m_RoiCurIndex).roi_type.equals("roi_polygon")) {
 
+
                             CObject_MoveToRect(m_DnPoint, point);
 
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                            // 변경된 것을 Activity에 전달해준다.
+                            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
 
                             invalidate(); // 화면을 다시 그리도록 요청
                         }
@@ -910,6 +1024,49 @@ public class MapImageView extends View {
                     ////    SetCursorType();
                     ////    //CObject_Draw();   // 선택된 경우 그려주는 색상변경
                     ////}
+                    //Log.d(TAG, "m_DnPoint( "+m_DnPoint.x+","+m_DnPoint.y+")");
+                    int dx = (int) ((x - m_DnPoint.x));
+                    int dy = (int) ((y - m_DnPoint.y));
+
+
+                    boolean bIsRedraw = false;
+
+                    // 선택된 것이 없는 경우에 한하여 이동한다.
+                    if(m_RoiCurIndex < 0) {
+                        if (dx != 0) {
+                            //Log.d(TAG, "StartPos_x : "+StartPos_x);
+                            StartPos_x += dx;
+                            //Log.d(TAG, "StartPos_x : "+StartPos_x);
+                            m_DnPoint.x = (int) x;
+
+                            bIsRedraw = true;
+                        }
+                        if (dy != 0) {
+                            //Log.d(TAG, "StartPos_y : "+StartPos_y);
+                            StartPos_y += dy;
+                            //Log.d(TAG, "StartPos_y : "+StartPos_y);
+                            m_DnPoint.y = (int) y;
+
+                            bIsRedraw = true;
+                        }
+                    }
+
+                    if (bIsRedraw == true) {
+                        //Log.d(TAG,"check mouse move: ");
+
+                        matrix.postTranslate((float) dx, (float) dy);
+                        //Log.d(TAG,"check mouse move: ");
+
+                        if(this.m_RoiCurIndex > -1)
+                        {
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                            // 변경된 것을 Activity에 전달해준다.
+                            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                        }
+
+                        invalidate(); // 화면을 다시 그리도록 요청
+                    }
 
                 } else if (m_drawing == true) {
                     // 그리기 모드
@@ -923,6 +1080,20 @@ public class MapImageView extends View {
                         CObject_MoveTo(m_DnPoint, point);
                         //CObject_MoveToRect(m_DnPoint, point);
                         m_DnPoint = point;
+                        if(m_RoiCurIndex > -1)
+                        {
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                            // 변경된 것을 Activity에 전달해준다.
+                            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                        }
+                        if(m_RoiCurObject != null)
+                        {
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                            // 변경된 것을 Activity에 전달해준다.
+                            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                        }
 
                         invalidate(); // 화면을 다시 그리도록 요청
                     }
@@ -933,7 +1104,7 @@ public class MapImageView extends View {
     }
 
     public void MouseUp(float x, float y) {
-        //Log.d(TAG, "MouseUp( "+x+","+y+" )");
+        Log.d(TAG, "MouseUp( "+x+","+y+" )");
 
         nTouchUpPosX = (int) (x * zoom_rate);
         nTouchUpPosY = (int) (y * zoom_rate);
@@ -1049,6 +1220,20 @@ public class MapImageView extends View {
 
                     //map_image_draw();
                     //CObject_Draw();
+                    if(m_RoiCurIndex > -1)
+                    {
+                        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                        m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                        // 선택된 것을 Activity에 전달해준다.
+                        RoiSelectedListener.onRoiSelected(m_RoiCurIndex);
+                    }
+                    if(this.m_RoiCurObject != null)
+                    {
+                        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                        // 선택된 것을 Activity에 전달해준다.
+                        RoiCreateListener.onRoiCreate();
+                    }
                     invalidate(); // 화면을 다시 그리도록 요청
 
                     SetCursorType();
@@ -1060,6 +1245,13 @@ public class MapImageView extends View {
                     m_isselected = true;
 
                     //map_image_draw();
+                    if(m_RoiCurIndex > -1)
+                    {
+                        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                        m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                        // 변경된 것을 Activity에 전달해준다.
+                        RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+                    }
                     invalidate();
                     //CObject_Draw();
 
@@ -1072,8 +1264,6 @@ public class MapImageView extends View {
     }
 
     public void MoveMap(float dx, float dy) {
-
-        // 그려주는 onDraw()함수에 버그가 있음.
 
         StartPos_x += (int) dx;
         StartPos_y += (int) dy;
@@ -1090,7 +1280,13 @@ public class MapImageView extends View {
             StartPos_y = (int) ((viewHeight - imageH * zoom_rate) / 2);
         }
 
-
+        if(this.m_RoiCurIndex > -1)
+        {
+            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+            // 변경된 것을 Activity에 전달해준다.
+            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+        }
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
@@ -1154,6 +1350,11 @@ public class MapImageView extends View {
             m_isCapture = false;
             m_isselected = true;
 
+            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+            // 추가된 것을 Activity에 전달해준다.
+            RoiCreateListener.onRoiCreate();
+
             invalidate();
 
             return;
@@ -1171,6 +1372,11 @@ public class MapImageView extends View {
             m_RoiCurObject.m_endroiflag = true;
             m_isCapture = false;
             m_isselected = true;
+
+            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+            // 추가된 것을 Activity에 전달해준다.
+            RoiCreateListener.onRoiCreate();
 
             invalidate();
 
@@ -1202,22 +1408,128 @@ public class MapImageView extends View {
                     m_isCapture = false;
                     m_isselected = true;
 
+                    // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                    m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                    // 추가된 것을 Activity에 전달해준다.
+                    RoiCreateListener.onRoiCreate();
+
                     invalidate();
 
                     return;
 
                 }
             }
+            if(m_RoiCurObject != null) {
+                // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                // 추가된 것을 Activity에 전달해준다.
+                RoiCreateListener.onRoiCreate();
+            }
+
             invalidate();
             SetCursorType();
         }
 
     }
 
+    public void roi_CreateObject() {
+        Log.d(TAG, "roi_CreateObject(): ");
+
+        if (!strMenu.equals("추가")) return;
+
+        m_drawstart = false;
+
+        int distance = 100;
+        int viewWidth = getWidth();
+        int viewHeight = getHeight();
+        // 화면의 중심 좌표를 이미지 좌표로 생성한다.
+        int nLeft = (int) ((((viewWidth/2.0) - distance) - StartPos_x) / zoom_rate);
+        int nTop = (int) ((((viewHeight/2.0) - distance) - StartPos_y) / zoom_rate);;
+        int nRight = (int) ((((viewWidth/2.0) + distance) - StartPos_x) / zoom_rate);
+        int nBottom = (int) ((((viewHeight/2.0) + distance) - StartPos_y) / zoom_rate);;
+
+
+        Log.d(TAG, "getWidth() : "+viewWidth);
+        Log.d(TAG, "getHeight() : "+viewHeight);
+        Log.d(TAG, "distance : "+distance);
+        Log.d(TAG, "nLeft : "+nLeft);
+        Log.d(TAG, "nTop : "+nTop);
+        Log.d(TAG, "nRight : "+nRight);
+        Log.d(TAG, "nBottom : "+nBottom);
+        Log.d(TAG, "StartPos_x : "+StartPos_x);
+        Log.d(TAG, "StartPos_y : "+StartPos_y);
+        Log.d(TAG, "zoom_rate : "+zoom_rate);
+        Log.d(TAG, "m_CurType : "+ m_CurType);
+
+        // line 생성
+        if (m_CurType.equals("roi_polygon")) {
+
+            // 화면의 1/4 크기로 polygon(정사각형)으로 공간 생성한다.
+            // 화면의 가로세로 가운데가 로봇이 이동 가능 지역이 아니면,
+            // 가운데 점을 기준으로 1 pixel로 회전하면서 가장 가까운 점을 찾아서 그곳을 무게 중심으로 하는 공간을 생성한다.
+
+            m_RoiCurObject = new CDrawObj("roi_polygon", nLeft, nTop, nRight, nBottom);
+            Point pt = new Point(nLeft, nTop);
+            m_RoiCurObject.AddPoint(pt);
+            Point pt2 = new Point(nRight, nTop);
+            m_RoiCurObject.AddPoint(pt2);
+            Point pt3 = new Point(nRight, nBottom);
+            m_RoiCurObject.AddPoint(pt3);
+            Point pt4 = new Point(nLeft, nBottom);
+            m_RoiCurObject.AddEndPoint(pt4, true);
+
+            // 먼저 적용한다.
+            m_RoiCurIndex = m_RoiObjects.size();
+            m_RoiObjects.add(m_RoiCurObject);
+
+        }
+        // line 생성
+        if (m_CurType.equals("roi_line")) {
+            // 화면의 1/4 크기로 위에서 아래로 line으로 가상벽을 생성한다.
+            // 도형의 무게 줌심은 가로,세로 가운데이다.
+
+            m_RoiCurObject = new CDrawObj("roi_line", nLeft, nTop, nRight, nBottom);
+
+            // 먼저 적용한다.
+            m_RoiCurIndex = m_RoiObjects.size();
+            m_RoiObjects.add(m_RoiCurObject);
+        }
+        // line 생성
+        if (m_CurType.equals("roi_rect")) {
+            // 화면의 1/4 크기로 정사각형 rect로 금지 공간을 생성한다.
+            // 도형의 무게 줌심은 가로,세로 가운데이다.
+            // 스테이션이 금지공간에 표함되면 안된다.
+
+            m_RoiCurObject = new CDrawObj("roi_rect", nLeft, nTop, nRight, nBottom);
+
+            // 먼저 적용한다.
+            m_RoiCurIndex = m_RoiObjects.size();
+            m_RoiObjects.add(m_RoiCurObject);
+        }
+        else
+        {
+            //return;
+        }
+
+        if(m_RoiCurObject != null) {
+            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+            // 추가된 것을 Activity에 전달해준다.
+            RoiCreateListener.onRoiCreate();
+        }
+
+        strMenu = "수정";
+
+        invalidate();
+        SetCursorType();
+    }
+
     public void roi_RemoveObject() {
         if (!m_drawstart && !m_drawing) {
             if (CObject_DelCurObject()) {
                 //roomNum = CountRoomNum(); 공간 이름을 갱신할 것인가?
+                // 변경된 것을 Activity에 전달해준다.
+                RoiChangedListener.onRoiChanged(m_RoiCurIndex);
                 invalidate();
             }
         }
@@ -1366,6 +1678,8 @@ public class MapImageView extends View {
         m_RoiCurIndex = -1;
 
         //map_image_draw();
+        // 변경된 것을 Activity에 전달해준다.
+        RoiChangedListener.onRoiChanged(m_RoiCurIndex);
         invalidate(); // 화면을 다시 그리도록 요청
         //CObject_Draw();
 
@@ -1387,6 +1701,8 @@ public class MapImageView extends View {
             m_isselected = false;
 
             //map_image_draw();
+            // 변경된 것을 Activity에 전달해준다.
+            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
             invalidate(); // 화면을 다시 그리도록 요청
             //CObject_Draw();
         } else if (m_drawstart) {
@@ -1434,6 +1750,11 @@ public class MapImageView extends View {
         }
 
         //map_image_draw();
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
+
         invalidate(); // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
@@ -1468,6 +1789,10 @@ public class MapImageView extends View {
         }
 
         //map_image_draw();
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate(); // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
@@ -1508,6 +1833,10 @@ public class MapImageView extends View {
 
 
         //map_image_draw();
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate(); // 화면을 다시 그리도록 요청
         //CObject_Draw();
     }
@@ -1535,6 +1864,10 @@ public class MapImageView extends View {
         if (m_RoiCurIndex > -1) {
             m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);
         }
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
@@ -1583,15 +1916,29 @@ public class MapImageView extends View {
             m_RoiCurObject.MoveTo(pt1, pt2);
         }
 
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+
         if(m_RoiCurIndex > -1)
         {
             //m_RoiObjects.get(m_RoiCurIndex) = m_RoiCurObject;
             m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);
             //m_RoiObjects[m_RoiCurIndex].MoveTo(point, point_dn);
             //m_RoiCurObject = m_RoiObjects[m_RoiCurIndex];
+            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+
+            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+            // 변경된 것을 Activity에 전달해준다.
+            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
         }
 
         //map_image_draw();
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate();   // 화면갱신
         //CObject_Draw();
     }
@@ -1816,6 +2163,10 @@ public class MapImageView extends View {
 
         // 중복이 아니면 라벨 설정
         m_RoiCurObject.m_label = newLabel;
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate();
     }
 
@@ -1897,6 +2248,10 @@ public class MapImageView extends View {
             m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);
         }
 
+        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        // 변경된 것을 Activity에 전달해준다.
+        RoiCreateListener.onRoiCreate();
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
@@ -1913,5 +2268,393 @@ public class MapImageView extends View {
             deleteToggleBar.setVisibility(View.INVISIBLE);
         }
     }
+
+    // 인터페이스 정의
+    public interface OnRoiSelectedListener {
+        void onRoiSelected(int indexSelected);
+    }
+
+    // Activity에서 인터페이스를 설정할 수 있는 메서드
+    public void setRoiSelectedListener(OnRoiSelectedListener listener) {
+        RoiSelectedListener = listener;
+    }
+
+    // 인터페이스 정의
+    public interface OnRoiCreateListener {
+        void onRoiCreate();
+    }
+
+    // Activity에서 인터페이스를 설정할 수 있는 메서드
+    public void setRoiCreateListener(OnRoiCreateListener listener) {
+        RoiCreateListener = listener;
+    }
+
+    // 인터페이스 정의
+    public interface OnRoiChangedListener {
+        void onRoiChanged(int indexSelected);
+    }
+
+    // Activity에서 인터페이스를 설정할 수 있는 메서드
+    public void setRoiChangedListener(OnRoiChangedListener listener) {
+        RoiChangedListener = listener;
+    }
+
+    public int getRatateAngle()
+    {
+        return nRotateAngle;
+    }
+
+    public void setRotateMap90() {
+        nRotateAngle += 90; // 90도 회전
+        if (nRotateAngle >= 360) {
+            nRotateAngle = nRotateAngle % 360;
+        }
+
+
+
+
+        // setBitmap
+        float[] values = new float[9];
+        matrix.getValues(values);
+
+        Log.d(TAG, "StartPos_x : " + StartPos_x);
+        Log.d(TAG, "StartPos_y : " + StartPos_y);
+
+        Log.d(TAG, "values[Matrix.MTRANS_X] before: " + values[Matrix.MTRANS_X]);
+        Log.d(TAG, "values[Matrix.MTRANS_Y] before: " + values[Matrix.MTRANS_Y]);
+
+        int viewWidth = getWidth();
+        int viewHeight = getHeight();
+        Log.d(TAG, "getWidth() : "+getWidth());
+        Log.d(TAG, "getHeight() : "+getHeight());
+
+        Log.d(TAG, "bitmap.getWidth() :  "+bitmap.getWidth());
+        Log.d(TAG, "bitmap.getHeight() :  "+bitmap.getHeight());
+
+        Log.d(TAG, "zoom_rate : "+zoom_rate);
+
+        int xOld = StartPos_x;
+        int yOld = StartPos_y;
+
+        int i;
+        Log.d(TAG, "m_RoiObjects.size() : "+m_RoiObjects.size());
+        for(i=0;i<m_RoiObjects.size();i++)
+        {
+
+            rotateObj(m_RoiObjects.get(i));
+
+        }
+        // 현재 그려주는 객체도 회전해준다.
+        if(m_RoiCurIndex < 0) {
+            if (this.m_RoiCurObject != null) {
+                // 그리는 중이면
+                rotateObj(m_RoiCurObject);
+            }
+        }
+
+        // roi을 회전후에 이미지를 회전한다.
+
+        int centerX = (int)(StartPos_x + (bitmap.getWidth()*zoom_rate)/2f);
+        int centerY = (int)(StartPos_y + (bitmap.getHeight()*zoom_rate)/2f);
+        if(bitmapRotate != null)
+        {
+            centerX = (int)(StartPos_x + (bitmapRotate.getWidth()*zoom_rate)/2f);
+            centerY = (int)(StartPos_y + (bitmapRotate.getHeight()*zoom_rate)/2f);
+        }
+        Log.d(TAG, "centerX : "+ centerX);
+        Log.d(TAG, "centerY : "+ centerY);
+
+        bitmapRotate = null;
+        Matrix matrix_rotate = new Matrix();
+        matrix_rotate.postRotate(nRotateAngle, bitmap.getWidth()/2f, bitmap.getHeight() / 2f);
+        bitmapRotate = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix_rotate, true);
+        Log.d(TAG, "bitmap.getWidth() : "+bitmap.getWidth());
+        Log.d(TAG, "bitmap.getHeight() : "+bitmap.getHeight());
+        Log.d(TAG, "bitmapRotate.getWidth() : "+bitmapRotate.getWidth());
+        Log.d(TAG, "bitmapRotate.getHeight() : "+bitmapRotate.getHeight());
+
+        float translateX = (float) (centerX - (bitmapRotate.getWidth()/2f) * zoom_rate );
+        float translateY = (float) (centerY - (bitmapRotate.getHeight()/2f) * zoom_rate );
+
+        Log.d(TAG, "translateX : "+translateX);
+        Log.d(TAG, "translateY : "+translateY);
+        StartPos_x = (int)translateX;
+        StartPos_y = (int)translateY;
+
+        for(i=0;i<m_RoiObjects.size();i++)
+        {
+            m_RoiObjects.get(i).MakeTracker(StartPos_x, StartPos_y);
+
+        }
+        if ( (m_RoiCurIndex != -1) && (m_RoiCurIndex < m_RoiObjects.size()) ) {
+            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+            RoiChangedListener.onRoiChanged(m_RoiCurIndex);
+        }
+
+        // 현재 그려주는 객체도 회전해준다.
+        if(m_RoiCurObject != null)
+        {
+            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+            // 변경된 것을 Activity에 전달해준다.
+            RoiCreateListener.onRoiCreate();
+
+        }
+        invalidate();
+    }
+
+    public void rotateObj(CDrawObj obj)
+    {
+        // 이미지의 중심점을 기준으로 모들 Point, mMBR을 90도씩 회전한다.
+
+        int left;
+        int top;
+        int right;
+        int bottom;
+        int ptx;
+        int pty;
+
+        int roi_center_x;
+        int roi_center_y;
+
+        double dx;
+        double dy;
+
+        //  이미지의 중심에서 (left,top)까지의 거리를 구한다.
+        double pointDistance;
+
+        // 두 점 간의 각도 계산
+        double lineAngle;
+
+        int i,j;
+        switch(obj.roi_type)
+        {
+            case "roi_line" :
+                // mMBR만 회전한다.
+                left = obj.m_MBR.left;
+                top = obj.m_MBR.top;
+                right = obj.m_MBR.right;
+                bottom = obj.m_MBR.bottom;
+
+                roi_center_x = (int)(bitmap.getWidth()/2f);
+                roi_center_y = (int)(bitmap.getHeight()/2f);
+                if(bitmapRotate != null) {
+                    Log.d(TAG, "bitmapRotate != null");
+                    roi_center_x = (int) (bitmapRotate.getWidth() / 2f);
+                    roi_center_y = (int) (bitmapRotate.getHeight() / 2f);
+                }
+
+                //Log.d(TAG, "roi_center_x : "+roi_center_x);
+                //Log.d(TAG, "roi_center_y : "+roi_center_y);
+                //obj.m_MBR.left = top;
+                //obj.m_MBR.top = left;
+                //obj.m_MBR.right = bottom;
+                //obj.m_MBR.bottom = right;
+
+                dx = roi_center_x - left;
+                dy = roi_center_y - top;
+                //Log.d(TAG, "dx :"+dx);
+                //Log.d(TAG, "dy :"+dy);
+
+                //  이미지의 중심에서 (left,top)까지의 거리를 구한다.
+                pointDistance = Math.sqrt(dx * dx + dy * dy);
+                //Log.d(TAG, "pointDistance : " + pointDistance);
+
+                // 두 점 간의 각도 계산
+                lineAngle = Math.atan2(roi_center_x - left, roi_center_y - top);
+                //Log.d(TAG, "lineAngle : "+ lineAngle);
+
+                obj.m_MBR.top = (int)(roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
+                obj.m_MBR.left = (int)(roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
+
+                dx = roi_center_x - right;
+                dy = roi_center_y - bottom;
+                //Log.d(TAG, "dx :"+dx);
+                //Log.d(TAG, "dy :"+dy);
+
+                //  이미지의 중심에서 (left,top)까지의 거리를 구한다.
+                pointDistance = Math.sqrt(dx * dx + dy * dy);
+                //Log.d(TAG, "pointDistance : " + pointDistance);
+
+                // 두 점 간의 각도 계산
+                lineAngle = Math.atan2(roi_center_x - right, roi_center_y - bottom);
+                //Log.d(TAG, "lineAngle : "+ lineAngle);
+
+                obj.m_MBR.bottom = (int)(roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
+                obj.m_MBR.right = (int)(roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
+
+                //Log.d(TAG, "obj.m_MBR("+i+") :( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
+
+                break;
+            case "roi_rect" :
+                //Log.d(TAG, "obj.m_MBR("+i+") :( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
+
+                // mMBR만 회전한다.
+                left = obj.m_MBR.left;
+                top = obj.m_MBR.top;
+                right = obj.m_MBR.right;
+                bottom = obj.m_MBR.bottom;
+
+                roi_center_x = (int)(bitmap.getWidth()/2f);
+                roi_center_y = (int)(bitmap.getHeight()/2f);
+                if(bitmapRotate != null) {
+                    Log.d(TAG, "bitmapRotate != null");
+                    roi_center_x = (int) (bitmapRotate.getWidth() / 2f);
+                    roi_center_y = (int) (bitmapRotate.getHeight() / 2f);
+                }
+
+                //Log.d(TAG, "roi_center_x : "+roi_center_x);
+                //Log.d(TAG, "roi_center_y : "+roi_center_y);
+                //obj.m_MBR.left = top;
+                //obj.m_MBR.top = left;
+                //obj.m_MBR.right = bottom;
+                //obj.m_MBR.bottom = right;
+
+                dx = roi_center_x - left;
+                dy = roi_center_y - top;
+                //Log.d(TAG, "dx :"+dx);
+                //Log.d(TAG, "dy :"+dy);
+
+                //  이미지의 중심에서 (left,top)까지의 거리를 구한다.
+                pointDistance = Math.sqrt(dx * dx + dy * dy);
+                //Log.d(TAG, "pointDistance : " + pointDistance);
+
+                // 두 점 간의 각도 계산
+                lineAngle = Math.atan2(roi_center_x - left, roi_center_y - top);
+                //Log.d(TAG, "lineAngle : "+ lineAngle);
+
+                obj.m_MBR_rotate.top = (int)(roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
+                obj.m_MBR_rotate.right = (int)(roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
+
+                dx = roi_center_x - right;
+                dy = roi_center_y - bottom;
+                //Log.d(TAG, "dx :"+dx);
+                //Log.d(TAG, "dy :"+dy);
+
+                //  이미지의 중심에서 (left,top)까지의 거리를 구한다.
+                pointDistance = Math.sqrt(dx * dx + dy * dy);
+                //Log.d(TAG, "pointDistance : " + pointDistance);
+
+                // 두 점 간의 각도 계산
+                lineAngle = Math.atan2(roi_center_x - right, roi_center_y - bottom);
+                //Log.d(TAG, "lineAngle : "+ lineAngle);
+
+                obj.m_MBR_rotate.bottom = (int)(roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
+                obj.m_MBR_rotate.left = (int)(roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
+
+                //Log.d(TAG, "obj.m_MBR_rotate("+i+") :( "+obj.m_MBR_rotate.left+", "+obj.m_MBR_rotate.top+", "+obj.m_MBR_rotate.right+", "+obj.m_MBR_rotate.bottom + " )");
+
+                obj.m_MBR.left = obj.m_MBR_rotate.left;
+                obj.m_MBR.top = obj.m_MBR_rotate.top;
+                obj.m_MBR.right = obj.m_MBR_rotate.right;
+                obj.m_MBR.bottom = obj.m_MBR_rotate.bottom;
+
+                //Log.d(TAG, "obj.m_MBR("+i+") :( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
+
+                break;
+            case "roi_polygon" :
+                // mMBR 회전한다.
+                left = obj.m_MBR.left;
+                top = obj.m_MBR.top;
+                right = obj.m_MBR.right;
+                bottom = obj.m_MBR.bottom;
+
+                roi_center_x = (int)(bitmap.getWidth()/2f);
+                roi_center_y = (int)(bitmap.getHeight()/2f);
+                if(bitmapRotate != null) {
+                    Log.d(TAG, "bitmapRotate != null");
+                    roi_center_x = (int) (bitmapRotate.getWidth() / 2f);
+                    roi_center_y = (int) (bitmapRotate.getHeight() / 2f);
+                }
+
+                //Log.d(TAG, "roi_center_x : "+roi_center_x);
+                //Log.d(TAG, "roi_center_y : "+roi_center_y);
+                //obj.m_MBR.left = top;
+                //obj.m_MBR.top = left;
+                //obj.m_MBR.right = bottom;
+                //obj.m_MBR.bottom = right;
+
+                dx = roi_center_x - left;
+                dy = roi_center_y - top;
+                //Log.d(TAG, "dx :"+dx);
+                //Log.d(TAG, "dy :"+dy);
+
+                //  이미지의 중심에서 (left,top)까지의 거리를 구한다.
+                pointDistance = Math.sqrt(dx * dx + dy * dy);
+                //Log.d(TAG, "pointDistance : " + pointDistance);
+
+                // 두 점 간의 각도 계산
+                lineAngle = Math.atan2(roi_center_x - left, roi_center_y - top);
+                //Log.d(TAG, "lineAngle : "+ lineAngle);
+
+                obj.m_MBR.top = (int)(roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
+                obj.m_MBR.right = (int)(roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
+
+                dx = roi_center_x - right;
+                dy = roi_center_y - bottom;
+                //Log.d(TAG, "dx :"+dx);
+                //Log.d(TAG, "dy :"+dy);
+
+                //  이미지의 중심에서 (left,top)까지의 거리를 구한다.
+                pointDistance = Math.sqrt(dx * dx + dy * dy);
+                //Log.d(TAG, "pointDistance : " + pointDistance);
+
+                // 두 점 간의 각도 계산
+                lineAngle = Math.atan2(roi_center_x - right, roi_center_y - bottom);
+                //Log.d(TAG, "lineAngle : "+ lineAngle);
+
+                obj.m_MBR.bottom = (int)(roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
+                obj.m_MBR.left = (int)(roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
+
+                //Log.d(TAG, "obj.m_MBR("+i+") :( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
+
+                // Points 회전한다.
+                for(j=0;j<obj.m_Points.size();j++)
+                {
+                    ptx = obj.m_Points.get(j).x;
+                    pty = obj.m_Points.get(j).y;
+
+                    dx = roi_center_x - ptx;
+                    dy = roi_center_y - pty;
+                    //Log.d(TAG, "dx :"+dx);
+                    //Log.d(TAG, "dy :"+dy);
+
+                    //  이미지의 중심에서 (x,y)까지의 거리를 구한다.
+                    pointDistance = Math.sqrt(dx * dx + dy * dy);
+                    //Log.d(TAG, "pointDistance : " + pointDistance);
+
+                    // 두 점 간의 각도 계산
+                    lineAngle = Math.atan2(roi_center_x - ptx, roi_center_y - pty);
+                    //Log.d(TAG, "lineAngle : "+ lineAngle);
+
+                    obj.m_Points.get(j).y = (int)(roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
+                    obj.m_Points.get(j).x = (int)(roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
+
+                }
+                //obj.NormalizeRect();
+
+                // 핀의 좌표도 회전해 준다.
+                ptx = obj.m_MBR_center.x;
+                pty = obj.m_MBR_center.y;
+
+                dx = roi_center_x - ptx;
+                dy = roi_center_y - pty;
+                //Log.d(TAG, "dx :"+dx);
+                //Log.d(TAG, "dy :"+dy);
+
+                //  이미지의 중심에서 (x,y)까지의 거리를 구한다.
+                pointDistance = Math.sqrt(dx * dx + dy * dy);
+                //Log.d(TAG, "pointDistance : " + pointDistance);
+
+                // 두 점 간의 각도 계산
+                lineAngle = Math.atan2(roi_center_x - ptx, roi_center_y - pty);
+                //Log.d(TAG, "lineAngle : "+ lineAngle);
+
+                obj.m_MBR_center.y = (int)(roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
+                obj.m_MBR_center.x = (int)(roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
+
+                break;
+        }
+    }
+
 
 }

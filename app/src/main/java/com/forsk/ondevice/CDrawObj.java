@@ -25,8 +25,8 @@ public class CDrawObj {
     String roi_type; // roi_point, roi_line, roi_rect
 
     Rect m_MBR;
+    Rect m_MBR_rotate;
     Point m_MBR_center;
-    boolean isSetTheta = false;
     ArrayList<Point> m_Points;
     boolean	m_endroiflag;	// 객체의 생성이 끝났는가?
 
@@ -37,10 +37,12 @@ public class CDrawObj {
 
     Paint labelpaint;   // 라벨 글자 색상
     Paint Rectpaint;    // roi 색상
+    Paint Rectpaint_rotate;    // roi 색상
 
 
     private Path path;        // 폴리곤 경로
     Paint fillPaint;   // 채우기 색상
+    Paint fillPaint_rotate;   // 채우기 색상
     private Random random;    // 랜덤 생성기
 
     double m_zoom = 0.0;
@@ -57,6 +59,7 @@ public class CDrawObj {
     public CDrawObj(String strType, int nLeft, int nTop, int nRight, int nBottom)
     {
         m_MBR = new Rect(nLeft,nTop,nRight, nBottom);
+        m_MBR_rotate = new Rect(nLeft,nTop,nRight, nBottom);
         m_MBR_center = new Point((int)((nLeft+nRight)/2), (int)((nTop+nBottom)/2));
 
         m_Points = new ArrayList<Point>();
@@ -80,6 +83,15 @@ public class CDrawObj {
         }
         Rectpaint.setStyle(Paint.Style.STROKE); // 사각형 내부를 없음
 
+        Rectpaint_rotate = new Paint();
+        Rectpaint_rotate.setColor(Color.GREEN); // 반투명 파란색 (#80FF0000)
+        Rectpaint_rotate.setStrokeWidth(10);
+        if(roi_type.equals("roi_rect"))
+        {
+            Rectpaint_rotate.setColor(Color.GREEN);
+        }
+        Rectpaint_rotate.setStyle(Paint.Style.STROKE); // 사각형 내부를 없음
+
 
         // 랜덤 생성기 초기화
         random = new Random();
@@ -102,6 +114,13 @@ public class CDrawObj {
             fillPaint.setColor(Color.argb(178, 255, 70, 80));
         }
 
+        fillPaint_rotate = new Paint();
+
+        // 랜덤 색상 생성
+        fillPaint_rotate.setColor(getRandomColor());
+        fillPaint_rotate.setStyle(Paint.Style.FILL); // 채우기 스타일
+        fillPaint_rotate.setAntiAlias(true);
+
         RectDashpaint = new Paint();
         RectDashpaint.setColor(Color.WHITE); // 반투명 파란색 (#80FF0000)
         RectDashpaint.setStrokeWidth(5);
@@ -115,6 +134,35 @@ public class CDrawObj {
             Point pt = new Point(0,0);
             m_DashPoints.add(pt);
         }
+    }
+    public void NormalizeRect() {
+        int temp = 0;
+
+        if(this.roi_type == "roi_polygon") {
+            if (m_Points.size() > 0) {
+                m_MBR = new Rect(10000, 10000, 0, 0);
+                for (int p = 0; p < m_Points.size(); p++) {
+                    if (m_MBR.left > m_Points.get(p).x) m_MBR.left = m_Points.get(p).x;
+                    if (m_MBR.right < m_Points.get(p).x) m_MBR.right = m_Points.get(p).x;
+                    if (m_MBR.top > m_Points.get(p).y) m_MBR.top = m_Points.get(p).y;
+                    if (m_MBR.bottom < m_Points.get(p).y) m_MBR.bottom = m_Points.get(p).y;
+                }
+            }
+        }
+        if(m_MBR.left > m_MBR.right)
+        {
+            temp = m_MBR.left;
+            m_MBR.left = m_MBR.right;
+            m_MBR.right = temp;
+        }
+        if(m_MBR.top > m_MBR.bottom)
+        {
+            temp = m_MBR.top;
+            m_MBR.top = m_MBR.bottom;
+            m_MBR.bottom = temp;
+        }
+        //this.m_MBR_center.x = (int)((this.m_MBR.left + this.m_MBR.right)/2);
+        //this.m_MBR_center.y = (int)((this.m_MBR.bottom + this.m_MBR.top)/2);
     }
 
     // 랜덤 색상 생성 함수
@@ -327,6 +375,9 @@ public class CDrawObj {
                 canvas.drawRect((int) (this.m_MBR.left * m_zoom + pt_Start.x), (int) (this.m_MBR.top * m_zoom + pt_Start.y), (int) (this.m_MBR.right * m_zoom + pt_Start.x), (int) (this.m_MBR.bottom * m_zoom + pt_Start.y), fillPaint);
                 canvas.drawRect((int) (this.m_MBR.left * m_zoom + pt_Start.x), (int) (this.m_MBR.top * m_zoom + pt_Start.y), (int) (this.m_MBR.right * m_zoom + pt_Start.x), (int) (this.m_MBR.bottom * m_zoom + pt_Start.y), Rectpaint);
 
+                //canvas.drawRect((int) (this.m_MBR_rotate.left * m_zoom + pt_Start.x), (int) (this.m_MBR_rotate.top * m_zoom + pt_Start.y), (int) (this.m_MBR_rotate.right * m_zoom + pt_Start.x), (int) (this.m_MBR_rotate.bottom * m_zoom + pt_Start.y), fillPaint_rotate);
+                //canvas.drawRect((int) (this.m_MBR_rotate.left * m_zoom + pt_Start.x), (int) (this.m_MBR_rotate.top * m_zoom + pt_Start.y), (int) (this.m_MBR_rotate.right * m_zoom + pt_Start.x), (int) (this.m_MBR_rotate.bottom * m_zoom + pt_Start.y), Rectpaint_rotate);
+
                 if(bSelected || bEdit)
                 {
                     canvas.drawCircle((int)((float)m_MBR.left*m_zoom + pt_Start.x), (int)((float)m_MBR.top*m_zoom + pt_Start.y), 5, Rectpaint);
@@ -457,12 +508,6 @@ public class CDrawObj {
                     }
                 }
 
-
-
-
-
-
-
                 break;
         }
         //if (m_endroiflag == true && m_labelviewflag)
@@ -522,6 +567,123 @@ public class CDrawObj {
 
         }
 
+    }
+    public void MakeTracker(int start_x, int start_y)
+    {
+        float distance = 50;
+        int nTemp = 0;
+        switch (this.roi_type) {
+            case "roi_point":
+
+                m_DashPoints.get(0).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(0).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(1).x = (int)( ((float)m_MBR.left*m_zoom + start_x) + distance );
+                m_DashPoints.get(1).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(2).x = (int)( ((float)m_MBR.left*m_zoom + start_x) + distance );
+                m_DashPoints.get(2).y = (int)( ((float)m_MBR.top*m_zoom + start_y) + distance );
+                m_DashPoints.get(3).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(3).y = (int)( ((float)m_MBR.top*m_zoom + start_y) + distance );
+
+                break;
+
+            case "roi_line":
+                int lengthExtension = 5;
+                int x1 = (int) (m_MBR.left * m_zoom + start_x);
+                int y1 = (int) (m_MBR.top * m_zoom + start_y);
+                int x2 = (int) (m_MBR.right * m_zoom + start_x);
+                int y2 = (int) (m_MBR.bottom * m_zoom + start_y);
+
+                // 두 점 간의 각도 계산
+                double lineAngle = Math.atan2(y2 - y1, x2 - x1);
+                //Log.d(TAG, "lineAngle : " + lineAngle);
+
+                // 두 점 길이를 구한다.
+                int dx = x2 - x1;
+                int dy = y2 - y1;
+                double lineDistance = Math.sqrt(dx * dx + dy * dy);
+                Log.d(TAG, "lineDistance : " + lineDistance);
+
+                // 두 점의 중앙에서 직각으로 50px 점을 각각 구한다.
+                // 메모리 누스를 피하기 위해서 new를 사용하지 않는다.
+
+                // 중심에서 수직으로 떨어진 두 점 계산
+
+                float offsetX1 = ((x1 + x2) / 2.0f) + distance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f);
+                float offsetY1 = ((y1 + y2) / 2.0f) + distance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f);
+
+                float offsetX2 = ((x1 + x2) / 2.0f) + distance * (float) Math.cos(lineAngle - (float) Math.PI / 2.0f);
+                float offsetY2 = ((y1 + y2) / 2.0f) + distance * (float) Math.sin(lineAngle - (float) Math.PI / 2.0f);
+
+                //canvas.drawCircle(offsetX1, offsetY1, 10, Rectpaint); // 첫 번째 선의 중심점
+                //canvas.drawCircle(offsetX2, offsetY2, 10, Rectpaint); // 두 번째 선의 중심점
+
+                // 줌심에서 수직으로 떨어진 두 점에서 두 점의 기울기를 이용해서 두 점의 거리보다 distance 만큼 더 긴 곳의 두 점을 각각 구한다.
+                double newlineHalfDistance = (lineDistance / 2.0) + distance;
+                m_DashPoints.get(0).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                m_DashPoints.get(0).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                m_DashPoints.get(1).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                m_DashPoints.get(1).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+                m_DashPoints.get(3).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                m_DashPoints.get(3).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                m_DashPoints.get(2).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                m_DashPoints.get(2).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+
+                break;
+
+            case "roi_rect":
+
+                // normalize rect
+                if(m_MBR.left > m_MBR.right)
+                {
+                    nTemp = m_MBR.left;
+                    m_MBR.left = m_MBR.right;
+                    m_MBR.right = nTemp;
+                }
+                if(m_MBR.top > m_MBR.bottom)
+                {
+                    nTemp = m_MBR.bottom;
+                    m_MBR.bottom = m_MBR.left;
+                    m_MBR.left = nTemp;
+                }
+
+                m_DashPoints.get(0).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(0).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(1).x = (int)( ((float)m_MBR.right*m_zoom + start_x) + distance );
+                m_DashPoints.get(1).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(2).x = (int)( ((float)m_MBR.right*m_zoom + start_x) + distance );
+                m_DashPoints.get(2).y = (int)( ((float)m_MBR.bottom*m_zoom + start_y) + distance );
+                m_DashPoints.get(3).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(3).y = (int)( ((float)m_MBR.bottom*m_zoom + start_y) + distance );
+
+                break;
+
+            case "roi_polygon":
+
+                // normalize rect
+                if(m_MBR.left > m_MBR.right)
+                {
+                    nTemp = m_MBR.left;
+                    m_MBR.left = m_MBR.right;
+                    m_MBR.right = nTemp;
+                }
+                if(m_MBR.top > m_MBR.bottom)
+                {
+                    nTemp = m_MBR.bottom;
+                    m_MBR.bottom = m_MBR.left;
+                    m_MBR.left = nTemp;
+                }
+
+                m_DashPoints.get(0).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(0).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(1).x = (int)( ((float)m_MBR.right*m_zoom + start_x) + distance );
+                m_DashPoints.get(1).y = (int)( ((float)m_MBR.top*m_zoom + start_y) - distance );
+                m_DashPoints.get(2).x = (int)( ((float)m_MBR.right*m_zoom + start_x) + distance );
+                m_DashPoints.get(2).y = (int)( ((float)m_MBR.bottom*m_zoom + start_y) + distance );
+                m_DashPoints.get(3).x = (int)( ((float)m_MBR.left*m_zoom + start_x) - distance );
+                m_DashPoints.get(3).y = (int)( ((float)m_MBR.bottom*m_zoom + start_y) + distance );
+
+                break;
+        }
     }
 
     public void AddPoint(Point point)
@@ -1081,6 +1243,9 @@ public class CDrawObj {
         int bottom = Math.min(bitmap.getHeight(), bounds[3]);
         int width = right - left;
         int height = bottom - top;
+
+        if(width <= 0) return;
+        if(height <= 0) return;
 
         // 픽셀 데이터를 가져오기
         int[] pixels = new int[width * height];

@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -55,7 +54,6 @@ import org.json.JSONException;
 import org.opencv.android.OpenCVLoader;
 import org.yaml.snakeyaml.Yaml;
 import org.json.JSONObject;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -68,23 +66,20 @@ public class MapEditorActivity extends Activity {
 
     private static final String TAG = "MapEditorActivity";
 
-    private static final String NAME_LIBRARY_CASELAB_OPT =
+    private static final String NAME_LIBRARY_CASELAB_OPT    =
 //                                                              "mapoptimizationV2";
-            //"mapoptimization241217v11";
-            //0118 외각선 라이브러리 추가.
-            "mapoptimization_arm_v2_240117";
+            "mapoptimization241217v11";
 
     static {
         try {
             System.loadLibrary(NAME_LIBRARY_CASELAB_OPT);
             Log.d("SKOnDeviceService", "SO library load success!");
-        } catch (UnsatisfiedLinkError e) {
+        }  catch (UnsatisfiedLinkError e) {
             Log.e("SKOnDeviceService", "SO library load error (UnsatisfiedLinkError): " + e.toString());
         } catch (SecurityException e) {
             Log.e("SKOnDeviceService", "SO library load error (SecurityException): " + e.toString());
         }
     }
-
     /*
         PATH_FILE_MAP_ORG : 가공되지 않은 원본 pgm, yaml 파일이 존재하는 폴더
         PATH_FILE_MAP_ROT : so 라이브리를 이용해서 가공된 pgm, yaml 결과 파일일 만들어질 폴더
@@ -93,11 +88,12 @@ public class MapEditorActivity extends Activity {
         PATH_FILE_MAP_SEG : 세그멘트 결과를 저장할 폴더명
         참고 : NAME_FILE_MAP_ORG의 파일명으로 각각 다른 폴더에 결과물이 나오면 최종 결과물은 PATH_FILE_MAP_ROT 폴더에 저장됨
      */
-    private static final String PATH_FILE_MAP_ORG = "/sdcard/Download/";
-    private static final String PATH_FILE_MAP_ROT = "/sdcard/Download/map_test/rot/";
-    private static final String NAME_FILE_MAP_ORG = "office";//"5py";
-    private static final String PATH_FILE_MAP_OPT = "/sdcard/Download/map_test/opt/";
-    private static final String PATH_FILE_MAP_SEG = "/sdcard/Download/map_test/seg/";
+    private static final String PATH_FILE_MAP_ORG           = "/sdcard/Download/";
+    private static final String PATH_FILE_MAP_ROT           = "/sdcard/Download/map_test/rot/";
+    private static final String NAME_FILE_MAP_ORG           = "office";//"5py";
+    private static final String PATH_FILE_MAP_OPT           = "/sdcard/Download/map_test/opt/";
+    private static final String PATH_FILE_MAP_SEG           = "/sdcard/Download/map_test/seg/";
+
 
     private boolean isFabOpen = false;
 
@@ -134,7 +130,6 @@ public class MapEditorActivity extends Activity {
     String strMode = "Zoom";
 
     String srcMapPgmFilePath = "";
-    String srcMapPngFilePath = "";
     String srcMapYamlFilePath = "";
     //String srcMappingFilePath = "";
     String destMappingFilePath = "";
@@ -143,6 +138,7 @@ public class MapEditorActivity extends Activity {
     double origin_x = 0.0;
     double origin_y = 0.0;
     double origin_angle = 0.0;
+
     // 모드 상수 정의
     private static final int MODE_MAP_EXPLORATION = 0;
     private static final int MODE_SPACE_CREATION = 1;
@@ -176,6 +172,10 @@ public class MapEditorActivity extends Activity {
     private View deleteToggleBar;
     private ImageView deleteButton, cancelButton;
 
+    // roi complete 토글바 관련 변수
+    private View roiCompleteToggleBar;
+    private ImageView roiCompleteButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         androidx.core.splashscreen.SplashScreen.installSplashScreen(this);
@@ -192,20 +192,13 @@ public class MapEditorActivity extends Activity {
 
         setContentView(R.layout.activity_mapeditor);
 
-        Log.d(TAG, "send broadcast appStatus start... ");
-        Intent statusIntent = new Intent("sk.action.airbot.map.responseMapping");
-        //intent.setPackage("com.sk.airbot.skmlauncher"); // 2024.12.04 이전
-        statusIntent.setPackage("com.sk.airbot.iotagent");
-        statusIntent.putExtra("appStatus", "start");
-        sendBroadcast(statusIntent);
-        Log.d(TAG, "sent broadcast. ");
-
         // Mode-specific TextView 초기화
         modeDescription = findViewById(R.id.mode_description);
 
         // Toggle Bar 레이아웃 가져오기
         toggleBar = findViewById(R.id.toggle_bar);
         toggleBar_CreateSpace = findViewById(R.id.toggle_bar_createspace);
+
 
 
         // Toggle Bar 초기 상태 설정
@@ -220,22 +213,26 @@ public class MapEditorActivity extends Activity {
 
 
         // 맵 탐색 - 줌 인/아웃, 맵 이동
-        View fabMoveMap = findViewById(R.id.fabMoveMap);
+        //View fabMoveMap = findViewById(R.id.fabMoveMap);
+
+
+        // 맵 탐색 - 줌 인/아웃, 맵 이동
+        View fabRotateMap = findViewById(R.id.fabRotateMap);
 
         // 공간생성,가상벽,금지구역,청저위치 - 객체 추가, 객체 이동, 선택, 제거, 이름 변경
         View fabAddObject = findViewById(R.id.fabAddObject);
-        View fabMoveObject = findViewById(R.id.fabMoveObject);
-        View fabSelectObject = findViewById(R.id.fabSelectObject);
-        View fabDeleteObject = findViewById(R.id.fabDeleteObject);
-        View fabMovePin = findViewById(R.id.fabMovePin);
-        View fabRotatePin = findViewById(R.id.fabRotatePin);
+        //View fabMoveObject = findViewById(R.id.fabMoveObject);
+        //View fabSelectObject = findViewById(R.id.fabSelectObject);
+        //View fabDeleteObject = findViewById(R.id.fabDeleteObject);
+        //View fabMovePin = findViewById(R.id.fabMovePin);
+        //View fabRotatePin = findViewById(R.id.fabRotatePin);
 
         View fabAddObjectCS = findViewById(R.id.fabAddObjectCS);
-        View fabMoveObjectCS = findViewById(R.id.fabMoveObjectCS);
-        View fabSelectObjectCS = findViewById(R.id.fabSelectObjectCS);
-        View fabDeleteObjectCS = findViewById(R.id.fabDeleteObjectCS);
+        //View fabMoveObjectCS = findViewById(R.id.fabMoveObjectCS);
+        //View fabSelectObjectCS = findViewById(R.id.fabSelectObjectCS);
+        //View fabDeleteObjectCS = findViewById(R.id.fabDeleteObjectCS);
         View fabRenameObjectCS = findViewById(R.id.fabRenameObjectCS);
-        View fabMovePinCS = findViewById(R.id.fabMovePinCS);
+        //View fabMovePinCS = findViewById(R.id.fabMovePinCS);
         View fabRotatePinCS = findViewById(R.id.fabRotatePinCS);
 
         Button finshButton = findViewById(R.id.finish_button);
@@ -245,11 +242,11 @@ public class MapEditorActivity extends Activity {
 
         // 메뉴 클릭 시 배경 생성 버튼
         View fabAddObjectClicked = findViewById(R.id.fabAddObjectClicked);
-        View fabSelectObjectClicked = findViewById(R.id.fabSelectObjectClicked);
-        View fabMoveObjectClicked = findViewById(R.id.fabMoveObjectClicked);
-        View fabMovePinClicked = findViewById(R.id.fabMovePinClicked);
+        //View fabSelectObjectClicked = findViewById(R.id.fabSelectObjectClicked);
+        //View fabMoveObjectClicked = findViewById(R.id.fabMoveObjectClicked);
+        //View fabMovePinClicked = findViewById(R.id.fabMovePinClicked);
         View fabRotatePinClicked = findViewById(R.id.fabRotatePinClicked);
-        View fabDeleteObjectClicked = findViewById(R.id.fabDeleteObjectClicked);
+        //View fabDeleteObjectClicked = findViewById(R.id.fabDeleteObjectClicked);
         View fabRenameObjectClicked = findViewById(R.id.fabRenameObjectClicked);
 
         // 삭제 버튼 초기화 (onCreate 메서드에서)
@@ -283,7 +280,6 @@ public class MapEditorActivity extends Activity {
                 intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
                 //intent.putExtra("destMappingFilePath", strPath+File.separator+strFileName);
                 intent.putExtra("resultCode", "MRC_000");
-                intent.putExtra("appStatus", "stop");
 
                 sendBroadcast(intent);
                 Log.d(TAG, "sent broadcast. ");
@@ -296,7 +292,16 @@ public class MapEditorActivity extends Activity {
             } catch (InterruptedException ie) {
                 Log.e(TAG, "Cancle Button InterruptedExtception: " + ie.getMessage());
             }
+        });
 
+        // roi complete 버튼 초기화 (onCreate 메서드에서)
+        roiCompleteToggleBar = findViewById(R.id.roi_complete_toggle_bar);
+        roiCompleteButton = roiCompleteToggleBar.findViewById(R.id.roiCompleteButton);
+        hideRoiCompleteToggleBar(); // 초기에는 안 보이는 것으로 설정
+
+        roiCompleteButton.setOnClickListener(v -> {
+            // 완료 버튼이 클릭되면 roi 생성완료
+            hideRoiCompleteToggleBar();
         });
 
         gobackButton.setOnClickListener(v -> {
@@ -321,7 +326,6 @@ public class MapEditorActivity extends Activity {
                 intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
                 //intent.putExtra("destMappingFilePath", strPath+File.separator+strFileName);
                 intent.putExtra("resultCode", "MRC_000");
-                intent.putExtra("appStatus", "stop");
 
                 sendBroadcast(intent);
                 Log.d(TAG, "sent broadcast. ");
@@ -360,7 +364,6 @@ public class MapEditorActivity extends Activity {
                     intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
                     //intent.putExtra("destMappingFilePath", strPath+File.separator+strFileName);
                     intent.putExtra("resultCode", "MRC_000");
-                    intent.putExtra("appStatus", "stop");
 
                     sendBroadcast(intent);
                     Log.d(TAG, "sent broadcast. ");
@@ -395,11 +398,11 @@ public class MapEditorActivity extends Activity {
             updateModeDescription();
             hideDeleteToggleBar();
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
         });
 
@@ -412,11 +415,11 @@ public class MapEditorActivity extends Activity {
             updateModeDescription();
             hideDeleteToggleBar();
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
         });
 
@@ -429,11 +432,11 @@ public class MapEditorActivity extends Activity {
             updateModeDescription();
             hideDeleteToggleBar();
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
         });
 
@@ -458,11 +461,11 @@ public class MapEditorActivity extends Activity {
             fabMainBack.setVisibility(View.INVISIBLE); // 닫기 버튼 숨기기
 
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
         });
 
@@ -472,14 +475,15 @@ public class MapEditorActivity extends Activity {
             fabMainBackCS.setVisibility(View.INVISIBLE); // 닫기 버튼 숨기기
 
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
         });
 
+        /*
         fabMoveMap.setOnClickListener(v ->
         {
             fabAddObjectClicked.setVisibility(View.GONE);
@@ -499,6 +503,16 @@ public class MapEditorActivity extends Activity {
             }
         });
 
+         */
+
+        fabRotateMap.setOnClickListener(v ->
+        {
+            // 250104 skmg
+            // Map 90도 회전 버튼
+            this.MapViewer.setRotateMap90();
+        });
+
+
 //        fabZoom.setOnClickListener(v -> {
 //            MapViewer.SetMenu("줌");
 //            strMode = "Zoom";
@@ -507,22 +521,23 @@ public class MapEditorActivity extends Activity {
         fabAddObject.setOnClickListener(v -> {
             MapViewer.SetMenu("추가");
             fabAddObjectClicked.setVisibility(View.VISIBLE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             hideDeleteToggleBar();
         });
 
+        /*
         fabMoveObject.setOnClickListener(v -> {
             //  move Object
             MapViewer.SetMenu("수정");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.VISIBLE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.VISIBLE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
@@ -532,9 +547,9 @@ public class MapEditorActivity extends Activity {
             //  Select Object
             MapViewer.SetMenu("선택");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.VISIBLE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.VISIBLE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
@@ -543,9 +558,9 @@ public class MapEditorActivity extends Activity {
         fabDeleteObject.setOnClickListener(v -> {
             MapViewer.SetMenu("삭제");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.VISIBLE);
             fabRenameObjectClicked.setVisibility(View.GONE);
@@ -558,70 +573,75 @@ public class MapEditorActivity extends Activity {
         fabMovePin.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 이동");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.VISIBLE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.VISIBLE);
             fabRotatePinClicked.setVisibility(View.GONE);
             fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             hideDeleteToggleBar();
         });
+
+
         fabRotatePin.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 회전");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.VISIBLE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             hideDeleteToggleBar();
         });
+
+         */
 
         // 241217 jihyeon
         // 공간 생성 모드일 때 토글 버튼 설정
         fabAddObjectCS.setOnClickListener(v -> {
             MapViewer.SetMenu("추가");
             fabAddObjectClicked.setVisibility(View.VISIBLE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             hideDeleteToggleBar();
         });
 
+        /*
         fabMoveObjectCS.setOnClickListener(v -> {
             MapViewer.SetMenu("수정");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.VISIBLE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.VISIBLE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             hideDeleteToggleBar();
         });
         fabSelectObjectCS.setOnClickListener(v -> {
             MapViewer.SetMenu("선택");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.VISIBLE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.VISIBLE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             hideDeleteToggleBar();
         });
         fabDeleteObjectCS.setOnClickListener(v -> {
             MapViewer.SetMenu("삭제");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.VISIBLE);
+            //fabDeleteObjectClicked.setVisibility(View.VISIBLE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             Log.d(TAG, "current index: " + MapViewer.getCurrentSelectedIndex());
             if (MapViewer.getCurrentSelectedIndex() != -1) {
@@ -632,27 +652,35 @@ public class MapEditorActivity extends Activity {
         fabMovePinCS.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 이동");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.VISIBLE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.VISIBLE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             hideDeleteToggleBar();
         });
+
+         */
         fabRotatePinCS.setOnClickListener(v -> {
             MapViewer.SetMenu("핀 회전");
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.VISIBLE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             hideDeleteToggleBar();
         });
 
         fabRenameObjectCS.setOnClickListener(v -> {
+
+            if(MapViewer.m_RoiCurIndex < 0) {
+                Toast.makeText(getApplicationContext(), "선택된 공간이 없습니다.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             strMode = "None";
             String oldPinName = PinName;
             showCustomDialog(selectedText -> {
@@ -661,11 +689,11 @@ public class MapEditorActivity extends Activity {
                 }
             });
             fabAddObjectClicked.setVisibility(View.GONE);
-            fabSelectObjectClicked.setVisibility(View.GONE);
-            fabMoveObjectClicked.setVisibility(View.GONE);
-            fabMovePinClicked.setVisibility(View.GONE);
+            //fabSelectObjectClicked.setVisibility(View.GONE);
+            //fabMoveObjectClicked.setVisibility(View.GONE);
+            //fabMovePinClicked.setVisibility(View.GONE);
             fabRotatePinClicked.setVisibility(View.GONE);
-            fabDeleteObjectClicked.setVisibility(View.GONE);
+            //fabDeleteObjectClicked.setVisibility(View.GONE);
             fabRenameObjectClicked.setVisibility(View.GONE);
             updateToggleBarVisibility();
             hideDeleteToggleBar();
@@ -718,7 +746,7 @@ public class MapEditorActivity extends Activity {
                     // 폴더가 제대로 만들어졌는지 체크 ======
                     if (!file_rot.mkdirs()) {
 
-                        Log.e("FILE", "Directory not created : " + path_rot);
+                        Log.e("FILE", "Directory not created : "+path_rot);
 
                     }
                     Log.d("SKOnDeviceService", "Run library-rotate!");
@@ -731,7 +759,7 @@ public class MapEditorActivity extends Activity {
                     // 폴더가 제대로 만들어졌는지 체크 ======
                     if (!file_opt.mkdirs()) {
 
-                        Log.e("FILE", "Directory not created : " + path_opt);
+                        Log.e("FILE", "Directory not created : "+path_opt);
 
                     }
                     Log.d("SKOnDeviceService", "Run library-line opt!");
@@ -740,15 +768,13 @@ public class MapEditorActivity extends Activity {
                     Log.d("SKOnDeviceService", "Library-line Finish!");
 
                     String strPgmFile = path_opt + fileTitle + ".pgm";
-                    String strPngFile = path_opt + fileTitle + ".png";
 
                     //Log.d(TAG, strPgmFile);
                     lib_flag = true;
                     srcMapPgmFilePath = strPgmFile;
-                    srcMapPngFilePath = strPngFile;
                     srcMapYamlFilePath = path_opt + fileTitle + ".yaml";
 
-                } catch (UnsatisfiedLinkError e) {
+                }  catch (UnsatisfiedLinkError e) {
                     Log.e(TAG, "Native library not loaded or linked properly", e);
                 } catch (ExceptionInInitializerError e) {
                     Log.e(TAG, "Initialization error in native method", e);
@@ -759,10 +785,7 @@ public class MapEditorActivity extends Activity {
                 }
 
                 try {
-                    //v2_240117.so
-                    Bitmap bitmap = loadPNG(srcMapPngFilePath);
-                    // 241217v11.so
-                    // Bitmap bitmap = loadPGM(srcMapPgmFilePath);
+                    Bitmap bitmap = loadPGM(srcMapPgmFilePath);
                     if (bitmap != null) {
                         MapViewer.setBitmap(bitmap);
 
@@ -790,6 +813,103 @@ public class MapEditorActivity extends Activity {
             }
         });
 
+        // MapImageView에서 Rio가 선택되면 수신
+        MapViewer.setRoiSelectedListener(new MapImageView.OnRoiSelectedListener() {
+            @Override
+            public void onRoiSelected(int indexSelected) {
+                // ROI가 선택된 경우
+                Log.d(TAG, "onRoiSelected("+indexSelected+")");
+
+                // 필요한 버튼을 선택된 ROI 객체에 Dash 역역에 보여준다.
+                if( (indexSelected > -1) && ( indexSelected < MapViewer.m_RoiObjects.size()))
+                {
+                    //    [0]=====[1]
+                    //    ||      ||
+                    //    ||      ||
+                    //    [3]=====[2]
+
+                    int nLef = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x;
+                    int nTop = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y;
+                    int nRight = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x;
+                    int nBottom = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y;
+
+                    Log.d(TAG, "nLef : "+nLef);
+                    Log.d(TAG, "nTop : "+nTop);
+                    Log.d(TAG, "nRight : "+nRight);
+                    Log.d(TAG, "nBottom : "+nBottom);
+
+                    showRoiCompleteToggleBar(nLef,nTop);
+                }
+                else
+                {
+                    // 선택된 것이 없음.
+                    hideRoiCompleteToggleBar();
+                }
+            }
+        });
+
+        // MapImageView에서 Rio(m_RoiCurObject)가 새로 생성되어 저장되기 전까지 수신
+        MapViewer.setRoiCreateListener(new MapImageView.OnRoiCreateListener(){
+            @Override
+            public void onRoiCreate() {
+                // ROI 새롭게 만든 경우
+                Log.d(TAG, "setRoiCreateListener.onRoiCreate()");
+
+                // 필요한 버튼을 선택된 ROI 객체에 Dash 역역에 보여준다.
+                if( MapViewer.m_RoiCurObject != null)
+                {
+                    //    [0]=====[1]
+                    //    ||      ||
+                    //    ||      ||
+                    //    [3]=====[2]
+
+                    int nLef = MapViewer.m_RoiCurObject.m_DashPoints.get(0).x;
+                    int nTop = MapViewer.m_RoiCurObject.m_DashPoints.get(0).y;
+                    int nRight = MapViewer.m_RoiCurObject.m_DashPoints.get(2).x;
+                    int nBottom = MapViewer.m_RoiCurObject.m_DashPoints.get(2).y;
+
+                    Log.d(TAG, "nLef : "+nLef);
+                    Log.d(TAG, "nTop : "+nTop);
+                    Log.d(TAG, "nRight : "+nRight);
+                    Log.d(TAG, "nBottom : "+nBottom);
+
+                    showRoiCompleteToggleBar(nLef,nTop);
+                }
+                else
+                {
+                    hideRoiCompleteToggleBar();
+                }
+            }
+        });
+
+        // MapImageView에서 Rio가 선택된 것의 변형, 이동시 수신
+        MapViewer.setRoiChangedListener(new MapImageView.OnRoiChangedListener(){
+            @Override
+            public void onRoiChanged(int indexSelected) {
+                // ROI 수정한 경우
+                Log.d(TAG, "onRoiChanged("+indexSelected+")");
+
+                // 필요한 버튼을 선택된 ROI 객체에 Dash 역역에 보여준다.
+                if( (indexSelected > -1) && ( indexSelected < MapViewer.m_RoiObjects.size()))
+                {
+                    //    [0]=====[1]
+                    //    ||      ||
+                    //    ||      ||
+                    //    [3]=====[2]
+
+                    int nLef = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x;
+                    int nTop = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y;
+                    int nRight = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x;
+                    int nBottom = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y;
+
+                    Log.d(TAG, "nLef : "+nLef);
+                    Log.d(TAG, "nTop : "+nTop);
+                    Log.d(TAG, "nRight : "+nRight);
+                    Log.d(TAG, "nBottom : "+nBottom);
+                }
+            }
+        });
+
         srcMapPgmFilePath = getIntent().getStringExtra("srcMapPgmFilePath");
         if (srcMapPgmFilePath == null) {
             //srcMapPgmFilePath = "/storage/emulated/0/Download/caffe_map.pgm";   // for test
@@ -807,6 +927,7 @@ public class MapEditorActivity extends Activity {
             destMappingFilePath = "/sdcard/Download/map_meta_sample.json";    // for test
         }
 
+
     }
 
     // 토글바 표시 함수
@@ -821,6 +942,29 @@ public class MapEditorActivity extends Activity {
     // 토글바 숨김 함수
     private void hideDeleteToggleBar() {
         deleteToggleBar.setVisibility(View.GONE);
+    }
+
+    // 토글바 표시 함수
+    void showRoiCompleteToggleBar(int x, int y) {
+        Log.d(TAG, "showRoiCompleteToggleBar(" + x + ", " + y+")");
+        roiCompleteToggleBar.setVisibility(View.VISIBLE);
+
+        // MapViewer의 시작위치를 가져온다.
+        int[] location = new int[2];
+        MapViewer.getLocationOnScreen(location);
+
+        //int x0 = location[0]; // X 좌표
+        //int y0 = location[1]; // Y 좌표
+        //Log.d(TAG, "location : ("+x0+","+y0+")");
+
+        // 선택된 객체 위치에 토글바 배치
+        roiCompleteToggleBar.setX(x + location[0]);
+        roiCompleteToggleBar.setY(y + location[1]);
+    }
+
+    // 토글바 숨김 함수
+    private void hideRoiCompleteToggleBar() {
+        roiCompleteToggleBar.setVisibility(View.GONE);
     }
 
     private void updateToggleBarVisibility() {
@@ -1027,10 +1171,11 @@ public class MapEditorActivity extends Activity {
         //if (!file.exists()) {
         //    throw new IOException("File not found: " + filePath);
         //}
-        try (FileInputStream fis = new FileInputStream(file)) {
+        try (FileInputStream fis = new FileInputStream(file)){
             //InputStream inputStream = new FileInputStream(filePath);
             //AssetManager assetManager = getAssets();
             //InputStream inputStream = assetManager.open(fileName);
+
 
 
             // Basic PGM file decoding
@@ -1050,9 +1195,9 @@ public class MapEditorActivity extends Activity {
                     // rotate pgm은 흰색 255, Else:회색(220)
                     if ((grayValue == 254) || (grayValue == 255)) { //내부와 외걱선 옅은 회색 #969696
                         grayValue = 150;
-                    } else if (grayValue == 0) {
+                    } else if(grayValue == 0){
                         grayValue = 17;
-                    } else {    //외부(254)는 짙은 회색 #333333
+                    }else {    //외부(254)는 짙은 회색 #333333
                         grayValue = 51;
                     }
                     int color = Color.rgb(grayValue, grayValue, grayValue);
@@ -1070,60 +1215,6 @@ public class MapEditorActivity extends Activity {
 
     }
 
-    private Bitmap loadPNG(String filePath) throws IOException {
-        Log.d(TAG, "loadPNG(\"" + filePath + "\")");
-
-        // 파일 이름 로깅(필수는 아님)
-        String[] paths = filePath.split("/");
-        String fileName = paths[paths.length - 1];
-        Log.d(TAG, "fileName : " + fileName);
-
-        File file = new File(filePath);
-        if (!file.exists()) {
-            throw new IOException("File not found: " + filePath);
-        }
-
-        // PNG 디코딩
-        Bitmap originalBitmap = BitmapFactory.decodeFile(filePath);
-        if (originalBitmap == null) {
-            throw new IOException("Failed to decode PNG file: " + filePath);
-        }
-
-        int width = originalBitmap.getWidth();
-        int height = originalBitmap.getHeight();
-
-        // 결과를 담을 Bitmap
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-
-        // 각 픽셀을 순회하며 R 값만 확인
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int pixel = originalBitmap.getPixel(x, y);
-
-                // R 값 추출
-                int r = Color.red(pixel);
-                // r 값 기준으로 흰색/검은색/회색 매핑
-                int newGray;
-                if (r == 255) {
-                    // 흰색
-                    newGray = 150;
-                } else if (r == 0) {
-                    // 검은색
-                    newGray = 0;
-                } else {
-                    // 회색
-                    newGray = 51;
-                }
-
-                // 새 픽셀 값
-                int newPixel = Color.rgb(newGray, newGray, newGray);
-                bitmap.setPixel(x, y, newPixel);
-            }
-        }
-
-        return bitmap;
-    }
-
     private static String readToken(InputStream is) throws IOException {
         StringBuilder sb = new StringBuilder();
         int b;
@@ -1137,7 +1228,7 @@ public class MapEditorActivity extends Activity {
     private boolean loadYaml(String filePath) {
 
         // 내부 저장소에서 파일 스트림 열기
-        try (InputStream inputStream = new FileInputStream(filePath)) {
+        try (InputStream inputStream = new FileInputStream(filePath)){
 
             Yaml yaml = new Yaml();
 
@@ -1241,7 +1332,7 @@ public class MapEditorActivity extends Activity {
                             Object cellValue = row.get(j);
                             if (cellValue instanceof Number) {
                                 transformationMatrix.put(i, j, ((Number) cellValue).doubleValue());
-                                Log.d(TAG, "transformation_matrix row " + i + " , " + j + " : " + ((Number) cellValue).doubleValue());
+                                Log.d(TAG, "transformation_matrix row " + i + " , " + j +" : " + ((Number) cellValue).doubleValue());
                             } else {
                                 Log.d(TAG, "Invalid value in transformation_matrix at (" + i + ", " + j + ").");
                             }
@@ -1278,7 +1369,8 @@ public class MapEditorActivity extends Activity {
             }
 
             return true;
-        } catch (IOException | NullPointerException e) {
+        }
+        catch (IOException | NullPointerException e) {
             Log.e(TAG, "loadYaml Exception: " + e.getMessage());
             return false;
         }
@@ -1290,7 +1382,7 @@ public class MapEditorActivity extends Activity {
         int image_width = MapViewer.GetBitmapWidth();
         int image_height = MapViewer.GetBitmapHeight();
 
-        Log.d(TAG, "image width : " + image_width + " , image_height : " + image_height);
+        Log.d(TAG,"image width : " + image_width + " , image_height : " +image_height);
         int count_id = 0;
         int count_id_rect = 0;
         int count_id_line = 0;
@@ -1358,7 +1450,7 @@ public class MapEditorActivity extends Activity {
 
                     strRoiJson += "{";
 
-                    double[] coordinates = calculateCoordinate(MapViewer.m_RoiObjects.get(i).m_Points.get(j).x, MapViewer.m_RoiObjects.get(i).m_Points.get(j).y, image_height);
+                    double[] coordinates = calculateCoordinate(MapViewer.m_RoiObjects.get(i).m_Points.get(j).x , MapViewer.m_RoiObjects.get(i).m_Points.get(j).y, image_height);
 
                     double path_x = coordinates[0];
                     double path_y = coordinates[1];
@@ -1406,7 +1498,7 @@ public class MapEditorActivity extends Activity {
                 double yvh = coordinates[1];
                 strRoiJson += "\"x\":" + xvw;
                 strRoiJson += ", \"y\":" + yvh;
-                double angle = MapViewer.m_RoiObjects.get(i).getAngle() - Math.toRadians(rotated_angle);
+                double angle = MapViewer.m_RoiObjects.get(i).getAngle() -  Math.toRadians(rotated_angle);
 
                 // -pi ~ +pi 범위 검사
 //                if(angle > Math.PI)
@@ -1432,12 +1524,11 @@ public class MapEditorActivity extends Activity {
                 // MapViewer.m_RoiObjects.get(i).m_MBR;
                 //Log.d(TAG,"height: " + image_height +", origin_y: "+ origin_y + ", imagey: " + MapViewer.m_RoiObjects.get(i).m_Points.get(j).y + ", real_y: "+ (float)((image_height-MapViewer.m_RoiObjects.get(i).m_Points.get(j).y)*nResolution + origin_y));
                 //Toast.makeText(getApplicationContext(), "X: " + (float)(xvw * nResolution + origin_x) +", Y: " + ((image_height - yvh) * nResolution + origin_y), Toast.LENGTH_SHORT).show();
-                strRoiJson += "\"is_set_theta\":" + MapViewer.m_RoiObjects.get(i).isSetTheta;
-                strRoiJson += ", \"x\":" + (int) xvw_image;
+
+                strRoiJson += "\"x\":" + (int) xvw_image;
                 strRoiJson += ", \"y\":" + (int) yvh_image;
                 strRoiJson += ", \"theta\":" + MapViewer.m_RoiObjects.get(i).getAngle();
                 strRoiJson += "}";
-                strRoiJson += ", \"isAssign\":true";
                 strRoiJson += "}";
             }
 
@@ -1480,6 +1571,7 @@ public class MapEditorActivity extends Activity {
 
                 strRoiJson += "]";
                 strRoiJson += ", \"robot_path\":[";
+
 
                 strRoiJson += "{";
 
@@ -1602,7 +1694,7 @@ public class MapEditorActivity extends Activity {
         // 파일 경로를 설정합니다.
         //File file = new File(downloadDir, strFileName);
         File file = new File(strPath, strFileName);
-        try (FileOutputStream fos = new FileOutputStream(file)) {
+        try (FileOutputStream fos = new FileOutputStream(file)){
             //strPath += "/";
 
             //File directory = new File(strPath);
@@ -1687,7 +1779,7 @@ public class MapEditorActivity extends Activity {
         }
 
         File file = new File(strPath, strFileName);
-        try (FileOutputStream fos = new FileOutputStream(file)) {
+        try (FileOutputStream fos = new FileOutputStream(file)){
 
             Log.d(TAG, strPath + "/" + strFileName);
             // 파일 경로를 설정합니다.
@@ -1719,7 +1811,7 @@ public class MapEditorActivity extends Activity {
         // InputStream 데이터를 문자열로 변환
         try (InputStream inputStream = new FileInputStream(filePath);
              InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)){
 
             String line;
 
@@ -1744,12 +1836,9 @@ public class MapEditorActivity extends Activity {
                 String id = room.getString("id");
                 String name = room.getString("name");
                 JSONArray imagePathArray = room.getJSONArray("image_path");
-
                 JSONObject imagePosition = room.getJSONObject("image_position");
-                boolean isSetTheta = imagePosition.getBoolean("is_set_theta");
                 int mbr_x = imagePosition.getInt("x");
                 int mbr_y = imagePosition.getInt("y");
-
                 Log.d(TAG, "  Room ID: " + id);
                 Log.d(TAG, "  Name: " + name);
                 Log.d(TAG, "  Image Path:");
@@ -1764,10 +1853,10 @@ public class MapEditorActivity extends Activity {
                     } else {
                         MapViewer.AddPoint_Polygon(new Point(x, y));
                     }
-                    if (left > x) left = x;
-                    if (right < x) right = x;
-                    if (top > y) top = y;
-                    if (bottom < y) bottom = y;
+                    if (left > x)    left   = x;
+                    if (right < x)   right  = x;
+                    if (top > y)     top    = y;
+                    if (bottom < y)  bottom = y;
 
                 }
                 MapViewer.m_drawing = true;
@@ -1776,13 +1865,13 @@ public class MapEditorActivity extends Activity {
                 //MapViewer.m_RoiCurObject.m_MBR = new Rect(left, top, right, bottom);
                 MapViewer.m_RoiCurObject.m_MBR_center.x = mbr_x;
                 MapViewer.m_RoiCurObject.m_MBR_center.y = mbr_y;
-                MapViewer.m_RoiCurObject.isSetTheta = isSetTheta;
                 MapViewer.SetLabel(name);
                 if (lib_flag) {
-                    float theta = (float) imagePosition.getDouble("theta");
+                    float theta = (float)imagePosition.getDouble("theta");
                     MapViewer.m_RoiCurObject.setAngle(theta);
                 }
             }
+
 
             // 2. block_area 데이터 읽기
             Log.d(TAG, "\nBlock Area:");
@@ -1841,7 +1930,7 @@ public class MapEditorActivity extends Activity {
             MapViewer.m_RoiCurObject = null;
             Log.d(TAG, "Read Json Success");
             return true;
-        } catch (FileNotFoundException fe) {
+        }  catch (FileNotFoundException fe) {
             Log.e(TAG, "Read Json FileNotFoundException: " + filePath + " " + fe.getMessage());
             return false;
         } catch (JSONException | IOException e) {
@@ -1890,11 +1979,12 @@ public class MapEditorActivity extends Activity {
         double robot_x = 0.0;
         double robot_y = 0.0;
 
-        if (lib_flag) {
-            Point pt = transformToRobotCoordinates(x, y);
+        if(lib_flag){
+            Point pt = transformToRobotCoordinates(x,y);
             robot_x = pt.x * nResolution + origin_x;
             robot_y = (original_image_height - pt.y) * nResolution + origin_y;
-        } else {
+        }
+        else {
             robot_x = x * nResolution + origin_x;
             robot_y = (image_height - y) * nResolution + origin_y;
         }
