@@ -570,6 +570,10 @@ public class CDrawObj {
     }
     public void MakeTracker(int start_x, int start_y)
     {
+        Log.d(TAG, "MakeTracker(" + start_x + ", " + start_y + ")");
+
+        Log.d(TAG, "m_MBR : ("+m_MBR.left+","+m_MBR.top+","+m_MBR.right+","+m_MBR.bottom+")");
+
         float distance = 50;
         int nTemp = 0;
         switch (this.roi_type) {

@@ -5,16 +5,18 @@
     android:layout_height="wrap_content"
     >
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/rounded_roi_save_button_background"
-        >
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:background="@drawable/rounded_roi_delete_button_background"
+        tools:ignore="MissingConstraints">
         <!-- 접기 버튼 -->
         <ImageView
-            android:id="@+id/roiCompleteButton"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:src="@drawable/ic_check"
+            android:id="@+id/roiDeleteButton"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="5dp"
+            android:layout_marginTop="5dp"
+            android:src="@drawable/ic_delete"
             android:contentDescription="완료" />
 
     </LinearLayout>

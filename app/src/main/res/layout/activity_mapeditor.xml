@@ -58,20 +58,7 @@
     -->
 
     <!-- Rotate Map Floating Action Button -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabRotateMap"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:layout_marginBottom="78dp"
-        android:layout_marginEnd="30dp"
-        android:contentDescription="@null"
-        android:src="@drawable/ic_rotate"
-        app:fabSize="mini"
-        app:fabCustomSize="44dp"
-        app:roundPercent="1"
-        android:backgroundTint="#777777"
-        android:layout_gravity="bottom|end"
-        />
+
 
     <!-- 메인 레이아웃 -->
     <LinearLayout
@@ -120,8 +107,8 @@
         </LinearLayout>
 
         <!-- 중간 LinearLayout -->
-        <LinearLayout
-            android:id="@+id/LayoutMain"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutMain"
             android:layout_width="600dp"
             android:layout_height="262dp"
             android:layout_gravity="center"
@@ -131,11 +118,28 @@
             android:background="@drawable/rounded_corners_background"
             android:gravity="center">
 
+
             <com.forsk.ondevice.MapImageView
                 android:id="@+id/imageView"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 android:layout_width="wrap_content"
                 android:layout_height="250dp" />
-        </LinearLayout>
+
+            <ImageView
+                android:id="@+id/fabRotateMap"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@drawable/ic_rotate"
+                android:layout_marginBottom="30dp"
+                android:layout_marginEnd="30dp"
+                android:background="#33ffffff"
+                android:backgroundTint="#777777"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -218,17 +222,27 @@
         />
 
     <!-- 삭제 토글바 -->
+    <!--
     <include
         android:id="@+id/delete_toggle_bar"
         layout="@layout/delete_toggle_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="invisible"/>
+    -->
 
     <!-- roi complete 토글바 -->
     <include
         android:id="@+id/roi_complete_toggle_bar"
         layout="@layout/roi_complete_toggle_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"/>
+
+    <!-- roi complete 토글바 -->
+    <include
+        android:id="@+id/roi_delete_toggle_bar"
+        layout="@layout/roi_delete_toggle_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="invisible"/>
@@ -253,12 +267,26 @@
             android:textSize="20sp"
             android:visibility="invisible" />
 
+        <!-- 핀 이동 -->
+        <TextView
+            android:id="@+id/fabMovePinClicked"
+            android:layout_width="60dp"
+            android:layout_height="40dp"
+            android:text="핀 이동"
+            android:visibility="invisible"
+            android:gravity="center"
+            android:textSize="14sp"
+            android:background="@drawable/rounded_button_white"
+            android:layout_marginStart="116dp"
+            android:layout_marginTop="80dp"
+            />
+
         <!-- 핀 회전 -->
         <TextView
             android:id="@+id/fabRotatePinClicked"
             android:layout_width="60dp"
             android:layout_height="40dp"
-            android:layout_marginStart="334dp"
+            android:layout_marginStart="179dp"
             android:layout_marginTop="80dp"
             android:background="@drawable/rounded_button_white"
             android:gravity="center"

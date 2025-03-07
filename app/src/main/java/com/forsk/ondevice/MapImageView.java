@@ -484,6 +484,7 @@ public class MapImageView extends View {
             } else {
                 m_RoiCurObject.Draw(canvas, pt, bitmap, false, false);
             }
+            /*
             if (strMenu.equals("삭제")) {
                 // 삭제 메뉴일 때 토글바 처리
                 Pair<Integer, Integer> position = getSelectedObjectPosition();
@@ -495,6 +496,8 @@ public class MapImageView extends View {
                     }
                 }
             }
+
+             */
             //m_RoiCurObject.SetLineColor(oldc);
         }
 
@@ -1434,6 +1437,8 @@ public class MapImageView extends View {
 
     public void roi_CreateObject() {
         Log.d(TAG, "roi_CreateObject(): ");
+        // roi를 화면의 중심 좌표를 기준으로 가로,세로중 작은 크기의 distance( 1/4 정도) 크기로 생성하여
+        // roi에 추가하고, 선택된 것으로 하고, rio 수정 화면으로 전환한다.
 
         if (!strMenu.equals("추가")) return;
 
@@ -1469,6 +1474,8 @@ public class MapImageView extends View {
             // 가운데 점을 기준으로 1 pixel로 회전하면서 가장 가까운 점을 찾아서 그곳을 무게 중심으로 하는 공간을 생성한다.
 
             m_RoiCurObject = new CDrawObj("roi_polygon", nLeft, nTop, nRight, nBottom);
+            m_RoiCurObject.SetZoom(zoom_rate);
+
             Point pt = new Point(nLeft, nTop);
             m_RoiCurObject.AddPoint(pt);
             Point pt2 = new Point(nRight, nTop);
@@ -1478,47 +1485,56 @@ public class MapImageView extends View {
             Point pt4 = new Point(nLeft, nBottom);
             m_RoiCurObject.AddEndPoint(pt4, true);
 
-            // 먼저 적용한다.
+            m_RoiCurObject.m_endroiflag = true;    // 그리기가 끝났음을 나타냄
+
+            // 먼저 추가후에 삭제 선택시 삭제한다.
             m_RoiCurIndex = m_RoiObjects.size();
             m_RoiObjects.add(m_RoiCurObject);
 
         }
         // line 생성
-        if (m_CurType.equals("roi_line")) {
+        else if (m_CurType.equals("roi_line")) {
             // 화면의 1/4 크기로 위에서 아래로 line으로 가상벽을 생성한다.
             // 도형의 무게 줌심은 가로,세로 가운데이다.
 
             m_RoiCurObject = new CDrawObj("roi_line", nLeft, nTop, nRight, nBottom);
+            m_RoiCurObject.SetZoom(zoom_rate);
+            m_RoiCurObject.m_endroiflag = true;    // 그리기가 끝났음을 나타냄
 
-            // 먼저 적용한다.
+            // 먼저 추가후에 삭제 선택시 삭제한다.
             m_RoiCurIndex = m_RoiObjects.size();
             m_RoiObjects.add(m_RoiCurObject);
         }
-        // line 생성
-        if (m_CurType.equals("roi_rect")) {
+        // rect 생성
+        else if (m_CurType.equals("roi_rect")) {
             // 화면의 1/4 크기로 정사각형 rect로 금지 공간을 생성한다.
             // 도형의 무게 줌심은 가로,세로 가운데이다.
             // 스테이션이 금지공간에 표함되면 안된다.
 
             m_RoiCurObject = new CDrawObj("roi_rect", nLeft, nTop, nRight, nBottom);
+            m_RoiCurObject.SetZoom(zoom_rate);
+            m_RoiCurObject.m_endroiflag = true;    // 그리기가 끝났음을 나타냄
 
-            // 먼저 적용한다.
+            // 먼저 추가후에 삭제 선택시 삭제한다.
             m_RoiCurIndex = m_RoiObjects.size();
             m_RoiObjects.add(m_RoiCurObject);
         }
         else
         {
-            //return;
+            //
+            return;
         }
 
-        if(m_RoiCurObject != null) {
+        Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
+        if(m_RoiCurIndex > -1) {
             // 해당 rio에 대해서 Tracker pointer를 생성해준다.
-            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
             // 추가된 것을 Activity에 전달해준다.
-            RoiCreateListener.onRoiCreate();
+            //RoiCreateListener.onRoiCreate();
+            RoiSelectedListener.onRoiSelected(m_RoiCurIndex);
         }
 
-        strMenu = "수정";
+        strMenu = "선택";
 
         invalidate();
         SetCursorType();
@@ -2262,12 +2278,15 @@ public class MapImageView extends View {
         return angle;
     }
 
+    /*
     private void hideDeleteToggleBar() {
         View deleteToggleBar = findViewById(R.id.delete_toggle_bar);
         if (deleteToggleBar != null) {
             deleteToggleBar.setVisibility(View.INVISIBLE);
         }
     }
+
+     */
 
     // 인터페이스 정의
     public interface OnRoiSelectedListener {
