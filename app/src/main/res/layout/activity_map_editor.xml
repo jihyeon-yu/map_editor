@@ -132,7 +132,7 @@
             android:gravity="center">
 
             <com.forsk.ondevice.MapImageView
-                android:id="@+id/imageView"
+                android:id="@+id/mapViewer"
                 android:layout_width="wrap_content"
                 android:layout_height="250dp" />
         </LinearLayout>
@@ -209,8 +209,8 @@
 
     <!-- Toggle Bar Create Space 추가 -->
     <include
-        android:id="@+id/toggle_bar_createspace"
-        layout="@layout/toggle_bar_createspace"
+        android:id="@+id/toggle_bar_create_space"
+        layout="@layout/toggle_bar_create_space"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="30dp"

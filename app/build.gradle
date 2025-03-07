@@ -1,15 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
     namespace 'com.forsk.ondevice'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.forsk.ondevice"
-        minSdk 24
-        targetSdk 34
+        minSdk 33
+        targetSdk 35
         versionCode 3
         versionName "0.0.12"
         ndk {
@@ -17,14 +18,7 @@ android {
         }
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-//    splits {
-//        abi {
-//            enable true
-//            reset()
-//            include 'armeabi-v7a', 'arm64-v8a' // 필요한 ABI만 포함
-//            universalApk false // Universal APK를 생성하지 않음
-//        }
-//    }
+
     signingConfigs {
 
         release {
@@ -46,9 +40,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    
+    viewBinding {
+        enable = true
+    }
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     sourceSets {
         main {
@@ -59,20 +58,21 @@ android {
         exclude "lib/x86/*"
         exclude "lib/x86_64/*"
     }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
 
 dependencies {
-
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity
     implementation libs.constraintlayout
     implementation project(':sdk')
+    implementation libs.core.ktx
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
-
-    implementation 'org.yaml:snakeyaml:2.0'
-
-    implementation 'androidx.core:core-splashscreen:1.0.1'
+    implementation libs.snakeyaml
+    implementation libs.core.splashscreen
 }
