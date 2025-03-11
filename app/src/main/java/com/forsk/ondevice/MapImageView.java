@@ -109,6 +109,8 @@ public class MapImageView extends View {
     // 공간 개수
     int roomNum = 0;
 
+    Paint iconPaint;
+
     private OnRoiSelectedListener RoiSelectedListener;
     private OnRoiCreateListener RoiCreateListener;
     private OnRoiChangedListener RoiChangedListener;
@@ -177,6 +179,14 @@ public class MapImageView extends View {
         // 선택 객체 초기화
         m_RoiCurIndex = -1;
         m_RoiCurObject = null;
+
+        // 채우기 페인트 설정
+        iconPaint = new Paint();
+
+        // 랜덤 색상 생성
+        iconPaint.setColor(Color.rgb(0,37,84));
+        iconPaint.setStyle(Paint.Style.FILL); // 채우기 스타일
+        iconPaint.setAntiAlias(true);
 
     }
 
@@ -460,6 +470,7 @@ public class MapImageView extends View {
             m_RoiCurObject.SetZoom(zoom_rate);
             //m_RoiCurObject.Draw(canvas, zoom_rate);
 
+            //Log.d(TAG, "strMenu : " + strMenu);
             if(strMenu.equals("수정"))
             {
                 if(m_CurType.equals(m_RoiCurObject.roi_type)) {
@@ -472,6 +483,8 @@ public class MapImageView extends View {
                         m_RoiCurObject.Draw(canvas, pt, bitmap, true, true);
                     }
 
+
+
                 } else {
                     if(bitmapRotate != null)
                     {
@@ -481,6 +494,9 @@ public class MapImageView extends View {
                         m_RoiCurObject.Draw(canvas, pt, bitmap, false, false);
                     }
                 }
+
+                DrawButtionIcon(canvas);
+
             } else {
                 m_RoiCurObject.Draw(canvas, pt, bitmap, false, false);
             }
@@ -500,6 +516,46 @@ public class MapImageView extends View {
              */
             //m_RoiCurObject.SetLineColor(oldc);
         }
+    }
+
+    public void DrawButtionIcon(Canvas canvas){
+        Log.d(TAG, "DrawButtionIcon()");
+
+        if(m_RoiCurIndex == -1) return;
+
+        if(m_RoiCurObject == null) return;
+
+        Point pt2 = m_RoiCurObject.m_DashPoints.get(2);
+        Point pt3 = m_RoiCurObject.m_DashPoints.get(3);
+
+        int px,py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
+        int nDistance = 150;    // 모서리와의 거리
+        int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
+        int iconWidth = 100;    // 아이콘 가로크기
+        int iconHeight = 100;   // 아이콘 높이
+        double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
+
+        // 두 점 간의 각도 계산
+        nAngle = Math.atan2(pt3.y - pt2.y, pt3.x - pt2.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
+        Log.d(TAG, "nAngle : " + nAngle);
+
+        // 각도에서 45도 위치로 이동한다.
+        px = (int)( pt2.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+        py = (int)( pt2.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+        Log.d(TAG, "(px,py) : ( "+ px + ", " + py + " )");
+
+        iconX = (int)((px + pt2.x)/2.0 - iconWidth/2.0);
+        iconY = (int)((py + pt2.y)/2.0 - iconHeight/2.0);
+
+        canvas.drawCircle((int)( (px+pt2.x)/2.0), (int)( (py+pt2.y)/2.0), 50, iconPaint);
+
+        Drawable iconDrawable = getResources().getDrawable(R.drawable.icon_nw_resize, null);
+
+        int iconPadding = 20;
+        iconDrawable.setBounds(iconX + iconPadding, iconY + iconPadding, iconX+iconWidth - iconPadding, iconY + iconHeight - iconPadding);
+        iconDrawable.draw(canvas);
+
+        // benjamin_direction
 
 
     }
@@ -1534,7 +1590,8 @@ public class MapImageView extends View {
             RoiSelectedListener.onRoiSelected(m_RoiCurIndex);
         }
 
-        strMenu = "선택";
+        strMenu = "수정";
+        Log.d(TAG, "strMenu = \"수정\";");
 
         invalidate();
         SetCursorType();

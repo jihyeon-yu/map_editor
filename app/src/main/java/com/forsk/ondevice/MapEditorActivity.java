@@ -311,7 +311,7 @@ public class MapEditorActivity extends Activity {
         // roi delete 버튼
         roiDeleteToggleBar = findViewById(R.id.roi_delete_toggle_bar);
         roiDeleteButton = roiDeleteToggleBar.findViewById(R.id.roiDeleteButton);
-        roiCompleteButton.setOnClickListener(v -> {
+        roiDeleteButton.setOnClickListener(v -> {
             // 완료 버튼이 클릭되면 roi 생성완료
             hideRoiCompleteToggleBar();
 
@@ -862,16 +862,55 @@ public class MapEditorActivity extends Activity {
                     Log.d(TAG, "m_DashPoints.get(2) : " + MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x + ", " + MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y);
                     Log.d(TAG, "m_DashPoints.get(3) : " + MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).x + ", " + MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).y);
 
+                    Point pt0 = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0);
+                    Point pt1 = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1);
+                    Point pt2 = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2);
+                    Point pt3 = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3);
 
                     roiCompleteToggleBar.setVisibility(View.VISIBLE);
+
                     // 선택된 객체 위치에 토글바 배치
-                    roiCompleteToggleBar.setX(MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x + location[0]);
-                    roiCompleteToggleBar.setY(MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y + location[1]);
+                    // 위치를 모서리 바깥에 위치하게 수정
+
+                    // 아이콘을 그려주는 위치는 해당 DashPoint에서 다음 DashPoint 의 각도를 계산하여
+                    // 45도 회전한 위치의 Point와 해당 DashPoint를 사각형의 중심 좌표에 아이콘의 중심이 위치하게 그려준다.
+                    int px,py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
+                    int nDistance = 150;    // 모서리와의 거리
+                    int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
+                    int iconWidth = 100;    // 아이콘 가로크기
+                    int iconHeight = 100;   // 아이콘 높이
+                    double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt1.y - pt0.y, pt1.x - pt0.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
+                    Log.d(TAG, "nAngle : " + nAngle);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt0.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+                    Log.d(TAG, "(px1,py1) : ( "+ px + ", " + py + " )");
+
+                    iconX = (int)((px + pt0.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt0.y)/2.0 - iconHeight/2.0);
+
+                    // view의 시작 좌표에 맞추어 보정해준다.
+                    roiDeleteToggleBar.setX(iconX + location[0]);
+                    roiDeleteToggleBar.setY(iconY + location[1]);
 
                     roiDeleteToggleBar.setVisibility(View.VISIBLE);
-                    // 선택된 객체 위치에 토글바 배치
-                    roiDeleteToggleBar.setX(MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).x + location[0]);
-                    roiDeleteToggleBar.setY(MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).y + location[1]);
+                    nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
+                    Log.d(TAG, "nAngle : " + nAngle);
+                    px = (int)( pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+                    Log.d(TAG, "(px1,py1) : ( "+ px + ", " + py + " )");
+
+                    iconX = (int)((px + pt1.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt1.y)/2.0 - iconHeight/2.0);
+
+
+                    // view의 시작 좌표에 맞추어 보정해준다.
+                    roiCompleteToggleBar.setX(iconX + location[0]);
+                    roiCompleteToggleBar.setY(iconY + location[1]);
                 }
                 else
                 {
@@ -908,17 +947,55 @@ public class MapEditorActivity extends Activity {
                     Log.d(TAG, "m_DashPoints.get(2) : " + MapViewer.m_RoiCurObject.m_DashPoints.get(2).x + ", " + MapViewer.m_RoiCurObject.m_DashPoints.get(2).y);
                     Log.d(TAG, "m_DashPoints.get(3) : " + MapViewer.m_RoiCurObject.m_DashPoints.get(3).x + ", " + MapViewer.m_RoiCurObject.m_DashPoints.get(3).y);
 
-
+                    Point pt0 = MapViewer.m_RoiCurObject.m_DashPoints.get(0);
+                    Point pt1 = MapViewer.m_RoiCurObject.m_DashPoints.get(1);
+                    Point pt2 = MapViewer.m_RoiCurObject.m_DashPoints.get(2);
+                    Point pt3 = MapViewer.m_RoiCurObject.m_DashPoints.get(3);
 
                     roiCompleteToggleBar.setVisibility(View.VISIBLE);
+
                     // 선택된 객체 위치에 토글바 배치
-                    roiCompleteToggleBar.setX(MapViewer.m_RoiCurObject.m_DashPoints.get(0).x + location[0]);
-                    roiCompleteToggleBar.setY(MapViewer.m_RoiCurObject.m_DashPoints.get(0).y + location[1]);
+                    // 위치를 모서리 바깥에 위치하게 수정
+
+                    // 아이콘을 그려주는 위치는 해당 DashPoint에서 다음 DashPoint 의 각도를 계산하여
+                    // 45도 회전한 위치의 Point와 해당 DashPoint를 사각형의 중심 좌표에 아이콘의 중심이 위치하게 그려준다.
+                    int px,py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
+                    int nDistance = 150;    // 모서리와의 거리
+                    int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
+                    int iconWidth = 100;    // 아이콘 가로크기
+                    int iconHeight = 100;   // 아이콘 높이
+                    double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt1.y - pt0.y, pt1.x - pt0.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
+                    Log.d(TAG, "nAngle : " + nAngle);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt0.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+                    Log.d(TAG, "(px1,py1) : ( "+ px + ", " + py + " )");
+
+                    iconX = (int)((px + pt0.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt0.y)/2.0 - iconHeight/2.0);
+
+                    // view의 시작 좌표에 맞추어 보정해준다.
+                    roiDeleteToggleBar.setX(iconX + location[0]);
+                    roiDeleteToggleBar.setY(iconY + location[1]);
 
                     roiDeleteToggleBar.setVisibility(View.VISIBLE);
-                    // 선택된 객체 위치에 토글바 배치
-                    roiDeleteToggleBar.setX(MapViewer.m_RoiCurObject.m_DashPoints.get(1).x + location[0]);
-                    roiDeleteToggleBar.setY(MapViewer.m_RoiCurObject.m_DashPoints.get(1).y + location[1]);
+                    nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
+                    Log.d(TAG, "nAngle : " + nAngle);
+                    px = (int)( pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+                    Log.d(TAG, "(px1,py1) : ( "+ px + ", " + py + " )");
+
+                    iconX = (int)((px + pt1.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt1.y)/2.0 - iconHeight/2.0);
+
+
+                    // view의 시작 좌표에 맞추어 보정해준다.
+                    roiCompleteToggleBar.setX(iconX + location[0]);
+                    roiCompleteToggleBar.setY(iconY + location[1]);
                 }
                 else
                 {
@@ -954,15 +1031,54 @@ public class MapEditorActivity extends Activity {
                     Log.d(TAG, "m_DashPoints.get(2) : " + MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x + ", " + MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y);
                     Log.d(TAG, "m_DashPoints.get(3) : " + MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).x + ", " + MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).y);
 
+                    Point pt0 = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0);
+                    Point pt1 = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1);
+                    Point pt2 = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2);
+                    Point pt3 = MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3);
+
                     roiCompleteToggleBar.setVisibility(View.VISIBLE);
                     // 선택된 객체 위치에 토글바 배치
-                    roiCompleteToggleBar.setX(MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x + location[0]);
-                    roiCompleteToggleBar.setY(MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y + location[1]);
+                    // 위치를 모서리 바깥에 위치하게 수정
+
+                    // 아이콘을 그려주는 위치는 해당 DashPoint에서 다음 DashPoint 의 각도를 계산하여
+                    // 45도 회전한 위치의 Point와 해당 DashPoint를 사각형의 중심 좌표에 아이콘의 중심이 위치하게 그려준다.
+                    int px,py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
+                    int nDistance = 150;    // 모서리와의 거리
+                    int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
+                    int iconWidth = 100;    // 아이콘 가로크기
+                    int iconHeight = 100;   // 아이콘 높이
+                    double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt1.y - pt0.y, pt1.x - pt0.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
+                    Log.d(TAG, "nAngle : " + nAngle);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt0.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+                    Log.d(TAG, "(px1,py1) : ( "+ px + ", " + py + " )");
+
+                    iconX = (int)((px + pt0.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt0.y)/2.0 - iconHeight/2.0);
+
+                    // view의 시작 좌표에 맞추어 보정해준다.
+                    roiDeleteToggleBar.setX(iconX + location[0]);
+                    roiDeleteToggleBar.setY(iconY + location[1]);
 
                     roiDeleteToggleBar.setVisibility(View.VISIBLE);
-                    // 선택된 객체 위치에 토글바 배치
-                    roiDeleteToggleBar.setX(MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).x + location[0]);
-                    roiDeleteToggleBar.setY(MapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).y + location[1]);
+                    nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
+                    Log.d(TAG, "nAngle : " + nAngle);
+                    px = (int)( pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+                    Log.d(TAG, "(px1,py1) : ( "+ px + ", " + py + " )");
+
+                    iconX = (int)((px + pt1.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt1.y)/2.0 - iconHeight/2.0);
+
+
+                    // view의 시작 좌표에 맞추어 보정해준다.
+                    roiCompleteToggleBar.setX(iconX + location[0]);
+                    roiCompleteToggleBar.setY(iconY + location[1]);
                 }
             }
         });

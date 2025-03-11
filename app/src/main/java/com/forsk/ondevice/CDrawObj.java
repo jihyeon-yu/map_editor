@@ -358,15 +358,89 @@ public class CDrawObj {
                     m_DashPoints.get(0).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle) );
                     m_DashPoints.get(1).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
                     m_DashPoints.get(1).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
-                    m_DashPoints.get(3).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle) );
-                    m_DashPoints.get(3).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle) );
                     m_DashPoints.get(2).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
                     m_DashPoints.get(2).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+                    m_DashPoints.get(3).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                    m_DashPoints.get(3).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle) );
 
                     int i=0;
                     for(i=0;i<4;i++) {
                         canvas.drawLine((int) m_DashPoints.get(i%4).x, (int) m_DashPoints.get(i%4).y, (int) m_DashPoints.get((i+1)%4).x, (int) m_DashPoints.get((i+1)%4).y, RectDashpaint);
                     }
+
+                    /*
+                    // 아이콘을 그려주는 위치는 해당 DashPoint에서 다음 DashPoint 의 각도를 계산하여
+                    // 45도 회전한 위치의 Point와 해당 DashPoint를 사각형의 중심 좌표에 아이콘의 중심이 위치하게 그려준다.
+
+                    int px,py;  // 45 이동한 위치의 포인트
+                    int iconX, iconY;
+
+                    int nDistance = 220;
+                    int iconWidth = 100;
+                    int iconHeight = 100;
+                    double nAngle;
+
+                    Point pt0 = m_DashPoints.get(0);
+                    Point pt1 = m_DashPoints.get(1);
+                    Point pt2 = m_DashPoints.get(2);
+                    Point pt3 = m_DashPoints.get(3);
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt1.y - pt0.y, pt1.x - pt0.x);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt0.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+
+                    iconX = (int)((px + pt0.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt0.y)/2.0 - iconHeight/2.0);
+
+                    canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+
+                    iconX = (int)((px + pt1.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt1.y)/2.0 - iconHeight/2.0);
+
+                    canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt3.y - pt2.y, pt3.x - pt2.x);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt2.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt2.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+
+                    iconX = (int)((px + pt2.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt2.y)/2.0 - iconHeight/2.0);
+
+                    canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt0.y - pt3.y, pt0.x - pt3.x);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt3.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt3.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+
+                    iconX = (int)((px + pt3.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt3.y)/2.0 - iconHeight/2.0);
+
+                    canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
+                    */
                 }
                 break;
 
@@ -416,6 +490,80 @@ public class CDrawObj {
                     for(i=0;i<4;i++) {
                         canvas.drawLine((int) m_DashPoints.get(i%4).x, (int) m_DashPoints.get(i%4).y, (int) m_DashPoints.get((i+1)%4).x, (int) m_DashPoints.get((i+1)%4).y, RectDashpaint);
                     }
+
+                    /*
+                    // 아이콘을 그려주는 위치는 해당 DashPoint에서 다음 DashPoint 의 각도를 계산하여
+                    // 45도 회전한 위치의 Point와 해당 DashPoint를 사각형의 중심 좌표에 아이콘의 중심이 위치하게 그려준다.
+
+                    int px,py;  // 45 이동한 위치의 포인트
+                    int iconX, iconY;
+
+                    int nDistance = 120;
+                    int iconWidth = 100;
+                    int iconHeight = 100;
+                    double nAngle;
+
+                    Point pt0 = m_DashPoints.get(0);
+                    Point pt1 = m_DashPoints.get(1);
+                    Point pt2 = m_DashPoints.get(2);
+                    Point pt3 = m_DashPoints.get(3);
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt1.y - pt0.y, pt1.x - pt0.x);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt0.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+
+                    iconX = (int)((px + pt0.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt0.y)/2.0 - iconHeight/2.0);
+
+                    canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+
+                    iconX = (int)((px + pt1.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt1.y)/2.0 - iconHeight/2.0);
+
+                    canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt3.y - pt2.y, pt3.x - pt2.x);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt2.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt2.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+
+                    iconX = (int)((px + pt2.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt2.y)/2.0 - iconHeight/2.0);
+
+                    canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
+
+                    // 두 점 간의 각도 계산
+                    nAngle = Math.atan2(pt0.y - pt3.y, pt0.x - pt3.x);
+
+                    // 각도에서 45도 위치로 이동한다.
+                    px = (int)( pt3.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
+                    py = (int)( pt3.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
+
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+
+                    iconX = (int)((px + pt3.x)/2.0 - iconWidth/2.0);
+                    iconY = (int)((py + pt3.y)/2.0 - iconHeight/2.0);
+
+                    canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
+                    */
                 }
 
                 break;
