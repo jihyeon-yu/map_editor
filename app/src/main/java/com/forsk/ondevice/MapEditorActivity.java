@@ -120,23 +120,12 @@ public class MapEditorActivity extends Activity {
 
     private String PinName = "";
 
-    private float scaleFactor = 1.0f;
-
-    // 선택된 버튼 저장 변수
-    Button selectedButton = null;
-
-    private View toggleBar;
-    private ConstraintLayout toggleBarCreateSpace;
     private boolean lib_flag = true;
 
     private Mat transformationMatrix = null;
 
     private float rotated_angle = 0f;
     int original_image_height = 0;
-
-    View roiDeleteToggleBar;
-    View roiDeleteButton;
-    View roiCompleteToggleBar;
 
     private ActivityMapeditorBinding activityMapeditorBinding;
 
@@ -284,13 +273,6 @@ public class MapEditorActivity extends Activity {
     }
 
     public void setUI() {
-        toggleBar = activityMapeditorBinding.toggleBar.getRoot();
-
-        // roi delete 버튼
-        roiDeleteToggleBar = activityMapeditorBinding.roiDeleteToggleBar.getRoot();
-        roiDeleteButton = activityMapeditorBinding.roiDeleteToggleBar.roiDeleteButton;
-        roiCompleteToggleBar = activityMapeditorBinding.roiCompleteToggleBar.getRoot();
-
         // 상태 바 제거
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -303,12 +285,12 @@ public class MapEditorActivity extends Activity {
         // 초기에는 안 보이는 것으로 설정
         hideRoiCompleteToggleBar();
 
-        activityMapeditorBinding.roiCompleteToggleBar.roiCompleteButton.setOnClickListener(v -> {
+        activityMapeditorBinding.roiCompleteLayout.setOnClickListener(v -> {
             // 완료 버튼이 클릭되면 roi 생성완료
             hideRoiCompleteToggleBar();
         });
 
-        roiDeleteButton.setOnClickListener(v -> {
+        activityMapeditorBinding.roiDeleteLayout.setOnClickListener(v -> {
             // 완료 버튼이 클릭되면 roi 생성완료
             hideRoiCompleteToggleBar();
             mapViewer.roi_RemoveObject();
@@ -428,6 +410,8 @@ public class MapEditorActivity extends Activity {
             mapViewer.setMenu("추가");
             mapViewer.roi_CreateObject();
             updateToggleButtonStatus(v.getId());
+            activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
+            activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
         });
 
         activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setOnClickListener(v -> {
@@ -526,7 +510,7 @@ public class MapEditorActivity extends Activity {
                 Point pt2 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2);
                 Point pt3 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3);
 
-                roiCompleteToggleBar.setVisibility(View.VISIBLE);
+                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
                 // 선택된 객체 위치에 토글바 배치
                 // 위치를 모서리 바깥에 위치하게 수정
@@ -553,10 +537,10 @@ public class MapEditorActivity extends Activity {
                 iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                roiDeleteToggleBar.setX(iconX + location[0]);
-                roiDeleteToggleBar.setY(iconY + location[1]);
+                activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
+                activityMapeditorBinding.roiDeleteLayout.setY(iconY + location[1]);
+                activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
-                roiDeleteToggleBar.setVisibility(View.VISIBLE);
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
                 Log.d(TAG, "nAngle : " + nAngle);
                 px = (int) (pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI / 4.0));
@@ -567,8 +551,8 @@ public class MapEditorActivity extends Activity {
                 iconY = (int) ((py + pt1.y) / 2.0 - iconHeight / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                roiCompleteToggleBar.setX(iconX + location[0]);
-                roiCompleteToggleBar.setY(iconY + location[1]);
+                activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
+                activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
             } else {
                 // 선택된 것이 없음.
                 hideRoiCompleteToggleBar();
@@ -604,7 +588,7 @@ public class MapEditorActivity extends Activity {
                 Point pt2 = mapViewer.m_RoiCurObject.m_DashPoints.get(2);
                 Point pt3 = mapViewer.m_RoiCurObject.m_DashPoints.get(3);
 
-                roiCompleteToggleBar.setVisibility(View.VISIBLE);
+                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
                 // 선택된 객체 위치에 토글바 배치
                 // 위치를 모서리 바깥에 위치하게 수정
@@ -631,10 +615,10 @@ public class MapEditorActivity extends Activity {
                 iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                roiDeleteToggleBar.setX(iconX + location[0]);
-                roiDeleteToggleBar.setY(iconY + location[1]);
+                activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
+                activityMapeditorBinding.roiDeleteLayout.setY(iconY + location[1]);
+                activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
-                roiDeleteToggleBar.setVisibility(View.VISIBLE);
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
                 Log.d(TAG, "nAngle : " + nAngle);
                 px = (int) (pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI / 4.0));
@@ -646,8 +630,8 @@ public class MapEditorActivity extends Activity {
 
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                roiCompleteToggleBar.setX(iconX + location[0]);
-                roiCompleteToggleBar.setY(iconY + location[1]);
+                activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
+                activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
             } else {
                 hideRoiCompleteToggleBar();
             }
@@ -682,7 +666,7 @@ public class MapEditorActivity extends Activity {
                 Point pt2 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2);
                 Point pt3 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3);
 
-                roiCompleteToggleBar.setVisibility(View.VISIBLE);
+                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
                 // 선택된 객체 위치에 토글바 배치
                 // 위치를 모서리 바깥에 위치하게 수정
 
@@ -691,8 +675,6 @@ public class MapEditorActivity extends Activity {
                 int px, py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
                 int nDistance = 150;    // 모서리와의 거리
                 int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
-                int iconWidth = 100;    // 아이콘 가로크기
-                int iconHeight = 100;   // 아이콘 높이
                 double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
 
                 // 두 점 간의 각도 계산
@@ -704,35 +686,38 @@ public class MapEditorActivity extends Activity {
                 py = (int) (pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
                 Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
-                iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
-                iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                View roiDeleteButton = activityMapeditorBinding.roiDeleteButton;
+
+                iconX = (int) ((px + pt0.x) / 2.0);
+                iconY = (int) ((py + pt0.y) / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                roiDeleteToggleBar.setX(iconX + location[0]);
-                roiDeleteToggleBar.setY(iconY + location[1]);
+                activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
+                activityMapeditorBinding.roiDeleteLayout.setY(iconY + location[1]);
+                activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
-                roiDeleteToggleBar.setVisibility(View.VISIBLE);
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
                 Log.d(TAG, "nAngle : " + nAngle);
                 px = (int) (pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI / 4.0));
                 py = (int) (pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
                 Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
-                iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
-                iconY = (int) ((py + pt1.y) / 2.0 - iconHeight / 2.0);
+                View roiCompleteLayout = activityMapeditorBinding.roiCompleteLayout;
+                iconX = (int) ((px + pt1.x) / 2.0 - roiCompleteLayout.getWidth());
+                iconY = (int) ((py + pt1.y) / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                roiCompleteToggleBar.setX(iconX + location[0]);
-                roiCompleteToggleBar.setY(iconY + location[1]);
+                activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
+                activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
+                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
             }
         });
     }
 
-
     // 토글바 숨김 함수
     private void hideRoiCompleteToggleBar() {
-        roiCompleteToggleBar.setVisibility(View.GONE);
-        roiDeleteToggleBar.setVisibility(View.GONE);
+        activityMapeditorBinding.roiCompleteLayout.setVisibility(View.GONE);
+        activityMapeditorBinding.roiDeleteLayout.setVisibility(View.GONE);
     }
 
     private void updateToggleButtonStatus(int viewId) {

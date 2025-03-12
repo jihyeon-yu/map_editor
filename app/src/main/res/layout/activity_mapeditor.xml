@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -205,18 +206,49 @@
     </LinearLayout>
 
     <!-- roi complete 토글바 -->
-    <include
-        android:id="@+id/roi_complete_toggle_bar"
-        layout="@layout/roi_complete_toggle_bar"
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/roiCompleteLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="invisible" />
+        android:paddingTop="8dp"
+        android:visibility="gone"
+        tools:ignore="MissingConstraints">
+
+        <ImageView
+            android:id="@+id/roiCompleteButton"
+            android:layout_width="44dp"
+            android:layout_height="36dp"
+            android:contentDescription="완료"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_map_area_complete"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="MissingConstraints" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- roi complete 토글바 -->
-    <include
-        android:id="@+id/roi_delete_toggle_bar"
-        layout="@layout/roi_delete_toggle_bar"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/roiDeleteLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="invisible" />
+        android:paddingTop="8dp"
+        android:visibility="visible"
+        tools:ignore="MissingConstraints">
+
+        <ImageView
+            android:id="@+id/roiDeleteButton"
+            android:layout_width="44dp"
+            android:layout_height="36dp"
+            android:contentDescription="완료"
+            android:src="@drawable/ic_map_area_delete"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

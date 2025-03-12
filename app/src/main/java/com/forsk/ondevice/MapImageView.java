@@ -233,10 +233,10 @@ public class MapImageView extends View {
             matrix.postScale(scaleFactor, scaleFactor, focus_x, focus_y);
 
             // 이동 값을 적용 (중앙 고정)
+            Log.w(">>>>","dx : " + focus_x + " width : " + getWidth());
             if (bitmap != null) {
                 float translateX = getWidth() / 2f - focus_x;
                 float translateY = getHeight() / 2f - focus_y;
-
                 matrix.postTranslate(translateX * (scaleFactor - 1), translateY * (scaleFactor - 1));
             }
 
