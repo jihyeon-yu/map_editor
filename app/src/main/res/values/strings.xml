@@ -2,4 +2,7 @@
     <string name="app_name">OnDevice</string>
     <string name="move">move</string>
     <string name="subIconMarginTop">35dp</string>
+    <string name="text_press_plus_block_area">+ 버튼을 탭하여 진입 금지 영역을 지정해주세요.</string>
+    <string name="text_press_plus_block_wall">+ 버튼을 탭하여 진입 금지벽을 지정해주세요.</string>
+    <string name="text_press_button_create_space">한 공간으로 묶고 싶은 영역을 지정해주세요.</string>
 </resources>

@@ -1,87 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/fabMain"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginTop="80dp"
-        android:layout_marginStart="30dp"
-        android:background="@drawable/rounded_toggle_bar"
-        android:drawableTop="@drawable/baseline_arrow_forward_ios_24"
-        android:gravity="center"
-        android:padding="10dp"
-        android:text=""
-        android:contentDescription="열기 버튼"
-        android:visibility="invisible"/>
-
-    <!-- GoBack Floating Action Button -->
-    <Button
-        android:id="@+id/goback_button"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:drawableTop="@drawable/baseline_arrow_back_24"
-        android:backgroundTint="@color/black"
-        android:layout_gravity="top|start"
-        />
-
-    <!-- Cancle Floating Action Button -->
-    <Button
-        android:id="@+id/cancel_button"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:drawableTop="@drawable/baseline_clear_24"
-        android:backgroundTint="@color/black"
-        android:layout_gravity="top|end"
-        />
-
-    <!-- Move Map Floating Action Button -->
-    <!--
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabMoveMap"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:layout_marginBottom="78dp"
-        android:layout_marginStart="30dp"
-        android:contentDescription="@null"
-        android:src="@drawable/baseline_pan_tool_alt_24"
-        app:fabSize="mini"
-        app:fabCustomSize="44dp"
-        android:backgroundTint="#969696"
-        android:layout_gravity="bottom|start"
-        />
-    -->
-
-    <!-- Rotate Map Floating Action Button -->
-
-
-    <!-- 메인 레이아웃 -->
     <LinearLayout
-        android:id="@+id/linearLayout"
+        android:id="@+id/layout_header"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10.8dp"
+        android:layout_marginEnd="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        <!-- GoBack Floating Action Button -->
 
-        <!-- 상단 LinearLayout -->
+        <ImageView
+            android:id="@+id/goback_button"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="top|start"
+            android:backgroundTint="@color/black"
+            android:src="@drawable/ic_back"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <LinearLayout
-            android:layout_width="640dp"
-            android:layout_height="60dp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="28dp"
+            android:layout_weight="1"
             android:background="#000000"
             android:orientation="vertical">
             <!-- 상단 텍스트 -->
             <TextView
                 android:id="@+id/title"
-                android:layout_width="58dp"
-                android:layout_height="24dp"
-                android:layout_marginStart="292dp"
-                android:layout_marginTop="5dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:fontFamily="@font/pretendard"
                 android:text="맵 편집"
+                android:textAlignment="center"
                 android:textColor="#FFFFFF"
                 android:textSize="20sp" />
 
@@ -90,146 +49,160 @@
                 android:id="@+id/mode_description"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="10dp"
                 android:alpha="0.8"
-                android:gravity="center"
-                android:text=""
+                android:text="123"
+                android:textAlignment="center"
                 android:textColor="#80FFFFFF"
                 android:textSize="14sp" />
-
-            <!-- Divider -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="2dp"
-                android:layout_marginTop="5dp"
-                android:alpha="0.4"
-                android:background="#FFFFFF" />
         </LinearLayout>
+    </LinearLayout>
 
+
+    <com.google.android.material.divider.MaterialDivider
+        android:id="@+id/divider_header"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:alpha="0.5"
+        app:dividerColor="#ffffff"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layout_header" />
+
+    <!-- 메인 레이아웃 -->
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider_header">
         <!-- 중간 LinearLayout -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutMain"
-            android:layout_width="600dp"
-            android:layout_height="262dp"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
             android:layout_gravity="center"
             android:layout_marginLeft="20dp"
             android:layout_marginTop="10dp"
             android:layout_marginRight="20dp"
+            android:layout_weight="1"
             android:background="@drawable/rounded_corners_background"
             android:gravity="center">
 
-
             <com.forsk.ondevice.MapImageView
-                android:id="@+id/imageView"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
+                android:id="@+id/map_viewer"
                 android:layout_width="wrap_content"
-                android:layout_height="250dp" />
-
-            <ImageView
-                android:id="@+id/fabRotateMap"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:src="@drawable/ic_rotate"
-                android:layout_marginBottom="30dp"
-                android:layout_marginEnd="30dp"
-                android:background="#33ffffff"
-                android:backgroundTint="#777777"
+                android:layout_height="0dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <include
+                android:id="@+id/toggle_bar"
+                layout="@layout/toggle_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/size_24"
+                android:layout_marginTop="@dimen/size_24"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/icRotateMap"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="16.67dp"
+                android:layout_marginBottom="16.67dp"
+                android:background="@drawable/ic_rotate_selector"
+                android:clickable="true"
+                android:focusable="true"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_rotate"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <FrameLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layout_bottom_button"
             android:layout_width="match_parent"
-            android:layout_height="77dp"
-            android:layout_gravity="bottom"
-            android:background="#000000">
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="@dimen/size_30">
 
             <!-- 공간 생성 -->
             <Button
                 android:id="@+id/button_space_creation"
-                android:layout_width="90dp"
-                android:layout_height="47dp"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:background="@drawable/rounded_button"
                 android:text="공간 생성"
                 android:textColor="#FFFFFF"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <!-- 가상벽 -->
             <Button
                 android:id="@+id/button_block_wall"
-                android:layout_width="120dp"
-                android:layout_height="47dp"
-                android:layout_marginStart="111dp"
-                android:layout_marginTop="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
                 android:background="@drawable/rounded_button"
+                android:paddingHorizontal="8dp"
                 android:text="가상벽 추가"
                 android:textColor="#FFFFFF"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                app:layout_constraintEnd_toStartOf="@id/button_block_area"
+                app:layout_constraintStart_toEndOf="@id/button_space_creation"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <!-- 금지공간 -->
             <Button
                 android:id="@+id/button_block_area"
-                android:layout_width="120dp"
-                android:layout_height="47dp"
-                android:layout_marginStart="235dp"
-                android:layout_marginTop="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
                 android:background="@drawable/rounded_button"
+                android:paddingHorizontal="8dp"
                 android:text="금지 공간 추가"
                 android:textColor="#FFFFFF"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                app:layout_constraintStart_toEndOf="@id/button_block_wall"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <!-- 완료 버튼 -->
             <Button
                 android:id="@+id/finish_button"
-                android:layout_width="84dp"
-                android:layout_height="47dp"
-                android:layout_marginStart="535dp"
-                android:layout_marginTop="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:background="@drawable/rounded_button"
                 android:drawableStart="@drawable/ic_complete"
-                android:gravity="center"
+                android:paddingStart="3dp"
+                android:paddingEnd="8dp"
                 android:text="저장"
                 android:textColor="#FFFFFF"
-                android:textSize="18sp" />
-
-        </FrameLayout>
-
+                android:textSize="18sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
-
-    <!-- Toggle Bar 추가 -->
-    <include
-        android:id="@+id/toggle_bar"
-        layout="@layout/toggle_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="80dp"
-        />
-
-    <!-- Toggle Bar Create Space 추가 -->
-    <include
-        android:id="@+id/toggle_bar_createspace"
-        layout="@layout/toggle_bar_createspace"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="80dp"
-        />
-
-    <!-- 삭제 토글바 -->
-    <!--
-    <include
-        android:id="@+id/delete_toggle_bar"
-        layout="@layout/delete_toggle_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="invisible"/>
-    -->
 
     <!-- roi complete 토글바 -->
     <include
@@ -237,7 +210,7 @@
         layout="@layout/roi_complete_toggle_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="invisible"/>
+        android:visibility="invisible" />
 
     <!-- roi complete 토글바 -->
     <include
@@ -245,69 +218,5 @@
         layout="@layout/roi_delete_toggle_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="invisible"/>
-
-    <!-- 토글바 클릭 버튼 레이아웃 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_anchor="@+id/linearLayout"
-        app:layout_anchorGravity="center">
-
-        <!-- 공간 생성 -->
-        <TextView
-            android:id="@+id/fabAddObjectClicked"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="72dp"
-            android:layout_marginTop="80dp"
-            android:background="@drawable/rounded_button_white"
-            android:gravity="center"
-            android:text="+"
-            android:textSize="20sp"
-            android:visibility="invisible" />
-
-        <!-- 핀 이동 -->
-        <TextView
-            android:id="@+id/fabMovePinClicked"
-            android:layout_width="60dp"
-            android:layout_height="40dp"
-            android:text="핀 이동"
-            android:visibility="invisible"
-            android:gravity="center"
-            android:textSize="14sp"
-            android:background="@drawable/rounded_button_white"
-            android:layout_marginStart="116dp"
-            android:layout_marginTop="80dp"
-            />
-
-        <!-- 핀 회전 -->
-        <TextView
-            android:id="@+id/fabRotatePinClicked"
-            android:layout_width="60dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="179dp"
-            android:layout_marginTop="80dp"
-            android:background="@drawable/rounded_button_white"
-            android:gravity="center"
-            android:text="핀 회전"
-            android:textSize="14sp"
-            android:visibility="invisible" />
-
-        <!-- 이름 편집 -->
-        <TextView
-            android:id="@+id/fabRenameObjectClicked"
-            android:layout_width="72dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="450dp"
-            android:layout_marginTop="80dp"
-            android:background="@drawable/rounded_button_white"
-            android:gravity="center"
-            android:text="이름 편집"
-            android:textSize="14sp"
-            android:visibility="invisible" />
-
-
-    </LinearLayout>
-
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        android:visibility="invisible" />
+</androidx.constraintlayout.widget.ConstraintLayout>

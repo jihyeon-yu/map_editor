@@ -1,44 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    >
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/rounded_toggle_bar">
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="80dp"
-        android:layout_height="40dp"
-        android:orientation="horizontal"
-        android:background="@drawable/rounded_toggle_bar"
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        tools:ignore="MissingConstraints">
-
+        android:orientation="horizontal"
+        android:paddingEnd="@dimen/size_7"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="RtlSymmetry">
         <!-- 접기 버튼 -->
         <ImageView
             android:id="@+id/fabMainBack"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginStart="10dp"
-            android:src="@drawable/baseline_arrow_back_ios_new_24"
-            android:contentDescription="접기" />
-
+            android:layout_width="@dimen/size_84"
+            android:layout_height="@dimen/size_84"
+            android:layout_margin="@dimen/size_18"
+            android:contentDescription="@null"
+            android:src="@drawable/arrow_l" />
         <!-- 구분선 -->
         <View
-            android:layout_width="2dp"
-            android:layout_height="20dp"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="10dp"
-            android:background="#7D7D7D" />
+            android:id="@+id/divider_1"
+            android:layout_width="1dp"
+            android:layout_height="@dimen/size_52"
+            android:layout_marginHorizontal="@dimen/size_7"
+            android:alpha="0.5"
+            android:background="#ffffff"
+            android:visibility="visible" />
 
-        <ImageView
-            android:id="@+id/fabAddObject"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/baseline_add_24"
-            android:contentDescription="추가" />
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/buttonAddObjectBackground"
+            android:layout_width="@dimen/size_120"
+            android:layout_height="@dimen/size_120"
+            android:background="@null"
+            android:padding="@dimen/size_7">
 
+            <ImageView
+                android:id="@+id/buttonAddObject"
+                android:layout_width="@dimen/size_84"
+                android:layout_height="@dimen/size_84"
+                android:contentDescription="@null"
+                android:src="@drawable/add_white"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <View
+            android:id="@+id/divider_2"
+            android:layout_width="1dp"
+            android:layout_height="@dimen/size_52"
+            android:layout_marginHorizontal="@dimen/size_7"
+            android:alpha="0.5"
+            android:background="#ffffff"
+            android:visibility="visible" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/buttonPinMoveBackground"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/size_120"
+            android:background="@null"
+            android:padding="@dimen/size_7">
+
+            <TextView
+                android:id="@+id/buttonPinMove"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/size_84"
+                android:layout_margin="@dimen/size_18"
+                android:contentDescription="@null"
+                android:fontFamily="@font/pretendard"
+                android:gravity="center"
+                android:src="@drawable/add_white"
+                android:text="핀 이동"
+                android:textColor="@color/white"
+                android:textSize="15sp"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <View
+            android:id="@+id/divider_3"
+            android:layout_width="1dp"
+            android:layout_height="@dimen/size_52"
+            android:layout_marginHorizontal="@dimen/size_7"
+            android:alpha="0.5"
+            android:background="#ffffff"
+            android:visibility="visible" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/buttonPinRotateBackground"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/size_120"
+            android:background="@null"
+            android:padding="@dimen/size_7">
+
+            <TextView
+                android:id="@+id/buttonPinRotate"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/size_84"
+                android:layout_margin="@dimen/size_18"
+                android:contentDescription="@null"
+                android:fontFamily="@font/pretendard"
+                android:gravity="center"
+                android:src="@drawable/add_white"
+                android:text="핀 회전"
+                android:textColor="@color/white"
+                android:textSize="15sp"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <View
+            android:id="@+id/divider_4"
+            android:layout_width="1dp"
+            android:layout_height="@dimen/size_52"
+            android:layout_marginHorizontal="@dimen/size_7"
+            android:alpha="0.5"
+            android:background="#ffffff"
+            android:visibility="visible" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/buttonRenameBackground"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/size_120"
+            android:background="@null"
+            android:padding="@dimen/size_7">
+
+            <TextView
+                android:id="@+id/buttonRename"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/size_84"
+                android:layout_margin="@dimen/size_18"
+                android:contentDescription="@null"
+                android:fontFamily="@font/pretendard"
+                android:gravity="center"
+                android:src="@drawable/add_white"
+                android:text="이름 편집"
+                android:textColor="@color/white"
+                android:textSize="15sp"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
     </LinearLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

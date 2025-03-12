@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <layer-list>
+            <item android:drawable="@drawable/bg_ic_rotate" />
+            <item>
+                <shape>
+                    <solid android:color="#88000000" /> <!-- 클릭 시 약간 어두운 오버레이 -->
+                    <corners android:radius="100dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
 
+    <item android:state_pressed="false">
+        <layer-list>
+            <item android:drawable="@drawable/bg_ic_rotate" />
+        </layer-list>
+    </item>
 </selector>
