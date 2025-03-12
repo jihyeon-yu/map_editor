@@ -187,25 +187,31 @@ public class MapImageView extends View {
 
     }
 
+    Boolean isDrag = false;
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        //String strMode = "맵 탐색";
-        //String strMenu = "Zoom";
-        //Log.d(TAG,"mouse GetPointCount: " + event.getPointerCount());
         if (event.getPointerCount() > 1) {
             scaleGestureDetector.onTouchEvent(event);
+            isDrag = true;
         } else {
-            zoom_rate_offset = zoom_rate;
+            //zoom_rate_offset = zoom_rate;
             StartPos_x_offset = StartPos_x;
             StartPos_y_offset = StartPos_y;
 
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (isDrag) return true;
                 MouseDown(event.getX(), event.getY());
             }
             if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (isDrag) {
+                    isDrag = false;
+                    return true;
+                }
                 MouseUp(event.getX(), event.getY());
             }
             if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                if (isDrag) return true;
                 MouseMove(event.getX(), event.getY());
             }
         }
@@ -220,28 +226,18 @@ public class MapImageView extends View {
             scaleFactor *= detector.getScaleFactor();
             zoom_rate = zoom_rate_offset * scaleFactor;
 
-            float[] values = new float[9];
-            matrix.getValues(values);
+            float focus_x = detector.getFocusX(); // 터치 중심 X 좌표
+            float focus_y = detector.getFocusY(); // 터치 중심 Y 좌표
 
-            // 현재 Matrix 값에 스케일 적용
-            matrix.setScale((float) zoom_rate, (float) zoom_rate);
-
-            float focus_x = detector.getFocusX();
-            float focus_y = detector.getFocusY();
-            // 포커싱 된 부분을 이미지의 위치를 확인하여 해당 포커싱된 부분이 이미지의 가운데로 오게 한다.
+            // 현재 Matrix 값에 스케일 적용 (중심 기준)
+            matrix.postScale(scaleFactor, scaleFactor, focus_x, focus_y);
 
             // 이동 값을 적용 (중앙 고정)
+            if (bitmap != null) {
+                float translateX = getWidth() / 2f - focus_x;
+                float translateY = getHeight() / 2f - focus_y;
 
-            //if(bitmap != null)
-            {
-
-                int CenterToImgX = (int) ((getWidth() / 2 - StartPos_x_offset) / zoom_rate_offset); // 선터 좌료를 원본 이미지 좌표로 변환
-                float ImgStartPosX = (float) ((int) (getWidth() / 2) - CenterToImgX * zoom_rate); // 원본이미지의 좌표를 변경된 이미지의 줌심좌표로 수정
-                float translateX = (float) ((int) (getWidth() / 2) - ((int) ((getWidth() / 2 - StartPos_x_offset) / zoom_rate_offset)) * zoom_rate);
-                float translateY = (float) ((int) (getHeight() / 2) - ((int) ((getHeight() / 2 - StartPos_y_offset) / zoom_rate_offset)) * zoom_rate);
-
-                matrix.postTranslate(translateX, translateY);
-                //matrix.postTranslate(5.0f, 5.0f);
+                matrix.postTranslate(translateX * (scaleFactor - 1), translateY * (scaleFactor - 1));
             }
 
             // 화면 다시 그리기
