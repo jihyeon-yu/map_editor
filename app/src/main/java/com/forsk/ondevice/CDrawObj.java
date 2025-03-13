@@ -581,8 +581,6 @@ public class CDrawObj {
 
             case "roi_polygon":
                 //Log.d(TAG, "m_Points.size() : "+(m_Points.size()));
-
-
                 // Path를 정의하여 폴리곤 만들기
                 path.reset();
 
@@ -655,7 +653,6 @@ public class CDrawObj {
                     }
                 }
                 if (bDashViewflag && bSelected) {
-
                     // normalize rect
                     int nTemp = 0;
                     if (m_MBR.left > m_MBR.right) {
@@ -668,7 +665,8 @@ public class CDrawObj {
                         m_MBR.bottom = m_MBR.left;
                         m_MBR.left = nTemp;
                     }
-                    /*
+
+                    float distance = 50;
                     m_DashPoints.get(0).x = (int) (((float) m_MBR.left * m_zoom + pt_Start.x) - distance);
                     m_DashPoints.get(0).y = (int) (((float) m_MBR.top * m_zoom + pt_Start.y) - distance);
                     m_DashPoints.get(1).x = (int) (((float) m_MBR.right * m_zoom + pt_Start.x) + distance);
@@ -677,8 +675,6 @@ public class CDrawObj {
                     m_DashPoints.get(2).y = (int) (((float) m_MBR.bottom * m_zoom + pt_Start.y) + distance);
                     m_DashPoints.get(3).x = (int) (((float) m_MBR.left * m_zoom + pt_Start.x) - distance);
                     m_DashPoints.get(3).y = (int) (((float) m_MBR.bottom * m_zoom + pt_Start.y) + distance);
-
-                     */
 
                     int i = 0;
                     for (i = 0; i < 4; i++) {
