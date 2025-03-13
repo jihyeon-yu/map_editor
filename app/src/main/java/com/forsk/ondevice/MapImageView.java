@@ -16,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -293,6 +294,8 @@ public class MapImageView extends View {
 
             if (strMenu.equals("핀 회전")) {
                 if (m_RoiObjects.get(i).roi_type.equals("roi_polygon")) {
+
+                    m_RoiObjects.get(i).bDashViewflag = false;
                     // 선택된 것만 회전한다.
                     if (i == m_RoiCurIndex) {
                         m_RoiObjects.get(i).setIconDrawable(iconDrawable);
@@ -303,6 +306,7 @@ public class MapImageView extends View {
                     }
                 }
             } else {
+                m_RoiObjects.get(i).bDashViewflag = true;
                 m_RoiObjects.get(i).setIconDrawable(null);
             }
 
@@ -342,7 +346,7 @@ public class MapImageView extends View {
             // 241222 jihyeon 핀 회전일 때 아이콘 변경
             if (strMenu.equals("핀 회전")) {
 
-                //RotatePinIcon();
+                RotatePinIcon();
 
             } else if (m_RoiObjects.get(i).roi_type.equals("roi_polygon")) {
 
@@ -555,7 +559,7 @@ public class MapImageView extends View {
             m_drawstart = false;
 
         } else if (str.equals("선택")) {
-            if (strMenu.equals("추가")) {
+            if (strMenu.equals("추가")) {     // 이전 메뉴가 추가이면
                 roi_AddObject();
             } else {
                 CObject_CurRoiCancelFunc();
@@ -564,11 +568,56 @@ public class MapImageView extends View {
         } else if (str.equals("삭제")) {
 
         } else if (str.equals("핀 회전")) {
-            // RotatePinIcon();
+            RotatePinIcon();
             // TODO 기능 구현 필요
         }
 
         strMenu = str;
+    }
+    // 241222 jihyeon 핀 회전 모드 아이콘
+    private void RotatePinIcon() {
+        Drawable iconDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
+        Drawable rotateDrawable = getResources().getDrawable(R.drawable.ic_rotate, null);
+        // 모든 ROI 객체의 핀을 새로운 Drawable로 설정
+        for (CDrawObj roiObject : m_RoiObjects) {
+            if (roiObject.roi_type.equals("roi_polygon")) {
+                roiObject.setIconDrawable(iconDrawable);
+                roiObject.setRotateDrawable(rotateDrawable);
+            }
+        }
+
+        // 화면 갱신
+        invalidate();
+    }
+    private void RotatePinIcon(int nIndex) {
+        if(nIndex > (m_RoiObjects.size()-1)) return ;
+        CDrawObj roiObject = m_RoiObjects.get(nIndex);
+
+        Drawable iconDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
+        Drawable rotateDrawable = getResources().getDrawable(R.drawable.ic_rotate, null);
+        if (roiObject.roi_type.equals("roi_polygon")) {
+            roiObject.setIconDrawable(iconDrawable);
+            roiObject.setRotateDrawable(rotateDrawable);
+        }
+    }
+    public String GetMenu() {
+        return this.strMenu;
+    }
+
+    public void SetRoiType(String str) {
+        this.roiType = str;
+    }
+
+    public String GetRoiType() {
+        return this.roiType;
+    }
+
+    public void SetCurType(String str) {
+        this.m_CurType = str;
+    }
+
+    public String GetCurType() {
+        return this.m_CurType;
     }
 
     public void MouseDown(float x, float y) {
@@ -580,7 +629,6 @@ public class MapImageView extends View {
         //241218 성웅 strMode 맵탐색에서 strMenu 이동으로 변경
         // TODO 추후 정리 필요
         if (strMenu.equals("이동")) {
-            //if (strMenu.equals("이동") || strMenu.equals("핀 회전")) {
             m_DnPoint.x = (int) x;
             m_DnPoint.y = (int) y;
 
@@ -673,7 +721,12 @@ public class MapImageView extends View {
                     // 해당 rio에 대해서 Tracker pointer를 생성해준다.
                     m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
                 }
-                roiSelectedListener.onRoiSelected(m_RoiCurIndex);
+                if (!strMenu.equals("핀 회전")) {
+                    roiSelectedListener.onRoiSelected(-1);
+                }
+                if (!strMenu.equals("핀 이동")) {
+                    roiSelectedListener.onRoiSelected(-1);
+                }
 
                 invalidate(); // 화면을 다시 그리도록 요청
             }
@@ -692,6 +745,7 @@ public class MapImageView extends View {
                 //Log.d(TAG,"Delta Angle:" +  Math.toDegrees(deltaAngle));
                 m_RoiObjects.get(m_RoiCurIndex).setAngle(deltaAngle);
 
+                roiSelectedListener.onRoiSelected(-1);
                 // 화면을 갱신해준다.
                 invalidate();
             }
@@ -918,10 +972,19 @@ public class MapImageView extends View {
 
                     //map_image_draw();
                     if (m_RoiCurIndex > -1) {
-                        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
-                        m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
-                        // 변경된 것을 Activity에 전달해준다.
-                        roiChangedListener.onRoiChanged(m_RoiCurIndex);
+                        if (strMenu.equals("핀 회전")) {
+                            roiChangedListener.onRoiChanged( -1 );
+                        }
+                        else {
+                            // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                            m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                            // 변경된 것을 Activity에 전달해준다.
+                            roiChangedListener.onRoiChanged(m_RoiCurIndex);
+                        }
+                    }
+                    else
+                    {
+                        roiChangedListener.onRoiChanged(-1);
                     }
                     invalidate();
                     //CObject_Draw();
@@ -1565,7 +1628,6 @@ public class MapImageView extends View {
         //var pt_x = parseInt(point.x/zoom_rate)*map_resolution + map_orient_x;
         //var pt_y = (img_map.height-parseInt(point.y/zoom_rate))*map_resolution + map_orient_y;
 
-
         Point pt1 = new Point(0, 0);
         pt1.x = (int) ((point.x - StartPos_x) / zoom_rate);
         pt1.y = (int) ((point.y - StartPos_y) / zoom_rate);
@@ -1592,15 +1654,37 @@ public class MapImageView extends View {
                     (x + dx <= bitmap.getWidth()) && (y + dy <= bitmap.getHeight())) {
                 pixelColor = bitmap.getPixel(x + dx, y + dy);
                 if ((pixelColor & 0x00FFFFFF) == 0x00969696) {
-                    m_RoiCurObject.MoveTo(pt1, pt2);
+                    if(strMenu.equals("핀 이동")) {
+                        m_RoiCurObject.MoveTo(pt1, pt2);
+                        if(m_RoiCurIndex > -1 )
+                        {
+                            m_RoiObjects.get(m_RoiCurIndex).MoveTo(pt1, pt2);
+                        }
+                    }
+                    else
+                    {
+                        m_RoiCurObject.MoveToCenter(pt1, pt2);
+                        if(m_RoiCurIndex > -1 )
+                        {
+                            m_RoiObjects.get(m_RoiCurIndex).MoveToCenter(pt1, pt2);
+                        }
+                    }
                 }
             }
         } else {
             m_RoiCurObject.MoveTo(pt1, pt2);
+            if(m_RoiCurIndex > -1 )
+            {
+                m_RoiObjects.get(m_RoiCurIndex).MoveTo(pt1, pt2);
+            }
         }
 
         // 해당 rio에 대해서 Tracker pointer를 생성해준다.
-        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        if(m_RoiCurObject != null){
+            m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+        }
+
+
         // 변경된 것을 Activity에 전달해준다.
         roiChangedListener.onRoiChanged(m_RoiCurIndex);
 
@@ -1649,6 +1733,20 @@ public class MapImageView extends View {
         }
     }
     */
+
+    // roi가 선택 안된 것으로 설정
+    public void CObject_UnSelect(){
+        m_isselected = false;
+        m_Select = -1;
+        m_RoiCurIndex = -1;
+
+        m_isCapture = false;
+        m_drawstart = m_drawing = false;
+
+        setMenu("선택");
+
+        invalidate();   // 화면 갱신
+    }
     public int CObject_FindObject(Point point, boolean msMove) {
         //Log.d(TAG, "CObject_FindObject( ("+point.x+","+point.y+","+msMove+"),"+msMove+" )");
 
@@ -1667,6 +1765,7 @@ public class MapImageView extends View {
 
                 if (m_CurType.equals(m_RoiCurObject.roi_type)) {
                     if (strMenu.equals("수정")) {
+
                         fRet = m_RoiCurObject.PointInPoint(point, cw, ch);
                     } else {
                         fRet = m_RoiCurObject.PointInHandle(point, cw, ch);

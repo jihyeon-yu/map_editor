@@ -283,17 +283,24 @@ public class MapEditorActivity extends Activity {
         updateModeDescription();
 
         // 초기에는 안 보이는 것으로 설정
-        hideRoiCompleteToggleBar();
+        hideRoiCompleteToggleBar(); //setUI()
 
         activityMapeditorBinding.roiCompleteLayout.setOnClickListener(v -> {
             // 완료 버튼이 클릭되면 roi 생성완료
-            hideRoiCompleteToggleBar();
+            hideRoiCompleteToggleBar(); //roiComplete Click
+
+            // roi가 선택 안된 것으로 설정
+            mapViewer.CObject_UnSelect();
         });
 
         activityMapeditorBinding.roiDeleteLayout.setOnClickListener(v -> {
             // 완료 버튼이 클릭되면 roi 생성완료
-            hideRoiCompleteToggleBar();
+            hideRoiCompleteToggleBar(); //roiDelete Click
+
             mapViewer.roi_RemoveObject();
+
+            // roi가 선택 안된 것으로 설정
+            mapViewer.CObject_UnSelect();
         });
 
         activityMapeditorBinding.gobackButton.setOnClickListener(v -> {
@@ -417,11 +424,39 @@ public class MapEditorActivity extends Activity {
         activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setOnClickListener(v -> {
             updateToggleButtonStatus(v.getId());
             //TODO : 핀 이동 구현
+
+            if(mapViewer.strMenu.equals("핀 이동")) {
+                updateToggleButtonStatus(-1);   // 아무 것도 선택안 된 것으로
+
+                mapViewer.setMenu("선택");
+                showRoiCompleteToggleBar();
+            }
+            else
+            {
+                updateToggleButtonStatus(v.getId());
+
+                mapViewer.setMenu("핀 이동");
+                hideRoiCompleteToggleBar(); //핀 이동
+            }
+
         });
 
         activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setOnClickListener(v -> {
-            updateToggleButtonStatus(v.getId());
+
             //TODO : 핀 회전 구현
+            if(mapViewer.strMenu.equals("핀 회전")) {
+                updateToggleButtonStatus(-1);   // 아무 것도 선택안 된 것으로
+
+                mapViewer.setMenu("선택");
+
+            }
+            else
+            {
+                updateToggleButtonStatus(v.getId());
+                mapViewer.setMenu("핀 회전");
+                hideRoiCompleteToggleBar(); //핀 회전
+            }
+
         });
 
         activityMapeditorBinding.toggleBar.buttonRenameBackground.setOnClickListener(v -> {
@@ -533,8 +568,11 @@ public class MapEditorActivity extends Activity {
                 py = (int) (pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
                 Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
-                iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
-                iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
+                //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
+                //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                iconX = (int) ((px + pt0.x) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt0.y) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
@@ -547,15 +585,18 @@ public class MapEditorActivity extends Activity {
                 py = (int) (pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
                 Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
-                iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
-                iconY = (int) ((py + pt1.y) / 2.0 - iconHeight / 2.0);
+                // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
+                //iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
+                //iconY = (int) ((py + pt1.y) / 2.0 - iconHeight / 2.0);
+                iconX = (int) ((px + pt1.x) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt1.y) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
             } else {
                 // 선택된 것이 없음.
-                hideRoiCompleteToggleBar();
+                hideRoiCompleteToggleBar(); //setRoiSelectedListener else
             }
         });
 
@@ -611,8 +652,11 @@ public class MapEditorActivity extends Activity {
                 py = (int) (pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
                 Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
-                iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
-                iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
+                //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
+                //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                iconX = (int) ((px + pt0.x) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt0.y) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
@@ -625,15 +669,18 @@ public class MapEditorActivity extends Activity {
                 py = (int) (pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
                 Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
-                iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
-                iconY = (int) ((py + pt1.y) / 2.0 - iconHeight / 2.0);
+                // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
+                //iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
+                //iconY = (int) ((py + pt1.y) / 2.0 - iconHeight / 2.0);
+                iconX = (int) ((px + pt1.x) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt1.y) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getHeight() / 2.0);
 
 
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
             } else {
-                hideRoiCompleteToggleBar();
+                hideRoiCompleteToggleBar(); //else setRoiCreateListener
             }
         });
 
@@ -686,10 +733,11 @@ public class MapEditorActivity extends Activity {
                 py = (int) (pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
                 Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
-                View roiDeleteButton = activityMapeditorBinding.roiDeleteButton;
-
-                iconX = (int) ((px + pt0.x) / 2.0);
-                iconY = (int) ((py + pt0.y) / 2.0);
+                // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
+                //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
+                //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                iconX = (int) ((px + pt0.x) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt0.y) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
@@ -702,9 +750,11 @@ public class MapEditorActivity extends Activity {
                 py = (int) (pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
                 Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
-                View roiCompleteLayout = activityMapeditorBinding.roiCompleteLayout;
-                iconX = (int) ((px + pt1.x) / 2.0 - roiCompleteLayout.getWidth());
-                iconY = (int) ((py + pt1.y) / 2.0);
+                // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
+                //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
+                //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                iconX = (int) ((px + pt1.x) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt1.y) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
@@ -718,6 +768,11 @@ public class MapEditorActivity extends Activity {
     private void hideRoiCompleteToggleBar() {
         activityMapeditorBinding.roiCompleteLayout.setVisibility(View.GONE);
         activityMapeditorBinding.roiDeleteLayout.setVisibility(View.GONE);
+    }
+    // 토글바 숨김 함수
+    private void showRoiCompleteToggleBar() {
+        activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
+        activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
     }
 
     private void updateToggleButtonStatus(int viewId) {
@@ -774,6 +829,19 @@ public class MapEditorActivity extends Activity {
 
             activityMapeditorBinding.toggleBar.buttonRenameBackground.setBackground(selectedBackground);
             activityMapeditorBinding.toggleBar.buttonRename.setTextColor(getColor(R.color.black));
+        }
+        else {
+            activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setBackground(null);
+            activityMapeditorBinding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
+
+            activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setBackground(null);
+            activityMapeditorBinding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.white));
+
+            activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setBackground(null);
+            activityMapeditorBinding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.white));
+
+            activityMapeditorBinding.toggleBar.buttonRenameBackground.setBackground(null);
+            activityMapeditorBinding.toggleBar.buttonRename.setTextColor(getColor(R.color.white));
         }
     }
 

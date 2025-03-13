@@ -323,6 +323,9 @@ public class CDrawObj {
                 }
 
                 if (bDashViewflag && bSelected) {
+
+                    //for test
+
                     int lengthExtension = 5;
                     int x1 = (int) (m_MBR.left * m_zoom + pt_Start.x);
                     int y1 = (int) (m_MBR.top * m_zoom + pt_Start.y);
@@ -355,14 +358,19 @@ public class CDrawObj {
 
                     // 줌심에서 수직으로 떨어진 두 점에서 두 점의 기울기를 이용해서 두 점의 거리보다 distance 만큼 더 긴 곳의 두 점을 각각 구한다.
                     double newlineHalfDistance = (lineDistance / 2.0) + distance;
-                    m_DashPoints.get(0).x = (int) (offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle));
-                    m_DashPoints.get(0).y = (int) (offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle));
-                    m_DashPoints.get(1).x = (int) (offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI));
-                    m_DashPoints.get(1).y = (int) (offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI));
-                    m_DashPoints.get(2).x = (int) (offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI));
-                    m_DashPoints.get(2).y = (int) (offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI));
-                    m_DashPoints.get(3).x = (int) (offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle));
-                    m_DashPoints.get(3).y = (int) (offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle));
+
+                    m_DashPoints.get(0).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                    m_DashPoints.get(0).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+                    //canvas.drawCircle(m_DashPoints.get(0).x, m_DashPoints.get(0).y,5,Rectpaint);
+                    m_DashPoints.get(1).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                    m_DashPoints.get(1).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+                    //canvas.drawCircle(m_DashPoints.get(1).x, m_DashPoints.get(1).y,10,Rectpaint);
+                    m_DashPoints.get(2).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                    m_DashPoints.get(2).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                    //canvas.drawCircle(m_DashPoints.get(2).x, m_DashPoints.get(2).y,15,Rectpaint);
+                    m_DashPoints.get(3).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                    m_DashPoints.get(3).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                    //canvas.drawCircle(m_DashPoints.get(3).x, m_DashPoints.get(3).y,20,Rectpaint);
 
                     int i = 0;
                     for (i = 0; i < 4; i++) {
@@ -395,11 +403,15 @@ public class CDrawObj {
 
                     canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
 
+                    canvas.drawLine(pt0.x, pt0.y, px, py, Rectpaint); //
+
                     iconX = (int)((px + pt0.x)/2.0 - iconWidth/2.0);
                     iconY = (int)((py + pt0.y)/2.0 - iconHeight/2.0);
 
                     canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
 
+
+                    /*
                     // 두 점 간의 각도 계산
                     nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);
 
@@ -407,21 +419,23 @@ public class CDrawObj {
                     px = (int)( pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
                     py = (int)( pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
 
-                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 두번째 선의 중심점
 
                     iconX = (int)((px + pt1.x)/2.0 - iconWidth/2.0);
                     iconY = (int)((py + pt1.y)/2.0 - iconHeight/2.0);
 
                     canvas.drawRect(iconX, iconY, iconX+iconWidth, iconY+iconHeight, Rectpaint); // 아이콘이 그렺질 영역
 
+
                     // 두 점 간의 각도 계산
                     nAngle = Math.atan2(pt3.y - pt2.y, pt3.x - pt2.x);
+
 
                     // 각도에서 45도 위치로 이동한다.
                     px = (int)( pt2.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
                     py = (int)( pt2.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
 
-                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 세번번째 선의 중심점
 
                     iconX = (int)((px + pt2.x)/2.0 - iconWidth/2.0);
                     iconY = (int)((py + pt2.y)/2.0 - iconHeight/2.0);
@@ -435,7 +449,7 @@ public class CDrawObj {
                     px = (int)( pt3.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI/4.0) );
                     py = (int)( pt3.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI/4.0) );
 
-                    canvas.drawCircle(px, py, 10, Rectpaint); // 첫 번째 선의 중심점
+                    canvas.drawCircle(px, py, 10, Rectpaint); // 네번번째 선의 중심점
 
                     iconX = (int)((px + pt3.x)/2.0 - iconWidth/2.0);
                     iconY = (int)((py + pt3.y)/2.0 - iconHeight/2.0);
@@ -640,6 +654,38 @@ public class CDrawObj {
                         canvas.drawCircle((int) ((float) m_Points.get(p).x * m_zoom + pt_Start.x), (int) ((float) m_Points.get(p).y * m_zoom + pt_Start.y), 5, Rectpaint);
                     }
                 }
+                if (bDashViewflag && bSelected) {
+
+                    // normalize rect
+                    int nTemp = 0;
+                    if (m_MBR.left > m_MBR.right) {
+                        nTemp = m_MBR.left;
+                        m_MBR.left = m_MBR.right;
+                        m_MBR.right = nTemp;
+                    }
+                    if (m_MBR.top > m_MBR.bottom) {
+                        nTemp = m_MBR.bottom;
+                        m_MBR.bottom = m_MBR.left;
+                        m_MBR.left = nTemp;
+                    }
+                    /*
+                    m_DashPoints.get(0).x = (int) (((float) m_MBR.left * m_zoom + pt_Start.x) - distance);
+                    m_DashPoints.get(0).y = (int) (((float) m_MBR.top * m_zoom + pt_Start.y) - distance);
+                    m_DashPoints.get(1).x = (int) (((float) m_MBR.right * m_zoom + pt_Start.x) + distance);
+                    m_DashPoints.get(1).y = (int) (((float) m_MBR.top * m_zoom + pt_Start.y) - distance);
+                    m_DashPoints.get(2).x = (int) (((float) m_MBR.right * m_zoom + pt_Start.x) + distance);
+                    m_DashPoints.get(2).y = (int) (((float) m_MBR.bottom * m_zoom + pt_Start.y) + distance);
+                    m_DashPoints.get(3).x = (int) (((float) m_MBR.left * m_zoom + pt_Start.x) - distance);
+                    m_DashPoints.get(3).y = (int) (((float) m_MBR.bottom * m_zoom + pt_Start.y) + distance);
+
+                     */
+
+                    int i = 0;
+                    for (i = 0; i < 4; i++) {
+                        canvas.drawLine((int) m_DashPoints.get(i % 4).x, (int) m_DashPoints.get(i % 4).y, (int) m_DashPoints.get((i + 1) % 4).x, (int) m_DashPoints.get((i + 1) % 4).y, RectDashpaint);
+                    }
+
+                }
 
                 break;
         }
@@ -724,6 +770,7 @@ public class CDrawObj {
                 break;
 
             case "roi_line":
+
                 int lengthExtension = 5;
                 int x1 = (int) (m_MBR.left * m_zoom + start_x);
                 int y1 = (int) (m_MBR.top * m_zoom + start_y);
@@ -756,14 +803,18 @@ public class CDrawObj {
 
                 // 줌심에서 수직으로 떨어진 두 점에서 두 점의 기울기를 이용해서 두 점의 거리보다 distance 만큼 더 긴 곳의 두 점을 각각 구한다.
                 double newlineHalfDistance = (lineDistance / 2.0) + distance;
-                m_DashPoints.get(0).x = (int) (offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle));
-                m_DashPoints.get(0).y = (int) (offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle));
-                m_DashPoints.get(1).x = (int) (offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI));
-                m_DashPoints.get(1).y = (int) (offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI));
-                m_DashPoints.get(3).x = (int) (offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle));
-                m_DashPoints.get(3).y = (int) (offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle));
-                m_DashPoints.get(2).x = (int) (offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI));
-                m_DashPoints.get(2).y = (int) (offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI));
+                m_DashPoints.get(0).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                m_DashPoints.get(0).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+                //canvas.drawCircle(m_DashPoints.get(0).x, m_DashPoints.get(0).y,5,Rectpaint);
+                m_DashPoints.get(1).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
+                m_DashPoints.get(1).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
+                //canvas.drawCircle(m_DashPoints.get(1).x, m_DashPoints.get(1).y,10,Rectpaint);
+                m_DashPoints.get(2).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                m_DashPoints.get(2).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                //canvas.drawCircle(m_DashPoints.get(2).x, m_DashPoints.get(2).y,15,Rectpaint);
+                m_DashPoints.get(3).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle) );
+                m_DashPoints.get(3).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle) );
+                //canvas.drawCircle(m_DashPoints.get(3).x, m_DashPoints.get(3).y,20,Rectpaint);
 
                 break;
 
@@ -1203,10 +1254,14 @@ public class CDrawObj {
                 m_Points.set(p, point);
             }
         }
+
         this.m_MBR.left = pt1.x;
         this.m_MBR.top = pt1.y;
         this.m_MBR.right = pt2.x;
         this.m_MBR.bottom = pt2.y;
+
+        this.m_MBR_center.x = (int)((this.m_MBR.left + this.m_MBR.right)/2);
+        this.m_MBR_center.y = (int)((this.m_MBR.top + this.m_MBR.bottom)/2);
 
     }
 
@@ -1254,6 +1309,41 @@ public class CDrawObj {
             this.m_MBR.bottom += dy;
         }
     }
+    public void MoveToCenter(Point pt1, Point pt2) {
+        //Log.d(TAG, "MoveTo( ("+pt1.x+","+pt1.y+"),("+pt2.x+","+pt2.y+") )");
+        // pt1 : mouse down
+        // pt2 : mouse move
+
+        // 실수 좌표계로 변환하여 대입한다.
+        //var zoom = this.m_zoom;
+
+        int dx = pt1.x - pt2.x;
+        int dy = pt1.y - pt2.y;
+
+        int halfWidth = (int)(m_MBR.width()/2);
+        int halfHeight = (int)(m_MBR.height()/2);
+
+        // 중심 좌표만 이동한다.
+        m_MBR_center.x += dx;
+        m_MBR_center.y += dy;
+
+        // 바뀐 중심 좌표를 기준으로 영역을 다시 만들어준다.
+        this.m_MBR.left = m_MBR_center.x - halfWidth;
+        this.m_MBR.top = m_MBR_center.y - halfHeight;
+        this.m_MBR.right = m_MBR_center.x + halfWidth;
+        this.m_MBR.bottom = m_MBR_center.y + halfHeight;
+
+        if (roi_type.equals("roi_polygon")) {
+            // m_Points의 point들도 m_MBR을 기준으로 다시 생성한다.
+            m_Points.clear();
+            m_Points.add(new Point(m_MBR.left, m_MBR.top));
+            m_Points.add(new Point(m_MBR.right, m_MBR.top));
+            m_Points.add(new Point(m_MBR.right, m_MBR.bottom));
+            m_Points.add(new Point(m_MBR.left, m_MBR.bottom));
+        }
+
+    }
+
 
     public void MoveHandleTo(Point pt1, Point pt2, int nHandle) {
         //console.log(pt1);
