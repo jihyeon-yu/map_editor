@@ -68,11 +68,7 @@ public class MapEditorActivity extends Activity {
 
     private static final String TAG = "MapEditorActivity";
 
-    private static final String NAME_LIBRARY_CASELAB_OPT =
-//                                                              "mapoptimizationV2";
-            //"mapoptimization241217v11";
-            //0118 외각선 라이브러리 추가.
-            "mapoptimization_arm_v2_240117";
+    private static final String NAME_LIBRARY_CASELAB_OPT = "mapoptimization";
 
     static {
         try {
