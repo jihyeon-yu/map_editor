@@ -244,6 +244,26 @@ public class MapImageView extends View {
             if (bitmap != null) {
                 float translateX = getWidth() / 2f - focus_x;
                 float translateY = getHeight() / 2f - focus_y;
+
+                // 이미지 그려주는 시작 좌표를 보정해준다.
+                // 변경된 Zoom Factor 만큼의 이미지 시작 좌표를 이동해준다.
+                // focus 된 x,y 좌표가 기준 zoom(zoom_rate_offset)이미지에서 어디인지 얻어와서
+                // 확대된 이미지의 좌표를 일치하여 시작위치를 얻어온다.
+
+                translateX = (float)(zoom_rate_offset*bitmap.getWidth() - bitmap.getWidth()*zoom_rate);
+                translateY = (float)(zoom_rate_offset*bitmap.getHeight() - bitmap.getHeight()*zoom_rate);
+
+                //StartPos_x += (int)translateX;
+                //StartPos_y += (int)translateY;
+
+                // 객체가 선택된 경우 Tracker를 만들어 준다.
+                if(m_RoiCurIndex > -1)
+                {
+                    m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                    roiChangedListener.onRoiChanged(m_RoiCurIndex);
+                }
+
+
                 matrix.postTranslate(translateX * (scaleFactor - 1), translateY * (scaleFactor - 1));
             }
 
