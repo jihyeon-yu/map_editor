@@ -251,7 +251,7 @@ public class MapEditorActivity extends Activity {
                 callback.onConfirm(selectedText[0]);
                 dialog.dismiss();
             } else {
-                Log.d(TAG, "공간명이 선택되지 않음");
+                //Log.d(TAG, "공간명이 선택되지 않음");
                 dialog.dismiss();
             }
         });
@@ -283,19 +283,20 @@ public class MapEditorActivity extends Activity {
         updateModeDescription();
 
         // 초기에는 안 보이는 것으로 설정
-        hideRoiCompleteToggleBar(); //setUI()
+        hideRoiCompleteToggleBar();
 
         activityMapeditorBinding.roiCompleteLayout.setOnClickListener(v -> {
             // 완료 버튼이 클릭되면 roi 생성완료
-            hideRoiCompleteToggleBar(); //roiComplete Click
+            hideRoiCompleteToggleBar();
 
             // roi가 선택 안된 것으로 설정
             mapViewer.CObject_UnSelect();
+
         });
 
         activityMapeditorBinding.roiDeleteLayout.setOnClickListener(v -> {
             // 완료 버튼이 클릭되면 roi 생성완료
-            hideRoiCompleteToggleBar(); //roiDelete Click
+            hideRoiCompleteToggleBar();
 
             mapViewer.roi_RemoveObject();
 
@@ -304,7 +305,7 @@ public class MapEditorActivity extends Activity {
         });
 
         activityMapeditorBinding.gobackButton.setOnClickListener(v -> {
-            Log.d(TAG, "canclebutton.setOnClickListener(...)");
+            //Log.d(TAG, "canclebutton.setOnClickListener(...)");
             try {
                 String strFileName = "map_meta_sample.json";
                 String strPath = "/sdcard/Download";
@@ -436,7 +437,7 @@ public class MapEditorActivity extends Activity {
                 updateToggleButtonStatus(v.getId());
 
                 mapViewer.setMenu("핀 이동");
-                hideRoiCompleteToggleBar(); //핀 이동
+                hideRoiCompleteToggleBar();
             }
 
         });
@@ -454,7 +455,7 @@ public class MapEditorActivity extends Activity {
             {
                 updateToggleButtonStatus(v.getId());
                 mapViewer.setMenu("핀 회전");
-                hideRoiCompleteToggleBar(); //핀 회전
+                hideRoiCompleteToggleBar();
             }
 
         });
@@ -512,13 +513,15 @@ public class MapEditorActivity extends Activity {
                 if (!loadJson(destMappingFilePath)) {
                     Log.d(TAG, "con not read " + destMappingFilePath);
                 }
+
+                hideRoiCompleteToggleBar();
             }
         });
 
         // MapImageView에서 Rio가 선택되면 수신
         mapViewer.setRoiSelectedListener(indexSelected -> {
             // ROI가 선택된 경우
-            Log.d(TAG, "onRoiSelected(" + indexSelected + ")");
+            //Log.d(TAG, "onRoiSelected(" + indexSelected + ")");
 
             // 필요한 버튼을 선택된 ROI 객체에 Dash 역역에 보여준다.
             if ((indexSelected > -1) && (indexSelected < mapViewer.m_RoiObjects.size())) {
@@ -535,10 +538,10 @@ public class MapEditorActivity extends Activity {
                 //int y0 = location[1]; // Y 좌표
                 //Log.d(TAG, "location : ("+x0+","+y0+")");
 
-                Log.d(TAG, "m_DashPoints.get(0) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y);
-                Log.d(TAG, "m_DashPoints.get(1) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).y);
-                Log.d(TAG, "m_DashPoints.get(2) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y);
-                Log.d(TAG, "m_DashPoints.get(3) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).y);
+                //Log.d(TAG, "m_DashPoints.get(0) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y);
+                //Log.d(TAG, "m_DashPoints.get(1) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).y);
+                //Log.d(TAG, "m_DashPoints.get(2) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y);
+                //Log.d(TAG, "m_DashPoints.get(3) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).y);
 
                 Point pt0 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0);
                 Point pt1 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1);
@@ -553,26 +556,27 @@ public class MapEditorActivity extends Activity {
                 // 아이콘을 그려주는 위치는 해당 DashPoint에서 다음 DashPoint 의 각도를 계산하여
                 // 45도 회전한 위치의 Point와 해당 DashPoint를 사각형의 중심 좌표에 아이콘의 중심이 위치하게 그려준다.
                 int px, py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
-                int nDistance = 150;    // 모서리와의 거리
+                int nDistance = mapViewer.roiButtonDistance;    // 아이콘 모서리와의 거리
                 int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
-                int iconWidth = 100;    // 아이콘 가로크기
-                int iconHeight = 100;   // 아이콘 높이
+                //int iconWidth = 100;    // 아이콘 가로크기
+                //int iconHeight = 100;   // 아이콘 높이
                 double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
 
                 // 두 점 간의 각도 계산
                 nAngle = Math.atan2(pt1.y - pt0.y, pt1.x - pt0.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
-                Log.d(TAG, "nAngle : " + nAngle);
+                //Log.d(TAG, "nAngle : " + nAngle);
 
                 // 각도에서 45도 위치로 이동한다.
                 px = (int) (pt0.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI / 4.0));
                 py = (int) (pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
-                Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
+                //Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
                 //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
                 iconX = (int) ((px + pt0.x) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getWidth() / 2.0);
                 iconY = (int) ((py + pt0.y) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getHeight() / 2.0);
+                //Log.d(TAG, "activityMapeditorBinding.roiDeleteLayout.getWidth() : " + activityMapeditorBinding.roiDeleteLayout.getWidth());
 
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
@@ -580,10 +584,10 @@ public class MapEditorActivity extends Activity {
                 activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
-                Log.d(TAG, "nAngle : " + nAngle);
+                //Log.d(TAG, "nAngle : " + nAngle);
                 px = (int) (pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI / 4.0));
                 py = (int) (pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
-                Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
+                //Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
@@ -596,14 +600,14 @@ public class MapEditorActivity extends Activity {
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
             } else {
                 // 선택된 것이 없음.
-                hideRoiCompleteToggleBar(); //setRoiSelectedListener else
+                hideRoiCompleteToggleBar();
             }
         });
 
         // MapImageView에서 Rio(m_RoiCurObject)가 새로 생성되어 저장되기 전까지 수신
         mapViewer.setRoiCreateListener(() -> {
             // ROI 새롭게 만든 경우
-            Log.d(TAG, "setRoiCreateListener.onRoiCreate()");
+            //Log.d(TAG, "setRoiCreateListener.onRoiCreate()");
 
             // 필요한 버튼을 선택된 ROI 객체에 Dash 역역에 보여준다.
             if (mapViewer.m_RoiCurObject != null) {
@@ -619,10 +623,10 @@ public class MapEditorActivity extends Activity {
                 //int y0 = location[1]; // Y 좌표
                 //Log.d(TAG, "location : ("+x0+","+y0+")");
 
-                Log.d(TAG, "m_DashPoints.get(0) : " + mapViewer.m_RoiCurObject.m_DashPoints.get(0).x + ", " + mapViewer.m_RoiCurObject.m_DashPoints.get(0).y);
-                Log.d(TAG, "m_DashPoints.get(1) : " + mapViewer.m_RoiCurObject.m_DashPoints.get(1).x + ", " + mapViewer.m_RoiCurObject.m_DashPoints.get(1).y);
-                Log.d(TAG, "m_DashPoints.get(2) : " + mapViewer.m_RoiCurObject.m_DashPoints.get(2).x + ", " + mapViewer.m_RoiCurObject.m_DashPoints.get(2).y);
-                Log.d(TAG, "m_DashPoints.get(3) : " + mapViewer.m_RoiCurObject.m_DashPoints.get(3).x + ", " + mapViewer.m_RoiCurObject.m_DashPoints.get(3).y);
+                //Log.d(TAG, "m_DashPoints.get(0) : " + mapViewer.m_RoiCurObject.m_DashPoints.get(0).x + ", " + mapViewer.m_RoiCurObject.m_DashPoints.get(0).y);
+                //Log.d(TAG, "m_DashPoints.get(1) : " + mapViewer.m_RoiCurObject.m_DashPoints.get(1).x + ", " + mapViewer.m_RoiCurObject.m_DashPoints.get(1).y);
+                //Log.d(TAG, "m_DashPoints.get(2) : " + mapViewer.m_RoiCurObject.m_DashPoints.get(2).x + ", " + mapViewer.m_RoiCurObject.m_DashPoints.get(2).y);
+                //Log.d(TAG, "m_DashPoints.get(3) : " + mapViewer.m_RoiCurObject.m_DashPoints.get(3).x + ", " + mapViewer.m_RoiCurObject.m_DashPoints.get(3).y);
 
                 Point pt0 = mapViewer.m_RoiCurObject.m_DashPoints.get(0);
                 Point pt1 = mapViewer.m_RoiCurObject.m_DashPoints.get(1);
@@ -637,20 +641,20 @@ public class MapEditorActivity extends Activity {
                 // 아이콘을 그려주는 위치는 해당 DashPoint에서 다음 DashPoint 의 각도를 계산하여
                 // 45도 회전한 위치의 Point와 해당 DashPoint를 사각형의 중심 좌표에 아이콘의 중심이 위치하게 그려준다.
                 int px, py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
-                int nDistance = 150;    // 모서리와의 거리
+                int nDistance = mapViewer.roiButtonDistance;    // 아이콘 모서리와의 거리
                 int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
-                int iconWidth = 100;    // 아이콘 가로크기
-                int iconHeight = 100;   // 아이콘 높이
+                //int iconWidth = 100;    // 아이콘 가로크기
+                //int iconHeight = 100;   // 아이콘 높이
                 double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
 
                 // 두 점 간의 각도 계산
                 nAngle = Math.atan2(pt1.y - pt0.y, pt1.x - pt0.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
-                Log.d(TAG, "nAngle : " + nAngle);
+                //Log.d(TAG, "nAngle : " + nAngle);
 
                 // 각도에서 45도 위치로 이동한다.
                 px = (int) (pt0.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI / 4.0));
                 py = (int) (pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
-                Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
+                //Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
@@ -664,10 +668,10 @@ public class MapEditorActivity extends Activity {
                 activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
-                Log.d(TAG, "nAngle : " + nAngle);
+                //Log.d(TAG, "nAngle : " + nAngle);
                 px = (int) (pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI / 4.0));
                 py = (int) (pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
-                Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
+                //Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
@@ -680,14 +684,15 @@ public class MapEditorActivity extends Activity {
                 activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
             } else {
-                hideRoiCompleteToggleBar(); //else setRoiCreateListener
+                // 선택된 것이 없음.
+                hideRoiCompleteToggleBar();
             }
         });
 
         // MapImageView에서 Rio가 선택된 것의 변형, 이동시 수신
         mapViewer.setRoiChangedListener(indexSelected -> {
             // ROI 수정한 경우
-            Log.d(TAG, "onRoiChanged(" + indexSelected + ")");
+            //Log.d(TAG, "onRoiChanged(" + indexSelected + ")");
 
             // 필요한 버튼을 선택된 ROI 객체에 Dash 역역에 보여준다.
             if ((indexSelected > -1) && (indexSelected < mapViewer.m_RoiObjects.size())) {
@@ -703,10 +708,10 @@ public class MapEditorActivity extends Activity {
                 //int y0 = location[1]; // Y 좌표
                 //Log.d(TAG, "location : ("+x0+","+y0+")");
 
-                Log.d(TAG, "m_DashPoints.get(0) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y);
-                Log.d(TAG, "m_DashPoints.get(1) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).y);
-                Log.d(TAG, "m_DashPoints.get(2) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y);
-                Log.d(TAG, "m_DashPoints.get(3) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).y);
+                //Log.d(TAG, "m_DashPoints.get(0) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y);
+                //Log.d(TAG, "m_DashPoints.get(1) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).y);
+                //Log.d(TAG, "m_DashPoints.get(2) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y);
+                //Log.d(TAG, "m_DashPoints.get(3) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3).y);
 
                 Point pt0 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0);
                 Point pt1 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1);
@@ -720,18 +725,18 @@ public class MapEditorActivity extends Activity {
                 // 아이콘을 그려주는 위치는 해당 DashPoint에서 다음 DashPoint 의 각도를 계산하여
                 // 45도 회전한 위치의 Point와 해당 DashPoint를 사각형의 중심 좌표에 아이콘의 중심이 위치하게 그려준다.
                 int px, py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
-                int nDistance = 150;    // 모서리와의 거리
+                int nDistance = mapViewer.roiButtonDistance;    // 아이콘 모서리와의 거리
                 int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
                 double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
 
                 // 두 점 간의 각도 계산
                 nAngle = Math.atan2(pt1.y - pt0.y, pt1.x - pt0.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
-                Log.d(TAG, "nAngle : " + nAngle);
+                //Log.d(TAG, "nAngle : " + nAngle);
 
                 // 각도에서 45도 위치로 이동한다.
                 px = (int) (pt0.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI / 4.0));
                 py = (int) (pt0.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
-                Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
+                //Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
@@ -745,10 +750,10 @@ public class MapEditorActivity extends Activity {
                 activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
-                Log.d(TAG, "nAngle : " + nAngle);
+                //Log.d(TAG, "nAngle : " + nAngle);
                 px = (int) (pt1.x - nDistance * (float) Math.cos(nAngle + (float) Math.PI / 4.0));
                 py = (int) (pt1.y - nDistance * (float) Math.sin(nAngle + (float) Math.PI / 4.0));
-                Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
+                //Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
@@ -761,6 +766,11 @@ public class MapEditorActivity extends Activity {
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
                 activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
             }
+            else {
+                // 선택된 것이 없음.
+                hideRoiCompleteToggleBar();
+            }
+
         });
     }
 
@@ -868,16 +878,26 @@ public class MapEditorActivity extends Activity {
             applyBottomButtonStyle(activityMapeditorBinding.buttonSpaceCreation, true);
             applyBottomButtonStyle(activityMapeditorBinding.buttonBlockWall, false);
             applyBottomButtonStyle(activityMapeditorBinding.buttonBlockArea, false);
+
+
+            mapViewer.setMenu("선택");
+            mapViewer.CObject_UnSelect();
         }
         if (viewId == R.id.button_block_wall) {
             applyBottomButtonStyle(activityMapeditorBinding.buttonSpaceCreation, false);
             applyBottomButtonStyle(activityMapeditorBinding.buttonBlockWall, true);
             applyBottomButtonStyle(activityMapeditorBinding.buttonBlockArea, false);
+
+            mapViewer.setMenu("선택");
+            mapViewer.CObject_UnSelect();
         }
         if (viewId == R.id.button_block_area) {
             applyBottomButtonStyle(activityMapeditorBinding.buttonSpaceCreation, false);
             applyBottomButtonStyle(activityMapeditorBinding.buttonBlockWall, false);
             applyBottomButtonStyle(activityMapeditorBinding.buttonBlockArea, true);
+
+            mapViewer.setMenu("선택");
+            mapViewer.CObject_UnSelect();
         }
     }
 
@@ -1285,6 +1305,8 @@ public class MapEditorActivity extends Activity {
                 strRoiJson += "\"x\":" + (int) xvw_image;
                 strRoiJson += ", \"y\":" + (int) yvh_image;
                 strRoiJson += ", \"theta\":" + mapViewer.m_RoiObjects.get(i).getAngle();
+                strRoiJson += ", \"is_set_theta\":" + mapViewer.m_RoiObjects.get(i).isSetTheta;
+                strRoiJson += ", \"isAssign\":true";
                 strRoiJson += "}";
                 strRoiJson += "}";
             }
@@ -1557,6 +1579,8 @@ public class MapEditorActivity extends Activity {
                 String name = room.getString("name");
                 JSONArray imagePathArray = room.getJSONArray("image_path");
                 JSONObject imagePosition = room.getJSONObject("image_position");
+                boolean isSetTheta = imagePosition.getBoolean("is_set_theta");
+                if(!isSetTheta) isSetTheta = false;
                 int mbr_x = imagePosition.getInt("x");
                 int mbr_y = imagePosition.getInt("y");
                 Log.d(TAG, "  Room ID: " + id);
@@ -1581,6 +1605,7 @@ public class MapEditorActivity extends Activity {
                 }
                 mapViewer.m_drawing = true;
                 mapViewer.roi_AddObject();
+                mapViewer.m_RoiCurObject.isSetTheta = isSetTheta;
                 // 241222 seongwoong 현재 버그 있음 확인 필요
                 //MapViewer.m_RoiCurObject.m_MBR = new Rect(left, top, right, bottom);
                 mapViewer.m_RoiCurObject.m_MBR_center.x = mbr_x;
@@ -1659,6 +1684,7 @@ public class MapEditorActivity extends Activity {
         } finally {
             // 자원이 자동으로 닫히는지 확인할 필요가 없지만 명시적으로 로깅 가능
             Log.d(TAG, "loadjson end");
+
         }
     }
 

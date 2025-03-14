@@ -39,6 +39,8 @@ public class CDrawObj {
 
     Paint labelpaint;   // 라벨 글자 색상
     Paint Rectpaint;    // roi 색상
+    Paint PointPaint;
+    Paint PointFillPaint;
     Paint Rectpaint_rotate;    // roi 색상
 
 
@@ -53,6 +55,8 @@ public class CDrawObj {
 
     private Drawable rotateDrawable;
     float angle = 0.0f;
+
+    boolean isSetTheta = false;
 
     Paint RectDashpaint;
     ArrayList<Point> m_DashPoints;
@@ -82,6 +86,18 @@ public class CDrawObj {
             Rectpaint.setColor(Color.RED);
         }
         Rectpaint.setStyle(Paint.Style.STROKE); // 사각형 내부를 없음
+
+        PointPaint = new Paint();
+        PointPaint.setColor(Color.RED);
+        PointPaint.setStrokeWidth(5);
+        PointPaint.setStyle(Paint.Style.STROKE); // 사각형 내부를 없음
+
+
+        PointFillPaint = new Paint();
+        PointFillPaint.setStyle(Paint.Style.FILL); // 채우기 스타일
+        PointFillPaint.setAntiAlias(true);
+        PointFillPaint.setColor(Color.argb(255, 255, 255, 255));
+
 
         Rectpaint_rotate = new Paint();
         Rectpaint_rotate.setColor(Color.GREEN); // 반투명 파란색 (#80FF0000)
@@ -314,16 +330,19 @@ public class CDrawObj {
                 break;
 
             case "roi_line":
-                if (bSelected || bEdit) {
-                    canvas.drawCircle((int) ((float) m_MBR.left * m_zoom + pt_Start.x), (int) ((float) m_MBR.top * m_zoom + pt_Start.y), 5, Rectpaint);
-                }
                 canvas.drawLine((int) (this.m_MBR.left * m_zoom + pt_Start.x), (int) (this.m_MBR.top * m_zoom + pt_Start.y), (int) (this.m_MBR.right * m_zoom + pt_Start.x), (int) (this.m_MBR.bottom * m_zoom + pt_Start.y), Rectpaint);
+
                 if (bSelected || bEdit) {
-                    canvas.drawCircle((int) ((float) m_MBR.right * m_zoom + pt_Start.x), (int) ((float) m_MBR.bottom * m_zoom + pt_Start.y), 5, Rectpaint);
+                    canvas.drawCircle((int) ((float) m_MBR.left * m_zoom + pt_Start.x), (int) ((float) m_MBR.top * m_zoom + pt_Start.y), 20, PointFillPaint);
+                    canvas.drawCircle((int) ((float) m_MBR.left * m_zoom + pt_Start.x), (int) ((float) m_MBR.top * m_zoom + pt_Start.y), 20, PointPaint);
+
+                    canvas.drawCircle((int) ((float) m_MBR.right * m_zoom + pt_Start.x), (int) ((float) m_MBR.bottom * m_zoom + pt_Start.y), 20, PointFillPaint);
+                    canvas.drawCircle((int) ((float) m_MBR.right * m_zoom + pt_Start.x), (int) ((float) m_MBR.bottom * m_zoom + pt_Start.y), 20, PointPaint);
                 }
 
                 if (bDashViewflag && bSelected) {
 
+                    /*
                     //for test
 
                     int lengthExtension = 5;
@@ -361,16 +380,17 @@ public class CDrawObj {
 
                     m_DashPoints.get(0).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
                     m_DashPoints.get(0).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
-                    //canvas.drawCircle(m_DashPoints.get(0).x, m_DashPoints.get(0).y,5,Rectpaint);
+                    canvas.drawCircle(m_DashPoints.get(0).x, m_DashPoints.get(0).y,5,Rectpaint);
                     m_DashPoints.get(1).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle + (float) Math.PI ) );
                     m_DashPoints.get(1).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle + (float) Math.PI ) );
-                    //canvas.drawCircle(m_DashPoints.get(1).x, m_DashPoints.get(1).y,10,Rectpaint);
+                    canvas.drawCircle(m_DashPoints.get(1).x, m_DashPoints.get(1).y,10,Rectpaint);
                     m_DashPoints.get(2).x = (int)( offsetX2 + newlineHalfDistance * (float) Math.cos(lineAngle) );
                     m_DashPoints.get(2).y = (int)( offsetY2 + newlineHalfDistance * (float) Math.sin(lineAngle) );
-                    //canvas.drawCircle(m_DashPoints.get(2).x, m_DashPoints.get(2).y,15,Rectpaint);
+                    canvas.drawCircle(m_DashPoints.get(2).x, m_DashPoints.get(2).y,15,Rectpaint);
                     m_DashPoints.get(3).x = (int)( offsetX1 + newlineHalfDistance * (float) Math.cos(lineAngle) );
                     m_DashPoints.get(3).y = (int)( offsetY1 + newlineHalfDistance * (float) Math.sin(lineAngle) );
-                    //canvas.drawCircle(m_DashPoints.get(3).x, m_DashPoints.get(3).y,20,Rectpaint);
+                    canvas.drawCircle(m_DashPoints.get(3).x, m_DashPoints.get(3).y,20,Rectpaint);
+                     */
 
                     int i = 0;
                     for (i = 0; i < 4; i++) {
@@ -488,6 +508,7 @@ public class CDrawObj {
                         m_MBR.bottom = m_MBR.left;
                         m_MBR.left = nTemp;
                     }
+                    /*
                     m_DashPoints.get(0).x = (int) (((float) m_MBR.left * m_zoom + pt_Start.x) - distance);
                     m_DashPoints.get(0).y = (int) (((float) m_MBR.top * m_zoom + pt_Start.y) - distance);
                     m_DashPoints.get(1).x = (int) (((float) m_MBR.right * m_zoom + pt_Start.x) + distance);
@@ -496,6 +517,8 @@ public class CDrawObj {
                     m_DashPoints.get(2).y = (int) (((float) m_MBR.bottom * m_zoom + pt_Start.y) + distance);
                     m_DashPoints.get(3).x = (int) (((float) m_MBR.left * m_zoom + pt_Start.x) - distance);
                     m_DashPoints.get(3).y = (int) (((float) m_MBR.bottom * m_zoom + pt_Start.y) + distance);
+
+                     */
 
                     int i = 0;
                     for (i = 0; i < 4; i++) {
@@ -581,6 +604,8 @@ public class CDrawObj {
 
             case "roi_polygon":
                 //Log.d(TAG, "m_Points.size() : "+(m_Points.size()));
+
+
                 // Path를 정의하여 폴리곤 만들기
                 path.reset();
 
@@ -618,7 +643,7 @@ public class CDrawObj {
                         try {
                             drawMatchPoints(bitmap, canvas, fillPaint, bounds, pt_Start);
                         } catch (IllegalStateException | InterruptedException ie) {
-                            Log.d(TAG, "Fail drawMatchPoints: " + ie.getLocalizedMessage());
+                            //Log.d(TAG, "Fail drawMatchPoints: " + ie.getLocalizedMessage());
                         }
                     }
                     //drawMatchPoints(bitmap,canvas,fillPaint, bounds, pt_Start);
@@ -653,6 +678,7 @@ public class CDrawObj {
                     }
                 }
                 if (bDashViewflag && bSelected) {
+
                     // normalize rect
                     int nTemp = 0;
                     if (m_MBR.left > m_MBR.right) {
@@ -665,8 +691,7 @@ public class CDrawObj {
                         m_MBR.bottom = m_MBR.left;
                         m_MBR.left = nTemp;
                     }
-
-                    float distance = 50;
+                    /*
                     m_DashPoints.get(0).x = (int) (((float) m_MBR.left * m_zoom + pt_Start.x) - distance);
                     m_DashPoints.get(0).y = (int) (((float) m_MBR.top * m_zoom + pt_Start.y) - distance);
                     m_DashPoints.get(1).x = (int) (((float) m_MBR.right * m_zoom + pt_Start.x) + distance);
@@ -675,6 +700,8 @@ public class CDrawObj {
                     m_DashPoints.get(2).y = (int) (((float) m_MBR.bottom * m_zoom + pt_Start.y) + distance);
                     m_DashPoints.get(3).x = (int) (((float) m_MBR.left * m_zoom + pt_Start.x) - distance);
                     m_DashPoints.get(3).y = (int) (((float) m_MBR.bottom * m_zoom + pt_Start.y) + distance);
+
+                     */
 
                     int i = 0;
                     for (i = 0; i < 4; i++) {
@@ -745,9 +772,9 @@ public class CDrawObj {
     }
 
     public void MakeTracker(int start_x, int start_y) {
-        Log.d(TAG, "MakeTracker(" + start_x + ", " + start_y + ")");
+        //Log.d(TAG, "MakeTracker(" + start_x + ", " + start_y + ")");
 
-        Log.d(TAG, "m_MBR : (" + m_MBR.left + "," + m_MBR.top + "," + m_MBR.right + "," + m_MBR.bottom + ")");
+        //Log.d(TAG, "m_MBR : (" + m_MBR.left + "," + m_MBR.top + "," + m_MBR.right + "," + m_MBR.bottom + ")");
 
         float distance = 50;
         int nTemp = 0;
@@ -781,7 +808,7 @@ public class CDrawObj {
                 int dx = x2 - x1;
                 int dy = y2 - y1;
                 double lineDistance = Math.sqrt(dx * dx + dy * dy);
-                Log.d(TAG, "lineDistance : " + lineDistance);
+                //Log.d(TAG, "lineDistance : " + lineDistance);
 
                 // 두 점의 중앙에서 직각으로 50px 점을 각각 구한다.
                 // 메모리 누스를 피하기 위해서 new를 사용하지 않는다.
@@ -1196,7 +1223,7 @@ public class CDrawObj {
 
     public int PointInPoint(Point point, int cw, int ch)        //Tracker를 찾기위한 함수
     {
-        Log.d(TAG, "PointInPoint( (" + point.x + "," + point.y + ") " + cw + ", " + ch + ")");
+        //Log.d(TAG, "PointInPoint( (" + point.x + "," + point.y + ") " + cw + ", " + ch + ")");
 
         Point pt = new Point(point.x, point.y);
         switch (roi_type) {
@@ -1222,7 +1249,7 @@ public class CDrawObj {
                 int i = 0;
                 for (i = 0; i < m_Points.size(); i++) {
                     if (((m_Points.get(i).x - cw) <= pt.x) && (pt.x <= (m_Points.get(i).x + cw)) && ((m_Points.get(i).y - ch) <= pt.y) && (pt.y <= (m_Points.get(i).y + ch))) {
-                        Log.d(TAG, "m_Points.get(" + i + ") : (" + m_Points.get(i).x + "," + m_Points.get(i).y + ")");
+                        //Log.d(TAG, "m_Points.get(" + i + ") : (" + m_Points.get(i).x + "," + m_Points.get(i).y + ")");
                         return i + 1;   // 0인 경우는 이동이므로 1부터 시작한다.
                     }
                 }
@@ -1337,7 +1364,29 @@ public class CDrawObj {
             m_Points.add(new Point(m_MBR.right, m_MBR.bottom));
             m_Points.add(new Point(m_MBR.left, m_MBR.bottom));
         }
+    }
+    public void MoveToCenterPosition(int x, int y){
+        // 중심 좌표만 이동한다.
+        m_MBR_center.x = x;
+        m_MBR_center.y = y;
 
+        int halfWidth = (int)(m_MBR.width()/2);
+        int halfHeight = (int)(m_MBR.height()/2);
+
+        // 바뀐 중심 좌표를 기준으로 영역을 다시 만들어준다.
+        this.m_MBR.left = m_MBR_center.x - halfWidth;
+        this.m_MBR.top = m_MBR_center.y - halfHeight;
+        this.m_MBR.right = m_MBR_center.x + halfWidth;
+        this.m_MBR.bottom = m_MBR_center.y + halfHeight;
+
+        if (roi_type.equals("roi_polygon")) {
+            // m_Points의 point들도 m_MBR을 기준으로 다시 생성한다.
+            m_Points.clear();
+            m_Points.add(new Point(m_MBR.left, m_MBR.top));
+            m_Points.add(new Point(m_MBR.right, m_MBR.top));
+            m_Points.add(new Point(m_MBR.right, m_MBR.bottom));
+            m_Points.add(new Point(m_MBR.left, m_MBR.bottom));
+        }
     }
 
 
@@ -1391,8 +1440,18 @@ public class CDrawObj {
             }
 
             case 8: {
+
                 this.m_MBR.right += dx;
                 this.m_MBR.bottom += dy;
+                if(roi_type.equals("roi_polygon")) {
+                    this.m_MBR_center.x = (int)((this.m_MBR.left + this.m_MBR.right)/2);
+                    this.m_MBR_center.y = (int)( (this.m_MBR.top + this.m_MBR.bottom)/2);
+                    this.m_Points.clear();
+                    this.m_Points.add(new Point(this.m_MBR.left, this.m_MBR.top));
+                    this.m_Points.add(new Point(this.m_MBR.right, this.m_MBR.top));
+                    this.m_Points.add(new Point(this.m_MBR.right, this.m_MBR.bottom));
+                    this.m_Points.add(new Point(this.m_MBR.left, this.m_MBR.bottom));
+                }
                 break;
             }
         }
@@ -1423,10 +1482,11 @@ public class CDrawObj {
 
             case "roi_polygon":
 
-                if (nHandle <= m_Points.size()) {
-                    m_Points.get(nHandle - 1).x += dx;
-                    m_Points.get(nHandle - 1).y += dy;
-                }
+                //if (nHandle <= m_Points.size()) {
+                //    m_Points.get(nHandle - 1).x += dx;
+                //    m_Points.get(nHandle - 1).y += dy;
+                //}
+                MoveHandleTo(pt1, pt2, nHandle);
                 break;
         }
     }
