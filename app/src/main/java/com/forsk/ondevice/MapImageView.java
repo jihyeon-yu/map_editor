@@ -202,7 +202,7 @@ public class MapImageView extends View {
             scaleGestureDetector.onTouchEvent(event);
             isDrag = true;
         } else {
-            //zoom_rate_offset = zoom_rate;
+            zoom_rate_offset = zoom_rate;
             StartPos_x_offset = StartPos_x;
             StartPos_y_offset = StartPos_y;
 
@@ -236,25 +236,20 @@ public class MapImageView extends View {
             float focus_x = detector.getFocusX(); // 터치 중심 X 좌표
             float focus_y = detector.getFocusY(); // 터치 중심 Y 좌표
 
-            // 현재 Matrix 값에 스케일 적용 (중심 기준)
-            matrix.postScale(scaleFactor, scaleFactor, focus_x, focus_y);
-
             // 이동 값을 적용 (중앙 고정)
             Log.w(">>>>","dx : " + focus_x + " width : " + getWidth());
             if (bitmap != null) {
-                float translateX = getWidth() / 2f - focus_x;
-                float translateY = getHeight() / 2f - focus_y;
 
                 // 이미지 그려주는 시작 좌표를 보정해준다.
                 // 변경된 Zoom Factor 만큼의 이미지 시작 좌표를 이동해준다.
                 // focus 된 x,y 좌표가 기준 zoom(zoom_rate_offset)이미지에서 어디인지 얻어와서
                 // 확대된 이미지의 좌표를 일치하여 시작위치를 얻어온다.
 
-                translateX = (float)(zoom_rate_offset*bitmap.getWidth() - bitmap.getWidth()*zoom_rate);
-                translateY = (float)(zoom_rate_offset*bitmap.getHeight() - bitmap.getHeight()*zoom_rate);
+                float translateX = (float)((zoom_rate_offset*bitmap.getWidth() - bitmap.getWidth()*zoom_rate)/2);
+                float translateY = (float)((zoom_rate_offset*bitmap.getHeight() - bitmap.getHeight()*zoom_rate)/2);
 
-                //StartPos_x += (int)translateX;
-                //StartPos_y += (int)translateY;
+                StartPos_x = StartPos_x_offset + (int)translateX;
+                StartPos_y = StartPos_y_offset + (int)translateY;
 
                 // 객체가 선택된 경우 Tracker를 만들어 준다.
                 if(m_RoiCurIndex > -1)
@@ -263,8 +258,6 @@ public class MapImageView extends View {
                     roiChangedListener.onRoiChanged(m_RoiCurIndex);
                 }
 
-
-                matrix.postTranslate(translateX * (scaleFactor - 1), translateY * (scaleFactor - 1));
             }
 
             // 화면 다시 그리기
@@ -873,18 +866,41 @@ public class MapImageView extends View {
                             // Log.d(TAG, "DPoint: " + m_DnPoint.x + ", " + m_DnPoint.y);
                             if (strMenu.equals("수정")) {
 
-                                int minRect = 30;
-                                if(m_RoiObjects.get(m_RoiCurIndex).m_MBR.width() < minRect) {
-                                    m_RoiObjects.get(m_RoiCurIndex).m_MBR.right = m_RoiObjects.get(m_RoiCurIndex).m_MBR.left+minRect;
-                                    return;
-                                }
-
-                                if(m_RoiObjects.get(m_RoiCurIndex).m_MBR.height() < minRect) {
-                                    m_RoiObjects.get(m_RoiCurIndex).m_MBR.bottom = m_RoiObjects.get(m_RoiCurIndex).m_MBR.top+minRect;
-                                    return;
-                                }
 
                                 CObject_MovePointTo(point, m_DnPoint, m_objSelect);
+
+                                int minRect = 30;
+                                if(m_RoiObjects.get(m_RoiCurIndex).roi_type.equals("roi_line")) {
+
+                                    int dx = m_RoiObjects.get(m_RoiCurIndex).m_MBR.right - m_RoiObjects.get(m_RoiCurIndex).m_MBR.left;
+                                    int dy = m_RoiObjects.get(m_RoiCurIndex).m_MBR.bottom - m_RoiObjects.get(m_RoiCurIndex).m_MBR.top;
+                                    double nDistance = Math.sqrt(dx*dx+dy*dy);
+                                    if(nDistance <= minRect)
+                                    {
+                                        double nAngle = Math.atan2(m_RoiObjects.get(m_RoiCurIndex).m_MBR.bottom - m_RoiObjects.get(m_RoiCurIndex).m_MBR.top, m_RoiObjects.get(m_RoiCurIndex).m_MBR.right - m_RoiObjects.get(m_RoiCurIndex).m_MBR.left);
+
+                                        int px = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.left + minRect * (float) Math.cos(nAngle) );
+                                        int py = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.top + minRect * (float) Math.sin(nAngle) );
+
+                                        m_RoiObjects.get(m_RoiCurIndex).m_MBR.right = px;
+                                        m_RoiObjects.get(m_RoiCurIndex).m_MBR.bottom = py;
+                                    }
+
+                                }
+                                else {
+                                    if(m_RoiObjects.get(m_RoiCurIndex).m_MBR.width() <= minRect) {
+                                        m_RoiObjects.get(m_RoiCurIndex).m_MBR.right = m_RoiObjects.get(m_RoiCurIndex).m_MBR.left+minRect;
+
+                                    }
+                                    if(m_RoiObjects.get(m_RoiCurIndex).m_MBR.height() <= minRect) {
+                                        m_RoiObjects.get(m_RoiCurIndex).m_MBR.bottom = m_RoiObjects.get(m_RoiCurIndex).m_MBR.top+minRect;
+
+                                    }
+
+                                    m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.x = (int)( (m_RoiObjects.get(m_RoiCurIndex).m_MBR.left + m_RoiObjects.get(m_RoiCurIndex).m_MBR.right)/2);
+                                    m_RoiObjects.get(m_RoiCurIndex).m_MBR_center.y = (int)( (m_RoiObjects.get(m_RoiCurIndex).m_MBR.bottom + m_RoiObjects.get(m_RoiCurIndex).m_MBR.top)/2);
+
+                                }
 
                                 if(m_RoiObjects.get(m_RoiCurIndex).roi_type.equals("roi_polygon")) {
                                     // 로봇이 이동 가능한 위치가 아닌 경우에 이동 가능한 가장 가까운 곳으로 이동한다.
