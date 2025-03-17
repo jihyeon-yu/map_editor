@@ -683,6 +683,7 @@ public class MapEditorActivity extends Activity {
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
+
             } else {
                 // 선택된 것이 없음.
                 hideRoiCompleteToggleBar();
@@ -1187,7 +1188,7 @@ public class MapEditorActivity extends Activity {
             }
 
 
-
+            
             return true;
         } catch (IOException | NullPointerException e) {
             Log.e(TAG, "loadYaml Exception: " + e.getMessage());
@@ -1675,10 +1676,10 @@ public class MapEditorActivity extends Activity {
 
             int[] stationCoordinates = getStationPos(0,0, original_image_height); // 원점 좌표에 스테이지가 있다.
             mapViewer.m_StationObjects.add(new Point(stationCoordinates[0],stationCoordinates[1]));
-
+            
             mapViewer.m_RoiCurIndex = -1;
             mapViewer.m_RoiCurObject = null;
-
+            
             Log.d(TAG, "Read Json Success");
             return true;
         } catch (FileNotFoundException fe) {

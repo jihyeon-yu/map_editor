@@ -1340,8 +1340,8 @@ public class CDrawObj {
         // 실수 좌표계로 변환하여 대입한다.
         //var zoom = this.m_zoom;
 
-        int dx = pt1.x - pt2.x;
-        int dy = pt1.y - pt2.y;
+        int dx = (int)(pt1.x - pt2.x);
+        int dy = (int)(pt1.y - pt2.y);
 
         int halfWidth = (int)(m_MBR.width()/2);
         int halfHeight = (int)(m_MBR.height()/2);
