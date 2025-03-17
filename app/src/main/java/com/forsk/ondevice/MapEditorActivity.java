@@ -1186,6 +1186,8 @@ public class MapEditorActivity extends Activity {
                 //Log.d(TAG,"rotated angle: " + rotated_angle);
             }
 
+
+
             return true;
         } catch (IOException | NullPointerException e) {
             Log.e(TAG, "loadYaml Exception: " + e.getMessage());
@@ -1671,8 +1673,12 @@ public class MapEditorActivity extends Activity {
                 mapViewer.roi_AddObject();
             }
 
+            int[] stationCoordinates = getStationPos(0,0, original_image_height); // 원점 좌표에 스테이지가 있다.
+            mapViewer.m_StationObjects.add(new Point(stationCoordinates[0],stationCoordinates[1]));
+
             mapViewer.m_RoiCurIndex = -1;
             mapViewer.m_RoiCurObject = null;
+
             Log.d(TAG, "Read Json Success");
             return true;
         } catch (FileNotFoundException fe) {
@@ -1732,5 +1738,41 @@ public class MapEditorActivity extends Activity {
         }
         return new double[]{robot_x, robot_y};
     }
-}
+
+    public int[] getStationPos(double x, double y,int image_height)
+    {
+        Log.d(TAG, "getStationPos( "+x+", "+y+", "+image_height+" )");
+
+        int stage_x = 0;
+        int stage_y = 0;
+
+        // 원본 이미지의 좌표를 구한다.
+        int img_x = (int)((x - origin_x)/nResolution);
+        int img_y = (int)((x- origin_y)/nResolution);
+
+        // 영상처리 되어 이미지 크기나 회전이 있으면 적용한다.
+        if (lib_flag) {
+            // 1. 이미지 좌표를 3x1 행렬로 변환
+            Mat pointMat = new Mat(3, 1, CvType.CV_64F);
+            pointMat.put(0, 0, img_x); // transformed_pixel_x
+            pointMat.put(1, 0, img_y); // transformed_pixel_y
+            pointMat.put(2, 0, 1.0);           // Homogeneous coordinate
+
+            // 2. 이미지 좌표를 구한다.
+            Mat inverseTransformedPointMat = new Mat();
+            Core.gemm(transformationMatrix, pointMat, 1, new Mat(), 0, inverseTransformedPointMat);
+
+            stage_x = (int) Math.round(inverseTransformedPointMat.get(0, 0)[0]);
+            stage_y = (int) Math.round(inverseTransformedPointMat.get(1, 0)[0]);
+
+        } else {
+            stage_x = img_x;
+            stage_y = img_y;
+        }
+
+        Log.d(TAG, "station_position( : " + stage_x + ", " + stage_y+ " )");
+
+        return new int[]{stage_x, stage_y};
+    }
+ }
 

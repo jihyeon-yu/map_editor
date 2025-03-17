@@ -63,6 +63,7 @@ public class MapImageView extends View {
 
     ArrayList<CDrawObj> m_RoiObjects;
 
+
     int labelIndex = 1;
 
     boolean m_isCapture = false;    // 마우스 누른 상태에서 이동 여부
@@ -112,6 +113,9 @@ public class MapImageView extends View {
     Paint iconPaint;
     int roiButtonDistance = 0;    // 아이콘 모서리와의 거리
     Rect roiButtonRect;
+
+    // stage
+    ArrayList<Point> m_StationObjects;
 
     private OnRoiSelectedListener roiSelectedListener;
     private OnRoiCreateListener roiCreateListener;
@@ -168,6 +172,8 @@ public class MapImageView extends View {
         paint.setStyle(Paint.Style.FILL);
 
         m_RoiObjects = new ArrayList<CDrawObj>();
+
+        m_StationObjects = new ArrayList<Point>();
 
         // 랜덤 생성기 초기화
         random = new Random();
@@ -236,20 +242,27 @@ public class MapImageView extends View {
             float focusX = detector.getFocusX(); // 터치 중심 X 좌표
             float focusY = detector.getFocusY(); // 터치 중심 Y 좌표
 
-            if (bitmap != null) {
-                // 터치한 곳이 원본 이미지에서 어떤 좌표인지 계산
-                float imageFocusX = (focusX - StartPos_x) / prevZoom;
-                float imageFocusY = (focusY - StartPos_y) / prevZoom;
+            // 터치한 곳이 원본 이미지에서 어떤 좌표인지 계산
+            float imageFocusX = (focusX - StartPos_x) / prevZoom;
+            float imageFocusY = (focusY - StartPos_y) / prevZoom;
 
-                // 새로운 줌 상태에서의 좌표 계산
-                StartPos_x = (int) (focusX - imageFocusX * zoom_rate);
-                StartPos_y = (int) (focusY - imageFocusY * zoom_rate);
+            // 새로운 줌 상태에서의 좌표 계산
+            StartPos_x = (int) (focusX - imageFocusX * zoom_rate);
+            StartPos_y = (int) (focusY - imageFocusY * zoom_rate);
 
-                // 객체가 선택된 경우 Tracker 업데이트
-                if (m_RoiCurIndex > -1) {
-                    m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
-                    roiChangedListener.onRoiChanged(m_RoiCurIndex);
-                }
+            // 시작 위치가 변경되어 모든 Tracker를 다시 생성해준다.
+            int i;
+            for (i = 0; i < m_RoiObjects.size(); i++) {
+                m_RoiObjects.get(i).MakeTracker(StartPos_x, StartPos_y);
+            }
+            if (m_RoiCurObject != null) {
+                m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+            }
+
+            // 객체가 선택된 경우 Tracker 업데이트
+            if (m_RoiCurIndex > -1) {
+                m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                roiChangedListener.onRoiChanged(m_RoiCurIndex);
             }
 
             // 화면 다시 그리기
@@ -295,6 +308,22 @@ public class MapImageView extends View {
         }
 
         int i;
+
+        Drawable iconDrawableSation = getResources().getDrawable(R.drawable.ic_station_white, null);
+        Log.d(TAG, "m_StationObjects.size() : " + m_StationObjects.size());
+
+        for (i = 0; i < m_StationObjects.size(); i++) {
+
+            int ptLeft = (int) ((m_StationObjects.get(i).x) * zoom_rate + StartPos_x);
+            int ptTop = (int) ((m_StationObjects.get(i).y) * zoom_rate + StartPos_y);
+            int ptRight = (int) ((m_StationObjects.get(i).x) * zoom_rate + StartPos_x + 90);
+            int ptBottom = (int) ((m_StationObjects.get(i).y) * zoom_rate + StartPos_y + 90);
+
+            iconDrawableSation.setBounds(ptLeft, ptTop, ptRight, ptBottom);
+
+            // 회전된 상태에서 그리기
+            iconDrawableSation.draw(canvas);
+        }
 
         Drawable iconDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
         Drawable rotateDrawable = getResources().getDrawable(R.drawable.ic_rotate, null);
