@@ -339,7 +339,9 @@ public class CDrawObj {
 
         switch (this.roi_type) {
             case "roi_point":
-                canvas.drawCircle((int) ((float) m_MBR.left * m_zoom + pt_Start.x), (int) ((float) m_MBR.top * m_zoom + pt_Start.y), 5, Rectpaint);
+                //canvas.drawCircle((int) ((float) m_MBR.left * m_zoom + pt_Start.x), (int) ((float) m_MBR.top * m_zoom + pt_Start.y), 5, Rectpaint);
+
+                // 아이콘을 그려준다.
                 break;
 
             case "roi_line":
@@ -730,56 +732,77 @@ public class CDrawObj {
             DrawLabel(canvas, pt_Start);
         }
 
-        if (iconDrawable != null) {
-            // 아이콘 크기 86.89 * 86.89
-            float iconWidth = 86.89f * 2; // 아이콘의 너비
-            float iconHeight = 86.89f * 2; // 아이콘의 높이
+        if(roi_type.equals("roi_point")) {
+            if (iconDrawable != null) {
+                // 아이콘 크기 90 * 90
+                float iconWidth = 90; // 아이콘의 너비
+                float iconHeight = 90; // 아이콘의 높이
 
-            // 중심점을 기준으로 아이콘의 Bounds 설정
-            int iconLeft = (int) ((m_MBR_center.x * m_zoom + pt_Start.x) - (iconWidth / 2));
-            int iconTop = (int) ((m_MBR_center.y * m_zoom + pt_Start.y) - (iconHeight / 2));
-            int iconRight = (int) (iconLeft + iconWidth);
-            int iconBottom = (int) (iconTop + iconHeight);
+                // 중심점을 기준으로 아이콘의 Bounds 설정
+                int iconLeft = (int) ((m_MBR_center.x * m_zoom + pt_Start.x) - (iconWidth / 2));
+                int iconTop = (int) ((m_MBR_center.y * m_zoom + pt_Start.y) - iconHeight );
+                int iconRight = (int) (iconLeft + iconWidth);
+                int iconBottom = (int) (iconTop + iconHeight);
 
-            int iconCenterX = (iconLeft + iconRight) / 2;
-            int iconCenterY = (iconTop + iconBottom) / 2;
+                iconDrawable.setBounds(iconLeft, iconTop, iconRight, iconBottom);
 
-            // 사각형 dashpoint
-            Paint dashedPaint = new Paint();
-            dashedPaint.setStyle(Paint.Style.STROKE);
-            dashedPaint.setPathEffect(new DashPathEffect(new float[]{10, 10}, 0));
-            dashedPaint.setColor(Color.WHITE);
-            dashedPaint.setStrokeWidth(5);
-            Rect rect = new Rect(iconLeft, iconTop, iconRight, iconBottom);
+                // 그리기
+                iconDrawable.draw(canvas);
 
-            if (rotateDrawable != null) {
-                rotateDrawable.setBounds(iconRight - 26, iconBottom - 26, iconRight + 26, iconBottom + 26);
             }
-            iconDrawable.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-            // Canvas 회전 및 아이콘 그리기
-            canvas.save(); // 현재 Canvas 상태 저장
-            // 반시계 + -> 시계 + 로 반전
-            // 0° ~ 360°로 변환 (음수 각도 처리)
-            float degrees = -(float) Math.toDegrees(angle);
+        }
+        else if(roi_type.equals("roi_polygon")) {
+            if (iconDrawable != null) {
+                // 아이콘 크기 86.89 * 86.89
+                float iconWidth = 86.89f * 2; // 아이콘의 너비
+                float iconHeight = 86.89f * 2; // 아이콘의 높이
+
+                // 중심점을 기준으로 아이콘의 Bounds 설정
+                int iconLeft = (int) ((m_MBR_center.x * m_zoom + pt_Start.x) - (iconWidth / 2));
+                int iconTop = (int) ((m_MBR_center.y * m_zoom + pt_Start.y) - (iconHeight / 2));
+                int iconRight = (int) (iconLeft + iconWidth);
+                int iconBottom = (int) (iconTop + iconHeight);
+
+                int iconCenterX = (iconLeft + iconRight) / 2;
+                int iconCenterY = (iconTop + iconBottom) / 2;
+
+                // 사각형 dashpoint
+                Paint dashedPaint = new Paint();
+                dashedPaint.setStyle(Paint.Style.STROKE);
+                dashedPaint.setPathEffect(new DashPathEffect(new float[]{10, 10}, 0));
+                dashedPaint.setColor(Color.WHITE);
+                dashedPaint.setStrokeWidth(5);
+                Rect rect = new Rect(iconLeft, iconTop, iconRight, iconBottom);
+
+                if (rotateDrawable != null) {
+                    rotateDrawable.setBounds(iconRight - 26, iconBottom - 26, iconRight + 26, iconBottom + 26);
+                }
+                iconDrawable.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                // Canvas 회전 및 아이콘 그리기
+                canvas.save(); // 현재 Canvas 상태 저장
+                // 반시계 + -> 시계 + 로 반전
+                // 0° ~ 360°로 변환 (음수 각도 처리)
+                float degrees = -(float) Math.toDegrees(angle);
 
 //            if (degrees < 0) {
 //                degrees += 360;
 //            }
-            //Log.d(TAG,"degrees: " + degrees);
+                //Log.d(TAG,"degrees: " + degrees);
 
-            canvas.rotate(degrees, iconCenterX, iconCenterY); // 아이콘 중심 기준 회전
+                canvas.rotate(degrees, iconCenterX, iconCenterY); // 아이콘 중심 기준 회전
 
-            // 회전된 상태에서 그리기
-            iconDrawable.draw(canvas);
+                // 회전된 상태에서 그리기
+                iconDrawable.draw(canvas);
 
-            if (rotateDrawable != null) {
-                canvas.drawRect(rect, dashedPaint);
-                rotateDrawable.draw(canvas);
+                if (rotateDrawable != null) {
+                    canvas.drawRect(rect, dashedPaint);
+                    rotateDrawable.draw(canvas);
+
+                }
+
+                canvas.restore(); // Canvas 상태 복원
 
             }
-
-            canvas.restore(); // Canvas 상태 복원
-
         }
 
     }

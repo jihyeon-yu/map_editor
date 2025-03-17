@@ -112,7 +112,7 @@ public class MapImageView extends View {
     Rect roiButtonRect;
     
     // stage
-    ArrayList<Point> m_StationObjects;  // 스테이션 리스트
+    ArrayList<CDrawObj> m_StationObjects;  // 스테이션 리스트
 
     // roi가 생성, 선택, 변경시 roi 버튼에 관련된 이벤트
     private OnRoiSelectedListener roiSelectedListener;  // roi 선택
@@ -134,7 +134,7 @@ public class MapImageView extends View {
 
         m_RoiObjects = new ArrayList<CDrawObj>();
 
-        m_StationObjects = new ArrayList<Point>();
+        m_StationObjects = new ArrayList<CDrawObj>();
 
         // 랜덤 생성기 초기화
         random = new Random();
@@ -294,29 +294,69 @@ public class MapImageView extends View {
 
         int i;
 
+        // 시작위치 만큼 + 해줘야 일치한다.
+        Point pt = new Point(StartPos_x, StartPos_y);
+
         Drawable iconDrawableSation = getResources().getDrawable(R.drawable.ic_station_white, null);
         //Log.d(TAG, "m_StationObjects.size() : " + m_StationObjects.size());
 
-        int stationWidth = 40;
-        int stationHeight = 80;
+        // Draw Station
         for (i = 0; i < m_StationObjects.size(); i++) {
+            m_StationObjects.get(i).SetZoom(zoom_rate);
 
-            int ptLeft = (int)((m_StationObjects.get(i).x)*zoom_rate + StartPos_x - stationWidth/2) ;
-            int ptTop = (int)((m_StationObjects.get(i).y)*zoom_rate + StartPos_y - stationHeight);
-            int ptRight = (int)( ptLeft + stationWidth);
-            int ptBottom = (int)(ptTop + stationHeight);
+            // 아이콘 크기 90 * 90
+            float iconWidth = 90; // 아이콘의 너비
+            float iconHeight = 90; // 아이콘의 높이
 
-            iconDrawableSation.setBounds(ptLeft, ptTop, ptRight,ptBottom);
-            
-            // 회전된 상태에서 그리기
+            // 중심점을 기준으로 아이콘의 Bounds 설정
+            int iconLeft = (int) ((m_StationObjects.get(i).m_MBR_center.x * zoom_rate + pt.x) - (iconWidth / 2));
+            int iconTop = (int) ((m_StationObjects.get(i).m_MBR_center.y * zoom_rate + pt.y) - iconHeight );
+            int iconRight = (int) (iconLeft + iconWidth);
+            int iconBottom = (int) (iconTop + iconHeight);
+
+            iconDrawableSation.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+
+            // 그리기
             iconDrawableSation.draw(canvas);
+
+            Point mbr = m_RoiObjects.get(i).GetMBRCenter();
+            int x = (int) (m_StationObjects.get(i).m_MBR.left * zoom_rate + pt.x);
+            int y = (int) (m_StationObjects.get(i).m_MBR.top * zoom_rate + pt.y);
+
+            // 배경으로 VectorDrawable 그리기
+            //Drawable drawable_ic = getResources().getDrawable(R.drawable.ic_location, null);
+            //drawable_ic.setBounds(x - 30, y - 80, x + 30, y + 10); //(60, 90)
+            //Log.d(TAG,"PIN X: " + mbr.x + " " + mbr.y);
+
+            Drawable drawable = getResources().getDrawable(R.drawable.pin_name, null);
+            drawable.setBounds(x - 81, y - 156, x + 80, y - 90); //(161, 66)
+            drawable.draw(canvas);
+
+
+            // 텍스트 추가
+            Paint paint = new Paint();
+            paint.setColor(Color.WHITE);
+            paint.setTextSize(36);
+            paint.setTextAlign(Paint.Align.CENTER);
+
+//            // 선택할 경우 하얀 화면에 검은색 굴자, 선택이 안될 경우 검은색 화면에 하얀색 글자
+//            if (i == m_RoiCurIndex) {
+//                drawable.setColorFilter(Color.parseColor("#FFFFFF"), PorterDuff.Mode.SRC_IN);
+//                paint.setColor(Color.BLACK);
+//
+//            } else {
+//                // default black color
+//                paint.setColor(Color.WHITE);
+//            }
+
+            drawable.draw(canvas);
+            canvas.drawText(m_StationObjects.get(i).m_label, x, y - 110, paint);
         }
         
         Drawable iconDrawable = getResources().getDrawable(R.drawable.benjamin_direction, null);
         Drawable rotateDrawable = getResources().getDrawable(R.drawable.ic_rotate, null);
 
-        // 시작위치 만큼 + 해줘야 일치한다.
-        Point pt = new Point(StartPos_x, StartPos_y);
+
         int x, y;
         for (i = 0; i < m_RoiObjects.size(); i++) {
 
@@ -2301,7 +2341,7 @@ public class MapImageView extends View {
         // station 객체도 회전해 준다.
         for(i=0;i<this.m_StationObjects.size();i++)
         {
-            rotatePoint(m_StationObjects.get(i));
+            rotateObj(m_StationObjects.get(i));
         }
 
         // roi을 회전후에 이미지를 회전한다.
@@ -2377,8 +2417,12 @@ public class MapImageView extends View {
         // 두 점 간의 각도 계산
         double lineAngle;
 
+        Log.d(TAG, "obj.roi_type : " + obj.roi_type);
+
         int i, j;
         switch (obj.roi_type) {
+
+
             case "roi_line":
                 // mMBR만 회전한다.
                 left = obj.m_MBR.left;
@@ -2402,7 +2446,7 @@ public class MapImageView extends View {
 
                 // 두 점 간의 각도 계산
                 lineAngle = Math.atan2(roi_center_x - left, roi_center_y - top);
-                //Log.d(TAG, "lineAngle : "+ lineAngle);
+                Log.d(TAG, "lineAngle : "+ lineAngle);
 
                 obj.m_MBR.top = (int) (roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
                 obj.m_MBR.left = (int) (roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
@@ -2427,7 +2471,7 @@ public class MapImageView extends View {
 
                 break;
             case "roi_rect":
-                //Log.d(TAG, "obj.m_MBR("+i+") :( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
+                Log.d(TAG, "obj.m_MBR( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
 
                 // mMBR만 회전한다.
                 left = obj.m_MBR.left;
@@ -2457,11 +2501,11 @@ public class MapImageView extends View {
 
                 //  이미지의 중심에서 (left,top)까지의 거리를 구한다.
                 pointDistance = Math.sqrt(dx * dx + dy * dy);
-                //Log.d(TAG, "pointDistance : " + pointDistance);
+                Log.d(TAG, "pointDistance : " + pointDistance);
 
                 // 두 점 간의 각도 계산
                 lineAngle = Math.atan2(roi_center_x - left, roi_center_y - top);
-                //Log.d(TAG, "lineAngle : "+ lineAngle);
+                Log.d(TAG, "lineAngle : "+ lineAngle);
 
                 obj.m_MBR_rotate.top = (int) (roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
                 obj.m_MBR_rotate.right = (int) (roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
@@ -2489,9 +2533,10 @@ public class MapImageView extends View {
                 obj.m_MBR.right = obj.m_MBR_rotate.right;
                 obj.m_MBR.bottom = obj.m_MBR_rotate.bottom;
 
-                //Log.d(TAG, "obj.m_MBR("+i+") :( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
+                Log.d(TAG, "obj.m_MBR( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
 
                 break;
+            case "roi_point":
             case "roi_polygon":
                 // mMBR 회전한다.
                 left = obj.m_MBR.left;
@@ -2546,7 +2591,7 @@ public class MapImageView extends View {
                 obj.m_MBR.bottom = (int) (roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
                 obj.m_MBR.left = (int) (roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
 
-                //Log.d(TAG, "obj.m_MBR("+i+") :( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
+                Log.d(TAG, "obj.m_MBR( "+obj.m_MBR.left+", "+obj.m_MBR.top+", "+obj.m_MBR.right+", "+obj.m_MBR.bottom + " )");
 
                 // Points 회전한다.
                 for (j = 0; j < obj.m_Points.size(); j++) {

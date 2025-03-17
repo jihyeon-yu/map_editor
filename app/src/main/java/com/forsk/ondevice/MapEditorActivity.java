@@ -432,14 +432,12 @@ public class MapEditorActivity extends Activity {
             updateToggleButtonStatus(v.getId());
             //TODO : 핀 이동 구현
 
-            if(mapViewer.strMenu.equals("핀 이동")) {
+            if (mapViewer.strMenu.equals("핀 이동")) {
                 updateToggleButtonStatus(-1);   // 아무 것도 선택안 된 것으로
 
                 mapViewer.setMenu("선택");
                 showRoiCompleteToggleBar();
-            }
-            else
-            {
+            } else {
                 updateToggleButtonStatus(v.getId());
 
                 mapViewer.setMenu("핀 이동");
@@ -451,14 +449,12 @@ public class MapEditorActivity extends Activity {
         activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setOnClickListener(v -> {
 
             //TODO : 핀 회전 구현
-            if(mapViewer.strMenu.equals("핀 회전")) {
+            if (mapViewer.strMenu.equals("핀 회전")) {
                 updateToggleButtonStatus(-1);   // 아무 것도 선택안 된 것으로
 
                 mapViewer.setMenu("선택");
 
-            }
-            else
-            {
+            } else {
                 updateToggleButtonStatus(v.getId());
                 mapViewer.setMenu("핀 회전");
                 hideRoiCompleteToggleBar();
@@ -772,8 +768,7 @@ public class MapEditorActivity extends Activity {
                 activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
                 activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
-            }
-            else {
+            } else {
                 // 선택된 것이 없음.
                 hideRoiCompleteToggleBar();
             }
@@ -786,6 +781,7 @@ public class MapEditorActivity extends Activity {
         activityMapeditorBinding.roiCompleteLayout.setVisibility(View.GONE);
         activityMapeditorBinding.roiDeleteLayout.setVisibility(View.GONE);
     }
+
     // 토글바 숨김 함수
     private void showRoiCompleteToggleBar() {
         activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
@@ -846,8 +842,7 @@ public class MapEditorActivity extends Activity {
 
             activityMapeditorBinding.toggleBar.buttonRenameBackground.setBackground(selectedBackground);
             activityMapeditorBinding.toggleBar.buttonRename.setTextColor(getColor(R.color.black));
-        }
-        else {
+        } else {
             activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setBackground(null);
             activityMapeditorBinding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
 
@@ -1196,7 +1191,6 @@ public class MapEditorActivity extends Activity {
             }
 
 
-            
             return true;
         } catch (IOException | NullPointerException e) {
             Log.e(TAG, "loadYaml Exception: " + e.getMessage());
@@ -1595,7 +1589,7 @@ public class MapEditorActivity extends Activity {
                 JSONArray imagePathArray = room.getJSONArray("image_path");
                 JSONObject imagePosition = room.getJSONObject("image_position");
                 boolean isSetTheta = imagePosition.getBoolean("is_set_theta");
-                if(!isSetTheta) isSetTheta = false;
+                if (!isSetTheta) isSetTheta = false;
                 int mbr_x = imagePosition.getInt("x");
                 int mbr_y = imagePosition.getInt("y");
                 Log.d(TAG, "  Room ID: " + id);
@@ -1686,12 +1680,16 @@ public class MapEditorActivity extends Activity {
                 mapViewer.roi_AddObject();
             }
 
-            int[] stationCoordinates = getStationPos(0,0, original_image_height); // 원점 좌표에 스테이지가 있다.
-            mapViewer.m_StationObjects.add(new Point(stationCoordinates[0],stationCoordinates[1]));
-            
+            int[] stationCoordinates = getStationPos(0, 0, original_image_height); // 원점 좌표에 스테이지가 있다.
+            CDrawObj obj = new CDrawObj("roi_point", stationCoordinates[0], stationCoordinates[1], stationCoordinates[0], stationCoordinates[1]);
+            obj.SetString("스테이션");
+            obj.m_labelviewflag = true;
+
+            mapViewer.m_StationObjects.add(obj);
+
             mapViewer.m_RoiCurIndex = -1;
             mapViewer.m_RoiCurObject = null;
-            
+
             Log.d(TAG, "Read Json Success");
             return true;
         } catch (FileNotFoundException fe) {
@@ -1756,16 +1754,15 @@ public class MapEditorActivity extends Activity {
 
     // 로봇 좌표를 현재 이미지 좌표로 변환
     // 스테이션(충전소)의 경우, (0, 0)은 무조건 있어야 함.
-    public int[] getStationPos(double x, double y,int image_height)
-    {
-        Log.d(TAG, "getStationPos( "+x+", "+y+", "+image_height+" )");
+    public int[] getStationPos(double x, double y, int image_height) {
+        Log.d(TAG, "getStationPos( " + x + ", " + y + ", " + image_height + " )");
 
         int stage_x = 0;
         int stage_y = 0;
 
         // 원본 이미지의 좌표를 구한다.
-        int img_x = (int)((x - origin_x)/nResolution);
-        int img_y = (int)((x- origin_y)/nResolution);
+        int img_x = (int) ((x - origin_x) / nResolution);
+        int img_y = (int) ((y - origin_y) / nResolution);
 
         // 영상처리 되어 이미지 크기나 회전이 있으면 적용한다.
         if (lib_flag) {
@@ -1780,16 +1777,16 @@ public class MapEditorActivity extends Activity {
             Core.gemm(transformationMatrix, pointMat, 1, new Mat(), 0, inverseTransformedPointMat);
 
             stage_x = (int) Math.round(inverseTransformedPointMat.get(0, 0)[0]);
-            stage_y = (int) Math.round(inverseTransformedPointMat.get(1, 0)[0]);
+            stage_y = original_image_height - (int) Math.round(inverseTransformedPointMat.get(1, 0)[0]);
 
         } else {
             stage_x = img_x;
-            stage_y = img_y;
+            stage_y = image_height - img_y;
         }
 
-        Log.d(TAG, "station_position( : " + stage_x + ", " + stage_y+ " )");
+        Log.d(TAG, "station_position( : " + stage_x + ", " + stage_y + " )");
 
         return new int[]{stage_x, stage_y};
     }
- }
+}
 
