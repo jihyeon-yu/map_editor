@@ -68,7 +68,7 @@ public class MapEditorActivity extends Activity {
 
     private static final String TAG = "MapEditorActivity";
 
-    private static final String NAME_LIBRARY_CASELAB_OPT = "mapoptimization";
+    private static final String NAME_LIBRARY_CASELAB_OPT = "mapoptimization_arm_250317";
 
     static {
         try {
