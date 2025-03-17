@@ -44,13 +44,11 @@ public class MapImageView extends View {
     double zoom_rate = 0.0;
     double zoom_rate_offset = 0.0;  // 확대/축소 시 기준 zoom rate
 
+    // 확대/축소 된 이미지의 시작위치
     int StartPos_x = 0;
     int StartPos_y = 0;
     int StartPos_x_offset = 0;
     int StartPos_y_offset = 0;
-
-    int Origin_StartPos_x = 0;
-    int Origin_StartPos_y = 0;
 
     String strTouchStatus = "None";
     String roiType = "default";
@@ -61,10 +59,10 @@ public class MapImageView extends View {
     float nTouchUpPosY = 0;
 
 
+    // 도형 개첵 리스트
     ArrayList<CDrawObj> m_RoiObjects;
 
-
-    int labelIndex = 1;
+    int labelIndex = 1; // 공간 객체가 만들어지는 순번
 
     boolean m_isCapture = false;    // 마우스 누른 상태에서 이동 여부
 
@@ -77,8 +75,6 @@ public class MapImageView extends View {
     Point m_ptOld = new Point(-1, -1);    // freehand 같은 경우를 표현하기 위해서 필요하다.
     boolean m_bIsMouseDown = false;
     int m_Select = -1;    // 선택된 트래커 핸들..
-    int mouse_down_pos_x = -1;
-    int mouse_down_pos_y = -1;
 
     //현재 작업중인 그리기 객체 타입
     int m_RoiCurIndex = -1; // 선택된 m_RoiObjects 인덱스
@@ -90,11 +86,11 @@ public class MapImageView extends View {
     int m_objSelect = -1;   // 마우스 모양
 
 
-    Paint paint;
+    Paint paint;    // fot test
 
     private ScaleGestureDetector scaleGestureDetector;
-    private Matrix matrix;
-    private int nRotateAngle = 0;
+    private Matrix matrix;  // 이미지 회전, 이동, 확대/축소 매트릭스 (사용 안함)
+    private int nRotateAngle = 0;   // 지도 이미지 회전값
 
     private float scaleFactor = 1.0f;
     private float translateX = 0;     // X축 이동
@@ -108,62 +104,27 @@ public class MapImageView extends View {
     private Random random;    // 랜덤 생성기
 
     // 공간 개수
-    int roomNum = 0;
+    int roomNum = 0;    // 공간의 내부 색상 랜덤값
 
+    // roi 크기 조정 버튼
     Paint iconPaint;
     int roiButtonDistance = 0;    // 아이콘 모서리와의 거리
     Rect roiButtonRect;
     
     // stage
-    ArrayList<Point> m_StationObjects;
+    ArrayList<Point> m_StationObjects;  // 스테이션 리스트
 
-    private OnRoiSelectedListener roiSelectedListener;
-    private OnRoiCreateListener roiCreateListener;
-    private OnRoiChangedListener roiChangedListener;
+    // roi가 생성, 선택, 변경시 roi 버튼에 관련된 이벤트
+    private OnRoiSelectedListener roiSelectedListener;  // roi 선택
+    private OnRoiCreateListener roiCreateListener;  // roi 생성
+    private OnRoiChangedListener roiChangedListener; // roi 변경
 
+    // 현재 선택된 roi 번호를 회신
     public int getCurrentSelectedIndex() {
         return m_RoiCurIndex;
     }
 
-    public Pair<Integer, Integer> getSelectedObjectPosition() {
-        if ((m_RoiCurIndex != -1) && (m_RoiCurIndex < m_RoiObjects.size())) {
-            int x;
-            int y;
-            if (m_RoiCurObject.roi_type.equals("roi_polygon")) {
-                Point mbr = m_RoiObjects.get(m_RoiCurIndex).GetMBRCenter();
-                x = (int) (mbr.x * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_x - 57);
-                y = (int) (mbr.y * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_y - 15);
-            } else if (m_RoiCurObject.roi_type.equals("roi_line")) {
-                x = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.left * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_x);
-                y = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.top * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_y + 100);
-            } else {
-                x = (int) (((m_RoiObjects.get(m_RoiCurIndex).m_MBR.left + m_RoiObjects.get(m_RoiCurIndex).m_MBR.right) / 2)
-                        * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_x - 55);
-                y = (int) (m_RoiObjects.get(m_RoiCurIndex).m_MBR.top * m_RoiObjects.get(m_RoiCurIndex).m_zoom + StartPos_y + 120);
-            }
-            return new Pair<>(x, y);
-        }
-        return null; // 선택된 객체가 없으면 null 반환
-    }
-
-    public void clearSelection() {
-        m_RoiCurIndex = -1;
-        // 선택 안된 것을 activity에 전달
-        roiSelectedListener.onRoiSelected(m_RoiCurIndex);
-        invalidate(); // 화면을 다시 그리도록 요청
-    }
-
-    public int CountRoomNum() {
-        int count = 0;
-
-        for (int i = 0; i < m_RoiObjects.size(); i++) {
-            if (m_RoiObjects.get(i).roi_type.equals("roi_polygon")) count++;
-        }
-        return count;
-    }
-
     public MapImageView(Context context, AttributeSet attrs) {
-
 
         super(context, attrs);
 
@@ -191,7 +152,7 @@ public class MapImageView extends View {
         // 채우기 페인트 설정
         iconPaint = new Paint();
 
-        // 랜덤 색상 생성
+        // roi 변경 버튼 색상 생성
         iconPaint.setColor(Color.rgb(0, 37, 84));
         iconPaint.setStyle(Paint.Style.FILL); // 채우기 스타일
         iconPaint.setAntiAlias(true);
@@ -295,6 +256,7 @@ public class MapImageView extends View {
         }
     }
 
+    // 외부에서 view를 다시 그리기 위해서 호출하는 함수
     public void reDraw() {
         this.invalidate();
     }
@@ -484,6 +446,7 @@ public class MapImageView extends View {
         }
     }
 
+    // roi 수정 버튼 그려주는 곳
     public void DrawroiButtions(Canvas canvas) {
         //Log.d(TAG, "DrawButtionIcon()");
 
@@ -525,6 +488,7 @@ public class MapImageView extends View {
         iconDrawable.draw(canvas);
     }
 
+    // 지도 이미지 설정 (최초 무조건 설정해야 함)
     public void setBitmap(Bitmap map) {
         //Log.d(TAG, "setBitmap(...)");
         this.bitmap = map;
@@ -567,6 +531,7 @@ public class MapImageView extends View {
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
+    // 지도 이미지 가로 크기
     public int GetBitmapWidth() {
         if (bitmap == null) {
             return 0;
@@ -574,6 +539,7 @@ public class MapImageView extends View {
         return bitmap.getWidth();
     }
 
+    // 지도 이미지 세로 크기
     public int GetBitmapHeight() {
         if (bitmap == null) {
             return 0;
@@ -581,7 +547,7 @@ public class MapImageView extends View {
         return bitmap.getHeight();
     }
 
-
+    // 도형(공간,가상벽, 금지영역) 모드 설정
     public void setMode(String str) {
         //Log.d(TAG, "SetMode("+str+")");
         CObject_CurRoiCancelFunc();
@@ -612,6 +578,7 @@ public class MapImageView extends View {
         invalidate();
     }
 
+    // 도형(roi)의 하위 메뉴
     public void setMenu(String str) {
         //Toast.makeText(getContext().getApplicationContext(), "SetMenu("+str+")", Toast.LENGTH_SHORT).show();
         // 241222 jihyeon 이전 모드가 핀 회전 모드였으면, 초기화
@@ -674,24 +641,9 @@ public class MapImageView extends View {
         }
     }
 
+    // 도형 메뉴
     public String GetMenu() {
         return this.strMenu;
-    }
-
-    public void SetRoiType(String str) {
-        this.roiType = str;
-    }
-
-    public String GetRoiType() {
-        return this.roiType;
-    }
-
-    public void SetCurType(String str) {
-        this.m_CurType = str;
-    }
-
-    public String GetCurType() {
-        return this.m_CurType;
     }
 
     public void MouseDown(float x, float y) {
@@ -1188,6 +1140,7 @@ public class MapImageView extends View {
         }
     }
 
+    // 지도 이동시 화면 밖으로 벗어나지 않게 이동
     public void MoveMap(float dx, float dy) {
 
         StartPos_x += (int) dx;
@@ -1214,49 +1167,7 @@ public class MapImageView extends View {
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
-
-    public void roi_AddPoint() {
-        //Log.d(TAG, "roi_AddPoint()");
-
-        strMode = "Add Roi";
-        roiType = "roi_point";
-
-        CObject_CurRoiCancelFunc();
-        m_CurType = "roi_point";
-        m_drawstart = true;
-
-    }
-
-    public void roi_AddLine() {
-        strMode = "Roi Add";
-        roiType = "roi_line";
-
-        CObject_CurRoiCancelFunc();
-        m_CurType = "roi_line";
-        m_drawstart = true;
-
-    }
-
-    public void roi_AddRect() {
-        strMode = "Roi Add";
-        roiType = "roi_rect";
-
-        CObject_CurRoiCancelFunc();
-        m_CurType = "roi_rect";
-        m_drawstart = true;
-
-    }
-
-    public void roi_AddPolygon() {
-        strMode = "Roi Add";
-        roiType = "roi_polygon";
-
-        Point pt = new Point(0, 0);
-        //CObject_AddCurObject(pt);
-        m_CurType = "roi_polygon";
-        m_drawstart = true;
-    }
-
+    // json에서 설정된 도형을 추가해주는 곳
     public void roi_AddObject() {
         //Log.d(TAG, "roi_AddObject(): ");
         if (m_RoiCurObject == null) return;
@@ -1356,6 +1267,7 @@ public class MapImageView extends View {
 
     }
 
+    // 도형 추가 함수
     public void roi_CreateObject() {
         //Log.d(TAG, "roi_CreateObject(): ");
         // roi를 화면의 중심 좌표를 기준으로 가로,세로중 작은 크기의 distance( 1/4 정도) 크기로 생성하여
@@ -1479,18 +1391,7 @@ public class MapImageView extends View {
         }
     }
 
-    public void roi_FindObject() {
-
-        strMode = "Roi Find";
-
-        m_CurType = "default";
-
-        CObject_CurRoiCancelFunc();
-
-        strMode = "Roi Find & Move";
-
-    }
-
+    // 도형의 신규로 그려주는 함수
     public boolean CObject_AddCurObject(Point point) {
 
         //Log.d(TAG,"CObject_AddCurObject("+point.x+","+point.y+")");
@@ -1535,6 +1436,7 @@ public class MapImageView extends View {
         return true;
     }
 
+    // 신규로 도형를 만들기 시작할 때 사용하는 함수
     public boolean CObject_CreateObject(String objType, Point point) {
 
         m_RoiCurObject = null;
@@ -1609,6 +1511,7 @@ public class MapImageView extends View {
 
     }
 
+    // 선택된 도형 삭제
     public boolean CObject_DelCurObject() {
         //console.log('CObject_DelCurObject()');
         //console.log('m_RoiCurIndex: '+m_RoiCurIndex);
@@ -1631,6 +1534,7 @@ public class MapImageView extends View {
 
     }
 
+    // 도형 선택 해제
     public void CObject_CurRoiCancelFunc() {
         //console.log('CObject_CurRoiCancelFunc()');
 
@@ -1660,7 +1564,21 @@ public class MapImageView extends View {
 
     }
 
-    // 마우스 좌표만큼 선택한 객체을 수정한다.
+    //    switch (nHandle) {
+    //        case 0:        // 선택
+    //        case 1:        // 왼쪽 위
+    //        case 2:        // 위쪽 중간
+    //        case 3:        // 오른쪽 위
+    //        case 4:        // 왼쪽 중간
+    //        case 5:        // 오른쪽 중간
+    //        case 6:        // 왼쪽 아래
+    //        case 7:        // 아래쪽 중간
+    //        case 8:        // 오른쪽 아래
+    //        case 9:        // 오른쪽 아래
+    //
+    //    }
+
+    // 도형의 모서리 변경하는 함수
     public void CObject_MoveHandleTo(Point point, Point point_dn, int nHandle) {
         //Log.d(TAG, "CObject_MoveHandleTo( (" + point_dn.x + "," + point_dn.y + "),(" + point.x + "," + point.y + ")," + nHandle + ")");
 
@@ -1703,6 +1621,7 @@ public class MapImageView extends View {
         //CObject_Draw();
     }
 
+    // 도형의 핸들을 이동하는 함수
     public void CObject_MovePointTo(Point point, Point point_dn, int nHandle) {
         //Log.d(TAG, "CObject_MovePointTo( (" + point_dn.x + "," + point_dn.y + "),(" + point.x + "," + point.y + ")," + nHandle + ")");
 
@@ -1783,36 +1702,6 @@ public class MapImageView extends View {
         roiCreateListener.onRoiCreate();
         invalidate(); // 화면을 다시 그리도록 요청
         //CObject_Draw();
-    }
-
-    public void CObject_MoveToPoint(Point point_dn, Point point) {
-        //Log.d(TAG, "CObject_MoveToPoint( (" + point_dn.x + "," + point_dn.y + "),(" + point.x + "," + point.y + ") )");
-        if (m_RoiCurObject == null) return;
-
-        //m_objSelect ( -1: 선택 안됨, 0: 이동 )
-        if (m_objSelect < 1) return;
-
-        // 왼쪽 하단이 원점(0,0)이다.
-        Point pt1 = new Point(0, 0);
-        pt1.x = (int) ((point_dn.x - StartPos_x) / zoom_rate);
-        pt1.y = (int) ((point_dn.y - StartPos_y) / zoom_rate);
-
-        Point pt2 = new Point(0, 0);
-        pt2.x = (int) ((point.x - StartPos_x) / zoom_rate);
-        pt2.y = (int) ((point.y - StartPos_y) / zoom_rate);
-
-        //console.log(pt1);
-
-        // 선택된 객체이
-        m_RoiCurObject.MovePointTo(pt1, pt2, m_objSelect);
-        if (m_RoiCurIndex > -1) {
-            m_RoiObjects.set(m_RoiCurIndex, m_RoiCurObject);
-        }
-        // 해당 rio에 대해서 Tracker pointer를 생성해준다.
-        m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
-        // 변경된 것을 Activity에 전달해준다.
-        roiCreateListener.onRoiCreate();
-        invalidate(); // 화면을 다시 그리도록 요청
     }
 
     // 마우스 좌표만큼 선택한 객체를 이동한다.
@@ -1923,31 +1812,6 @@ public class MapImageView extends View {
         //CObject_Draw();
     }
 
-    /*
-    public void  CObject_Draw(Canvas canvas){
-        //console.log(m_RoiObjects);
-        int obj = 0;
-        for(obj=0; obj<m_RoiObjects.size(); obj++)
-        {
-            m_RoiObjects.get(obj).SetZoom(zoom_rate);
-            //m_RoiObjects.get(obj).Draw(canvas, zoom_rate);
-            m_RoiObjects.get(obj).Draw(canvas);
-        }
-
-        // 선택 안되어도 그리기 상태이면 보여야 한다.
-        //if (m_RoiCurObject != null && m_isselected == true)
-        if (m_RoiCurObject != null )
-        {
-            int oldc = m_RoiCurObject.GetLineColor();
-            m_RoiCurObject.SetLineColor(Color.rgb(255,255,0));
-            m_RoiCurObject.SetZoom(zoom_rate);
-            //m_RoiCurObject.Draw(canvas, zoom_rate);
-            m_RoiCurObject.Draw(canvas);
-            m_RoiCurObject.SetLineColor(oldc);
-        }
-    }
-    */
-
     // roi가 선택 안된 것으로 설정
     public void CObject_UnSelect() {
         m_isselected = false;
@@ -1965,6 +1829,7 @@ public class MapImageView extends View {
         invalidate();   // 화면 갱신
     }
 
+    // 해당 point에 도형(roi)이 있는지 찾는다.
     public int CObject_FindObject(Point point, boolean msMove) {
         //Log.d(TAG, "CObject_FindObject( ("+point.x+","+point.y+","+msMove+"),"+msMove+" )");
 
@@ -2103,7 +1968,7 @@ public class MapImageView extends View {
         return false;
     }
 
-    // 랜덤 색상 생성 함수
+    // 공간 채우기 색성을 랜덤하게 선택하는 함수
     private int getRandomColor() {
         // RGB 값을 랜덤으로 생성
 
@@ -2114,35 +1979,7 @@ public class MapImageView extends View {
         return Color.rgb(red, green, blue); // 랜덤 색상 반환
     }
 
-    private int getRandomColorArgb(int blur) {
-        // RGB 값을 랜덤으로 생성
-        int red = (int) (Math.random() * 255);    // 0~255
-        int green = (int) (Math.random() * 255);    // 0~255
-        int blue = (int) (Math.random() * 255);    // 0~255
-
-        return Color.argb(blur, red, green, blue); // 랜덤 색상 반환
-    }
-
-
-    public String getStringName() {
-        if (m_RoiCurIndex < 0) {
-            return null;
-        }
-
-        return m_RoiObjects.get(m_RoiCurIndex).GetString();
-    }
-
-    public void setStringName(String strName) {
-        if (m_RoiCurIndex < 0) {
-            return;
-        }
-
-        m_RoiObjects.get(m_RoiCurIndex).SetString(strName);
-        if (m_RoiCurObject != null) {
-            m_RoiCurObject.SetString(strName);
-        }
-    }
-
+    // 도형 이름 설정
     public void SetLabel(String newLabel) {
         if (m_RoiCurObject == null) {
             return; // 현재 선택된 객체가 없으면 종료
@@ -2164,6 +2001,7 @@ public class MapImageView extends View {
     }
 
 
+    // 라벨 중복 체크
     private boolean isLabelDuplicate(String label) {
         for (CDrawObj roiObject : m_RoiObjects) {
             if (roiObject != m_RoiCurObject && label.equals(roiObject.m_label)) {
@@ -2173,10 +2011,12 @@ public class MapImageView extends View {
         return false; // 중복 없음
     }
 
+    // 공간 점들 추가
     public void AddPoint_Polygon(Point point) {
         m_RoiCurObject.AddPoint(point);
     }
 
+    // JSON에서 도형 만들어주는 함수
     public boolean CObject_LoadObject(String objType, Point point) {
 
         m_RoiCurObject = null;
@@ -2226,6 +2066,7 @@ public class MapImageView extends View {
 
     }
 
+    // 금지 공간 수정
     public void CObject_LoadRect(Point point1, Point point2) {
         //m_RoiCurIndex = m_RoiObjects.size()-1;
 
@@ -2248,6 +2089,8 @@ public class MapImageView extends View {
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
+    // 공간의 무게 중심 좌표가 이동 가능 공간인지 확인하여
+    // 이동 불가 영역이면 가장 가까운 이동 가능 지역으로 이동한다.
     public void CObject_CheckMap(int nIndex) {
         //Log.d(TAG, "CObject_CheckMap("+nIndex+")");
 
@@ -2368,6 +2211,7 @@ public class MapImageView extends View {
         }
     }
 
+    // 두 점간의 각도 계산
     private float calculateAngle(float x1, float y1, float x2, float y2) {
         // atan2로 각도 계산
         float angle = -(float) (Math.atan2(y2 - y1, x2 - x1));
@@ -2375,17 +2219,7 @@ public class MapImageView extends View {
         return angle;
     }
 
-    /*
-    private void hideDeleteToggleBar() {
-        View deleteToggleBar = findViewById(R.id.delete_toggle_bar);
-        if (deleteToggleBar != null) {
-            deleteToggleBar.setVisibility(View.INVISIBLE);
-        }
-    }
-
-     */
-
-    // 인터페이스 정의
+    // 인터페이스 정의 : 도형 선택
     public interface OnRoiSelectedListener {
         void onRoiSelected(int indexSelected);
     }
@@ -2395,7 +2229,7 @@ public class MapImageView extends View {
         roiSelectedListener = listener;
     }
 
-    // 인터페이스 정의
+    // 인터페이스 정의: 도형 생성
     public interface OnRoiCreateListener {
         void onRoiCreate();
     }
@@ -2405,7 +2239,7 @@ public class MapImageView extends View {
         roiCreateListener = listener;
     }
 
-    // 인터페이스 정의
+    // 인터페이스 정의 : 도형 수정
     public interface OnRoiChangedListener {
         void onRoiChanged(int indexSelected);
     }
@@ -2415,10 +2249,12 @@ public class MapImageView extends View {
         roiChangedListener = listener;
     }
 
+    // 지도 회전 각도 반환
     public int getRatateAngle() {
         return nRotateAngle;
     }
 
+    // 화면에 보이는 지도 이미지 90 회전
     public void setRotateMap90() {
         //Log.d(TAG, "setRotateMap90()");
         nRotateAngle += 90; // 90도 회전
@@ -2518,6 +2354,7 @@ public class MapImageView extends View {
         invalidate();
     }
 
+    // 도형 90 회전
     public void rotateObj(CDrawObj obj) {
         // 이미지의 중심점을 기준으로 모들 Point, mMBR을 90도씩 회전한다.
 
@@ -2758,6 +2595,7 @@ public class MapImageView extends View {
                 break;
         }
     }
+    // point (station) 90회전
     public void rotatePoint(Point pt) {
 
         int roi_center_x = (int) (bitmap.getWidth() / 2f);

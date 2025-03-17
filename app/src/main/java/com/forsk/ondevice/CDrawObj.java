@@ -26,41 +26,40 @@ public class CDrawObj {
 
     String roi_type; // roi_point, roi_line, roi_rect
 
-    Rect m_MBR;
-    Rect m_MBR_rotate;
-    Point m_MBR_center;
-    ArrayList<Point> m_Points;
+    Rect m_MBR; // 도형 영역 (사각형)
+    Rect m_MBR_rotate;  // 도형 회전시 사용
+    Point m_MBR_center; // 도형의 무게중심 (로봇위치)
+    ArrayList<Point> m_Points;  // polygon의 point 리스트
     boolean m_endroiflag;    // 객체의 생성이 끝났는가?
 
-    String m_label = "test";   // 라벨 이름
-    boolean m_labelviewflag = true;
+    String m_label = "test";   // 라벨 기본 이름
+    boolean m_labelviewflag = true; // 라벨 display 여보
 
     boolean m_Closed = false;    // 닫혔는지 아닌지..
 
     Paint labelpaint;   // 라벨 글자 색상
     Paint Rectpaint;    // roi 색상
-    Paint PointPaint;
-    Paint PointFillPaint;
+    Paint PointPaint;   // Point용 paint
+    Paint PointFillPaint;   // point 채우기 paint
     Paint Rectpaint_rotate;    // roi 색상
 
 
     private Path path;        // 폴리곤 경로
     Paint fillPaint;   // 채우기 색상
-    Paint fillPaint_rotate;   // 채우기 색상
     private Random random;    // 랜덤 생성기
 
-    double m_zoom = 0.0;
+    double m_zoom = 0.0;    // 화대/축소 배율
 
     private Drawable iconDrawable; // 핀 회전 아이콘
 
-    private Drawable rotateDrawable;
-    float angle = 0.0f;
+    private Drawable rotateDrawable;    // 회전핀 배경
+    float angle = 0.0f; // 회전 값
 
     boolean isSetTheta = false;
 
-    Paint RectDashpaint;
-    ArrayList<Point> m_DashPoints;
-    boolean bDashViewflag = true;
+    Paint RectDashpaint;    // 메뉴 버튼 위치
+    ArrayList<Point> m_DashPoints;  // 메뉴 버튼 네 모서리  point들
+    boolean bDashViewflag = true;   // 메뉴 버튼 영역 display 여부
 
     public CDrawObj(String strType, int nLeft, int nTop, int nRight, int nBottom) {
         m_MBR = new Rect(nLeft, nTop, nRight, nBottom);
@@ -128,13 +127,6 @@ public class CDrawObj {
             fillPaint.setColor(Color.argb(178, 255, 70, 80));
         }
 
-        fillPaint_rotate = new Paint();
-
-        // 랜덤 색상 생성
-        fillPaint_rotate.setColor(getRandomColor());
-        fillPaint_rotate.setStyle(Paint.Style.FILL); // 채우기 스타일
-        fillPaint_rotate.setAntiAlias(true);
-
         RectDashpaint = new Paint();
         RectDashpaint.setColor(Color.WHITE); // 반투명 파란색 (#80FF0000)
         RectDashpaint.setStrokeWidth(5);
@@ -149,6 +141,7 @@ public class CDrawObj {
         }
     }
 
+    // 도형 영역(사각형) normalize
     public void NormalizeRect() {
         int temp = 0;
 
@@ -206,14 +199,17 @@ public class CDrawObj {
         return this.iconDrawable;
     }
 
+    // 회전값 설정
     public void setAngle(float angle) {
         this.angle = angle;
     }
 
+    // 회전값 회신
     public float getAngle() {
         return this.angle;
     }
 
+    // 핀 회전 아이콘 이미지 설정
     public void setRotateDrawable(Drawable drawable) {
         this.rotateDrawable = drawable;
     }
@@ -223,14 +219,17 @@ public class CDrawObj {
         this.rotateDrawable = null;
     }
 
+    // 핀회젅 배경이미지 회신
     public Drawable getRotateDrawable() {
         return this.rotateDrawable;
     }
 
+    // 도형 타입 회신
     public String getType() {
         return roi_type;
     }
 
+    // 도형의 영역 설정
     public void SetPosition(Rect rect) {
         // 실수 좌표계로 변환하여 대입한다.
 
@@ -244,59 +243,72 @@ public class CDrawObj {
         m_MBR_center = new Point((int) ((rect.left + rect.right) / 2), (int) ((rect.top + rect.bottom) / 2));
     }
 
+    // 도형 영역 회신
     public Rect GetPosition() {
         return this.m_MBR;
     }
 
+    // 확대/축소 배율 설정
     public void SetZoom(double z) {
         this.m_zoom = z;
     }
 
+    // 화대/축소 배율 회신
     public double GetZoom() {
         return this.m_zoom;
     }
 
+    // 라벨명 회신
     public String GetString() {
         return this.m_label;
     }
 
+    // 라벨 설정
     public void SetString(String m_label) {
         this.m_label = m_label;
     }
 
+    // 라벨 색상 설정
     public void SetTextColor(int color) {
         labelpaint.setColor(color);
     }
 
+    // 도형 색상 설정
     public void SetLineColor(int color) {
         Rectpaint.setColor(color);
     }
 
+    // 도형 색상 회신
     public int GetLineColor() {
         return Rectpaint.getColor();
     }
 
+    // 도형메뉴 영역 색상 설정
     public void SetDashLineColor(int color) {
         RectDashpaint.setColor(color);
     }
 
+    // 도형메뉴 영역 색상 회신
     public int GetDashLineColor() {
         return RectDashpaint.getColor();
     }
 
-
+    // 도형 내부 색상 설정
     public void SetFillColor(int color) {
         fillPaint.setColor(color);
     }
 
+    // 도형 내부 색상 회신
     public int GetFillColor() {
         return fillPaint.getColor();
     }
 
+    // 도형의 무게중심 회신
     public Point GetMBRCenter() {
         return this.m_MBR_center;
     }
 
+    // 라벨 그려주는 함수
     public void DrawLabel(Canvas canvas, Point pt_Start) {
         int x, y;
 
@@ -317,6 +329,7 @@ public class CDrawObj {
         }
     }
 
+    // 도형 그려주는 함수
     // 2024.12.11 lyt94 bDrawPoint 추가
     public void Draw(Canvas canvas, Point pt_Start, Bitmap bitmap, boolean bSelected, boolean bEdit) {
         //Log.d(TAG, "Draw(...)");
@@ -771,6 +784,7 @@ public class CDrawObj {
 
     }
 
+    // 도형 메뉴 영역을 생성하는 함수
     public void MakeTracker(int start_x, int start_y) {
         //Log.d(TAG, "MakeTracker(" + start_x + ", " + start_y + ")");
 
@@ -893,6 +907,7 @@ public class CDrawObj {
         }
     }
 
+    // 도형의 Point 추가 함수
     public void AddPoint(Point point) {
         //Log.d(TAG, "AddPoint("+point.x+","+point.y+")");
         m_Points.add(point);
@@ -910,6 +925,7 @@ public class CDrawObj {
         m_MBR_center.y = (int) ((m_MBR.top + m_MBR.bottom) / 2);
     }
 
+    // 도형의 끝점을 추가하고, 도형 그리기를 종료한다.
     public void AddEndPoint(Point point, boolean flag) {
         //Log.d(TAG, "AddEndPoint(...)");
         // 마지막 점은 제외하고 시작 포인트와 끝 포인트를 같게 함
@@ -932,6 +948,7 @@ public class CDrawObj {
     }
 
 
+    // 도형의 point 갯수를 회신
     public int GetPointCount() {
         int point_count = 0;
         switch (this.roi_type) {
@@ -954,6 +971,7 @@ public class CDrawObj {
         return point_count;
     }
 
+    // 해당 핸들의 Point를 회신하는 함수
     public Point GetPoint(int nHandle) {
         int x = -1;
         int y = -1;
@@ -1022,6 +1040,7 @@ public class CDrawObj {
         return handle_count;
     }
 
+    // 선택된 핸들의 Point 좌표를 회신한다.
     public Point GetHandle(int nHandle) {
 
         switch (this.roi_type) {
@@ -1125,6 +1144,7 @@ public class CDrawObj {
 
     }
 
+    // 선택된 좌표 point가 해당 도형내에 있는지 회신한다.
     public boolean PointInRect(Point point) {
         //Log.d(TAG, "PointInRect("+point.x+","+point.y+")");
 
@@ -1195,6 +1215,7 @@ public class CDrawObj {
         return false;
     }
 
+    // 해당 Point의 어떤 handle를 갖는지 회신한다.
     public int PointInHandle(Point point, int cw, int ch)        //Tracker를 찾기위한 함수
     {
         //Log.d(TAG, "PointInHandle( ("+point.x+","+point.y+"),"+cw+","+ch+")");
@@ -1221,6 +1242,9 @@ public class CDrawObj {
         return 0;
     }
 
+    // 해당 포인트 핸들을 회신한다.
+    // cw: 가로 오차범위
+    // ch: 세로 오차범위
     public int PointInPoint(Point point, int cw, int ch)        //Tracker를 찾기위한 함수
     {
         //Log.d(TAG, "PointInPoint( (" + point.x + "," + point.y + ") " + cw + ", " + ch + ")");
@@ -1258,6 +1282,7 @@ public class CDrawObj {
         return -1;
     }
 
+    // 해당 좌표 차이 만큰 도형과 무게중심을 이동한다.
     public void MoveToRect(Point pt1, Point pt2) {
         //console.log('MoveToRect( ('+pt1.x+','+pt1.y+'), ('+pt2.x+','+pt2.y+') )');
 
@@ -1288,6 +1313,7 @@ public class CDrawObj {
 
     }
 
+    // 해당 좌표만큼 도형을 이동한다.
     public void MoveTo(Point pt1, Point pt2) {
         //Log.d(TAG, "MoveTo( ("+pt1.x+","+pt1.y+"),("+pt2.x+","+pt2.y+") )");
         // pt1 : mouse down
@@ -1332,6 +1358,8 @@ public class CDrawObj {
             this.m_MBR.bottom += dy;
         }
     }
+
+    // 무게 중심을 기준으로 도형을 이동한다.
     public void MoveToCenter(Point pt1, Point pt2) {
         //Log.d(TAG, "MoveTo( ("+pt1.x+","+pt1.y+"),("+pt2.x+","+pt2.y+") )");
         // pt1 : mouse down
@@ -1365,6 +1393,8 @@ public class CDrawObj {
             m_Points.add(new Point(m_MBR.left, m_MBR.bottom));
         }
     }
+
+    // 무게중심을 설정하고 무게 중심으로 도형을 이동한다.
     public void MoveToCenterPosition(int x, int y){
         // 중심 좌표만 이동한다.
         m_MBR_center.x = x;
@@ -1390,6 +1420,20 @@ public class CDrawObj {
     }
 
 
+    //    switch (nHandle) {
+    //        case 0:        // 선택
+    //        case 1:        // 왼쪽 위
+    //        case 2:        // 위쪽 중간
+    //        case 3:        // 오른쪽 위
+    //        case 4:        // 왼쪽 중간
+    //        case 5:        // 오른쪽 중간
+    //        case 6:        // 왼쪽 아래
+    //        case 7:        // 아래쪽 중간
+    //        case 8:        // 오른쪽 아래
+    //        case 9:        // 오른쪽 아래
+    //
+    //    }
+    // 핸들의 종류에 따라서 도형을 이동/변경 한다.
     public void MoveHandleTo(Point pt1, Point pt2, int nHandle) {
         //console.log(pt1);
         // 실수 좌표계로 변환하여 대입한다.
@@ -1456,14 +1500,13 @@ public class CDrawObj {
             }
         }
 
-        //console.log(str);
-
         // 일부 ROI의 경우에는 괘적을 그림.
         // if(POLYGON || FREEHAND || FREEHANDLINE){}
         // else (point) //
         // 여기서는 point 만 이동한다.
     }
 
+    // 포인트 핸들의 Point를 이동한다.
     public void MovePointTo(Point pt1, Point pt2, int nHandle) {
 
         if (nHandle < 1) return; // 포인터 이동이 아님.
@@ -1491,6 +1534,7 @@ public class CDrawObj {
         }
     }
 
+    // polygon 내부 색상 랜덤 생성
     private int getRandomColorArgb(int blur) {
         // RGB 값을 랜덤으로 생성
 
@@ -1506,6 +1550,7 @@ public class CDrawObj {
     }
 
 
+    // 도형 내무에서 로봇이 이동 가능한 영역만 다른 색상으로 그려준다.
     public void drawMatchPoints(Bitmap bitmap, Canvas canvas, Paint paint, int[] bounds, Point pt_Start) throws InterruptedException {
         // Bounds를 기반으로 영역 가져오기
         int left = Math.max(0, bounds[0]); // Bitmap 경계를 벗어나지 않도록 제한
@@ -1549,6 +1594,7 @@ public class CDrawObj {
         canvas.drawPoints(pointArray, paint);
     }
 
+    // 해당 point가 polygon 내에 위치하는 지 체크한다.
     public boolean isPointInPolygon(Point point) {
         int intersectCount = 0;
         int size = m_Points.size();

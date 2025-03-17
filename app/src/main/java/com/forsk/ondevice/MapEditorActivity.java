@@ -64,6 +64,8 @@ import org.opencv.core.Core;
 
 public class MapEditorActivity extends Activity {
     private static final String TAG = "MapEditorActivity";
+
+    // 맵 최적화 so 라이브러리 위치 및 로딩
     private static final String NAME_LIBRARY_CASELAB_OPT =
 //                                                              "mapoptimizationV2";
             "mapoptimization241217v11";
@@ -79,9 +81,11 @@ public class MapEditorActivity extends Activity {
         }
     }
 
+    // 파일 입축력 권한
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static String[] PERMISSIONS_STORAGE = {android.Manifest.permission.READ_EXTERNAL_STORAGE, android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
+    // 접근 권한이 없을 때는 권한 변경창 띄우기
     public static void verifyStoragePermissions(Activity activity) {
         int permission = ActivityCompat.checkSelfPermission(activity, android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
@@ -99,11 +103,12 @@ public class MapEditorActivity extends Activity {
 
     String strMode = "Zoom";
 
+    // 설정파일
     String srcMapPgmFilePath = "";
     String srcMapYamlFilePath = "";
-    //String srcMappingFilePath = "";
     String destMappingFilePath = "";
 
+    // 로봇 지도 변환값
     double nResolution = 0.0;
     double origin_x = 0.0;
     double origin_y = 0.0;
@@ -188,6 +193,7 @@ public class MapEditorActivity extends Activity {
 
         // List to manage all RadioButtons
         ArrayList<RadioButton> allRadioButtons = new ArrayList<>();
+
         // 선택된 라디오 버튼의 텍스트를 추적하기 위한 변수
         final String[] selectedText = {null};
         // Dynamically add rows
@@ -1021,6 +1027,7 @@ public class MapEditorActivity extends Activity {
         }
     }
 
+    // 지도 이미지 불러오기
     private Bitmap loadPGM(String filePath) throws IOException {
         Log.d(TAG, "loadPGM(\"" + filePath + "\")");
 
@@ -1077,6 +1084,7 @@ public class MapEditorActivity extends Activity {
         return sb.toString();
     }
 
+    // 로봇에서 사용하는 좌표계
     private boolean loadYaml(String filePath) {
         // 내부 저장소에서 파일 스트림 열기
         try (InputStream inputStream = new FileInputStream(filePath)) {
@@ -1196,6 +1204,8 @@ public class MapEditorActivity extends Activity {
         }
     }
 
+    // 설정값 저장
+    // calculateCoordinate() 홤수는 화면에 보이는 지도 좌표를 로봇좌표로 변환하는 함수
     public boolean roi_saveToFile(String strPath, String strFileName) {
 
         int i, j;
@@ -1493,6 +1503,7 @@ public class MapEditorActivity extends Activity {
     }
 
 
+    // 도형 설정없는 기본 json파일
     public boolean roi_saveToEmptyFile(String strPath, String strFileName) {
 
         int i, j;
@@ -1550,6 +1561,7 @@ public class MapEditorActivity extends Activity {
         return false;
     }
 
+    // 지도 설정된 값을 불러온다.
     private synchronized boolean loadJson(String filePath) {
         Log.d(TAG, "Exist Json File");
         StringBuilder jsonStringBuilder = new StringBuilder();
@@ -1695,6 +1707,7 @@ public class MapEditorActivity extends Activity {
         }
     }
 
+    // 이미지 보정전 이미지 좌표로 변환
     public Point transformToRobotCoordinates(int image_x, int image_y) {
         // 1. 이미지 좌표를 3x1 행렬로 변환
         Mat pointMat = new Mat(3, 1, CvType.CV_64F);
@@ -1724,6 +1737,7 @@ public class MapEditorActivity extends Activity {
         return new Point(original_pixel_x, original_pixel_y);
     }
 
+    // 지도 좌표를 로봇 좌표로 변환
     public double[] calculateCoordinate(int x, int y, int image_height) {
         // 계산 공식: (x * resolution + origin_x)
         double robot_x = 0.0;
@@ -1740,6 +1754,8 @@ public class MapEditorActivity extends Activity {
         return new double[]{robot_x, robot_y};
     }
 
+    // 로봇 좌표를 현재 이미지 좌표로 변환
+    // 스테이션(충전소)의 경우, (0, 0)은 무조건 있어야 함.
     public int[] getStationPos(double x, double y,int image_height)
     {
         Log.d(TAG, "getStationPos( "+x+", "+y+", "+image_height+" )");
