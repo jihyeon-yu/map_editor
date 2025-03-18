@@ -22,7 +22,7 @@ import android.graphics.Region;
 
 public class CDrawObj {
 
-    private static final String TAG = "CDrawObj";
+    private static final String TAG = "OnDeviceMapEditor:CDrawObj";
 
     String roi_type; // roi_point, roi_line, roi_rect
 

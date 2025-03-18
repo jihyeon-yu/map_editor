@@ -25,7 +25,7 @@ import android.widget.Toast;
 
 public class MapImageView extends View {
 
-    private static final String TAG = "MapImageView";
+    private static final String TAG = "OnDeviceMapEditor:MapImageView";
 
     String strMode = "맵 탐색";
     String strMenu = "Zoom";
@@ -308,9 +308,10 @@ public class MapImageView extends View {
             float iconWidth = 90; // 아이콘의 너비
             float iconHeight = 90; // 아이콘의 높이
 
-            // 중심점을 기준으로 아이콘의 Bounds 설정
-            int iconLeft = (int) ((m_StationObjects.get(i).m_MBR_center.x * zoom_rate + pt.x) - (iconWidth / 2));
-            int iconTop = (int) ((m_StationObjects.get(i).m_MBR_center.y * zoom_rate + pt.y) - iconHeight );
+            // 왼쪽위 기준으로 아이콘의 Bounds 설정
+            // m_StationObjects는 roi_point 이다.
+            int iconLeft = (int) ((m_StationObjects.get(i).m_MBR.left * zoom_rate + pt.x) - (iconWidth / 2));
+            int iconTop = (int) ((m_StationObjects.get(i).m_MBR.top * zoom_rate + pt.y) - iconHeight );
             int iconRight = (int) (iconLeft + iconWidth);
             int iconBottom = (int) (iconTop + iconHeight);
 
@@ -319,23 +320,17 @@ public class MapImageView extends View {
             // 그리기
             iconDrawableSation.draw(canvas);
 
-            Point mbr = m_RoiObjects.get(i).GetMBRCenter();
             int x = (int) (m_StationObjects.get(i).m_MBR.left * zoom_rate + pt.x);
             int y = (int) (m_StationObjects.get(i).m_MBR.top * zoom_rate + pt.y);
 
-            // 배경으로 VectorDrawable 그리기
-            //Drawable drawable_ic = getResources().getDrawable(R.drawable.ic_location, null);
-            //drawable_ic.setBounds(x - 30, y - 80, x + 30, y + 10); //(60, 90)
-            //Log.d(TAG,"PIN X: " + mbr.x + " " + mbr.y);
-
-            Drawable drawable = getResources().getDrawable(R.drawable.pin_name, null);
+            Drawable drawable = getResources().getDrawable(R.drawable.background_station_rect, null);
             drawable.setBounds(x - 81, y - 156, x + 80, y - 90); //(161, 66)
             drawable.draw(canvas);
 
 
             // 텍스트 추가
             Paint paint = new Paint();
-            paint.setColor(Color.WHITE);
+            paint.setColor(Color.rgb(90,218,198));
             paint.setTextSize(36);
             paint.setTextAlign(Paint.Align.CENTER);
 
@@ -1390,7 +1385,7 @@ public class MapImageView extends View {
         else if (m_CurType.equals("roi_rect")) {
             // 화면의 1/4 크기로 정사각형 rect로 금지 공간을 생성한다.
             // 도형의 무게 줌심은 가로,세로 가운데이다.
-            // 스테이션이 금지공간에 표함되면 안된다.
+
 
             m_RoiCurObject = new CDrawObj("roi_rect", nLeft, nTop, nRight, nBottom);
             m_RoiCurObject.SetZoom(zoom_rate);
@@ -2670,6 +2665,33 @@ public class MapImageView extends View {
         pt.y = (int) (roi_center_x + pointDistance * (float) Math.cos(lineAngle + (float) Math.PI / 2.0f));
         pt.x = (int) (roi_center_y + pointDistance * (float) Math.sin(lineAngle + (float) Math.PI / 2.0f));
 
+    }
+
+    public boolean CheckStation() {
+        boolean nResult = true;
+
+        if(m_RoiCurIndex < 0) return true;
+
+        // 스테이션이 금지공간에 표함되면 안된다.
+        if(m_RoiObjects.get(m_RoiCurIndex).roi_type.equals("roi_rect")) {
+            int nLeft = m_RoiObjects.get(m_RoiCurIndex).m_MBR.left;
+            int nTop = m_RoiObjects.get(m_RoiCurIndex).m_MBR.top;
+            ;
+            int nRight = m_RoiObjects.get(m_RoiCurIndex).m_MBR.right;
+            int nBottom = m_RoiObjects.get(m_RoiCurIndex).m_MBR.bottom;
+
+            int i;
+            for(i=0;i<m_StationObjects.size();i++)
+            {
+                if((m_StationObjects.get(i).m_MBR.left >= nLeft) && (m_StationObjects.get(i).m_MBR.left <= nRight) ) {
+                    if ((m_StationObjects.get(i).m_MBR.top >= nTop) && (m_StationObjects.get(i).m_MBR.left <= nBottom)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return nResult;
     }
 
 }

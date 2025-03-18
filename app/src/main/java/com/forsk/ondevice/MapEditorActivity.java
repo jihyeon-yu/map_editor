@@ -63,7 +63,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.Core;
 
 public class MapEditorActivity extends Activity {
-    private static final String TAG = "MapEditorActivity";
+    private static final String TAG = "OnDeviceMapEditor:MapEditorActivity";
 
     // 맵 최적화 so 라이브러리 위치 및 로딩
     private static final String NAME_LIBRARY_CASELAB_OPT =
@@ -165,6 +165,60 @@ public class MapEditorActivity extends Activity {
         }
     }
 
+    public interface DialogCallback_OK {
+        void onConfirm(String strResult); // 선택된 텍스트를 반환
+    }
+
+    private void showCustomDialog_OK(DialogCallback_OK callback) {
+        // Inflate the custom layout
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_okcancel_with_buttons, null);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomDialogTheme);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+
+        // Find views
+        RadioGroup radioGroup = dialogView.findViewById(R.id.radio_group);
+        Button cancelButton = dialogView.findViewById(R.id.rename_pin_cancel_button);
+        Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
+
+        TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
+        textViewTitle.setText("종료");
+
+        TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
+        textViewMessage.setText("저장하시겠습니까?");
+
+        // Set button listeners
+        cancelButton.setOnClickListener(v -> {
+            callback.onConfirm("cancel");
+            dialog.dismiss();
+        });
+
+        confirmButton.setOnClickListener(v -> {
+            callback.onConfirm("ok");
+            dialog.dismiss();
+
+        });
+
+        // Show the dialog
+        dialog.show();
+
+        // Adjust dialog size
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = WindowManager.LayoutParams.MATCH_PARENT; // 너비
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT; // 높이
+            params.horizontalMargin = 0.05f; // 좌우 마진 (화면 비율로 계산)
+            params.verticalMargin = 0.1f; // 상하 마진
+            window.setAttributes(params);
+        }
+
+
+    }
     public interface DialogCallback {
         void onConfirm(String selectedText); // 선택된 텍스트를 반환
     }
@@ -292,6 +346,13 @@ public class MapEditorActivity extends Activity {
         hideRoiCompleteToggleBar();
 
         activityMapeditorBinding.roiCompleteLayout.setOnClickListener(v -> {
+
+            // 스테이션이 금지공간에 표함되면 안된다.
+            if(!mapViewer.CheckStation()){
+                Toast.makeText(getApplicationContext(), "스테이션이 있는 위치에는 금지 공간 설정이 불가능합니다!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             // 완료 버튼이 클릭되면 roi 생성완료
             hideRoiCompleteToggleBar();
 
@@ -347,35 +408,46 @@ public class MapEditorActivity extends Activity {
         activityMapeditorBinding.finishButton.setOnClickListener(v -> {
             Log.d(TAG, "finshButton.setOnClickListener(...)");
 
-            try {
-                String strFileName = "map_meta_sample.json";
-                String strPath = "/sdcard/Download";
+            showCustomDialog_OK(strResult -> {
+                Toast.makeText(getApplicationContext(),strResult, Toast.LENGTH_SHORT).show();
+                if (strResult.equals("ok")) {
+                    try {
+                        String strFileName = "map_meta_sample.json";
+                        String strPath = "/sdcard/Download";
 
-                // TODO 수정필요 srcMappingfilePath 경로로 확인해서 name,path구분
+                        // TODO 수정필요 srcMappingfilePath 경로로 확인해서 name,path구분
 
-                Log.d(TAG, "try roi_saveToFile()");
-                if (roi_saveToFile(strPath, strFileName)) {
-                    Log.d(TAG, "send broadcast... ");
-                    Intent intent = new Intent("sk.action.airbot.map.responseMapping");
-                    intent.setPackage("com.sk.airbot.iotagent");
-                    intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
-                    intent.putExtra("resultCode", "MRC_000");
+                        Log.d(TAG, "try roi_saveToFile()");
+                        if (roi_saveToFile(strPath, strFileName)) {
+                            Log.d(TAG, "send broadcast... ");
+                            Intent intent = new Intent("sk.action.airbot.map.responseMapping");
+                            intent.setPackage("com.sk.airbot.iotagent");
+                            intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
+                            intent.putExtra("resultCode", "MRC_000");
 
-                    sendBroadcast(intent);
-                    Log.d(TAG, "sent broadcast. ");
+                            sendBroadcast(intent);
+                            Log.d(TAG, "sent broadcast. ");
 
-                    Thread.sleep(1000);
+                            Thread.sleep(1000);
 
-                    Log.d(TAG, "finish activity ");
-                    //System.exit(0);
-                    finish();
-                } else {
-                    Toast.makeText(getApplicationContext(), "can not save JSON data !", Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "finish activity ");
+                            //System.exit(0);
+                            finish();
+                        } else {
+                            Toast.makeText(getApplicationContext(), "can not save JSON data !", Toast.LENGTH_SHORT).show();
+                        }
+
+                    } catch (InterruptedException ie) {
+                        Log.e(TAG, "SendBroadcast Unexpected error: " + ie.getMessage());
+                    }
                 }
+                else
+                {
 
-            } catch (InterruptedException ie) {
-                Log.e(TAG, "SendBroadcast Unexpected error: " + ie.getMessage());
-            }
+                }
+            });
+
+
         });
 
         // 20241217 jihyeon
@@ -420,24 +492,38 @@ public class MapEditorActivity extends Activity {
         });
 
         activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setOnClickListener(v -> {
-            Log.w(">>>", "123123213");
+            //Log.w(">>>", "123123213");
+
+            // 공간을 최대 7개만 추가 가능하게 제한
+            int i;
+            int nCount = 0;
+            for(i=0;i<mapViewer.m_RoiObjects.size();i++) {
+                if(mapViewer.m_RoiObjects.get(i).roi_type.equals("roi_polygon")) nCount++;
+            }
+            if(nCount >= 7) {
+                Toast.makeText(getApplicationContext(), "공간은 최대 7개까지 추가 가능합니다!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             mapViewer.setMenu("추가");
             mapViewer.roi_CreateObject();
             updateToggleButtonStatus(v.getId());
-            activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
-            activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
+            //activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
+            //activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
         });
 
         activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setOnClickListener(v -> {
             updateToggleButtonStatus(v.getId());
             //TODO : 핀 이동 구현
 
-            if (mapViewer.strMenu.equals("핀 이동")) {
+            if(mapViewer.strMenu.equals("핀 이동")) {
                 updateToggleButtonStatus(-1);   // 아무 것도 선택안 된 것으로
 
                 mapViewer.setMenu("선택");
                 showRoiCompleteToggleBar();
-            } else {
+            }
+            else
+            {
                 updateToggleButtonStatus(v.getId());
 
                 mapViewer.setMenu("핀 이동");
@@ -449,12 +535,14 @@ public class MapEditorActivity extends Activity {
         activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setOnClickListener(v -> {
 
             //TODO : 핀 회전 구현
-            if (mapViewer.strMenu.equals("핀 회전")) {
+            if(mapViewer.strMenu.equals("핀 회전")) {
                 updateToggleButtonStatus(-1);   // 아무 것도 선택안 된 것으로
 
                 mapViewer.setMenu("선택");
 
-            } else {
+            }
+            else
+            {
                 updateToggleButtonStatus(v.getId());
                 mapViewer.setMenu("핀 회전");
                 hideRoiCompleteToggleBar();
@@ -768,7 +856,8 @@ public class MapEditorActivity extends Activity {
                 activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
                 activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
-            } else {
+            }
+            else {
                 // 선택된 것이 없음.
                 hideRoiCompleteToggleBar();
             }
@@ -781,7 +870,6 @@ public class MapEditorActivity extends Activity {
         activityMapeditorBinding.roiCompleteLayout.setVisibility(View.GONE);
         activityMapeditorBinding.roiDeleteLayout.setVisibility(View.GONE);
     }
-
     // 토글바 숨김 함수
     private void showRoiCompleteToggleBar() {
         activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
@@ -842,7 +930,8 @@ public class MapEditorActivity extends Activity {
 
             activityMapeditorBinding.toggleBar.buttonRenameBackground.setBackground(selectedBackground);
             activityMapeditorBinding.toggleBar.buttonRename.setTextColor(getColor(R.color.black));
-        } else {
+        }
+        else {
             activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setBackground(null);
             activityMapeditorBinding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
 
@@ -1191,6 +1280,7 @@ public class MapEditorActivity extends Activity {
             }
 
 
+            
             return true;
         } catch (IOException | NullPointerException e) {
             Log.e(TAG, "loadYaml Exception: " + e.getMessage());
@@ -1589,7 +1679,7 @@ public class MapEditorActivity extends Activity {
                 JSONArray imagePathArray = room.getJSONArray("image_path");
                 JSONObject imagePosition = room.getJSONObject("image_position");
                 boolean isSetTheta = imagePosition.getBoolean("is_set_theta");
-                if (!isSetTheta) isSetTheta = false;
+                if(!isSetTheta) isSetTheta = false;
                 int mbr_x = imagePosition.getInt("x");
                 int mbr_y = imagePosition.getInt("y");
                 Log.d(TAG, "  Room ID: " + id);
@@ -1680,16 +1770,16 @@ public class MapEditorActivity extends Activity {
                 mapViewer.roi_AddObject();
             }
 
-            int[] stationCoordinates = getStationPos(0, 0, original_image_height); // 원점 좌표에 스테이지가 있다.
-            CDrawObj obj = new CDrawObj("roi_point", stationCoordinates[0], stationCoordinates[1], stationCoordinates[0], stationCoordinates[1]);
+            int[] stationCoordinates = getStationPos(0,0, original_image_height); // 원점 좌표에 스테이지가 있다.
+            CDrawObj obj = new CDrawObj("roi_point", stationCoordinates[0],stationCoordinates[1],stationCoordinates[0],stationCoordinates[1]);
             obj.SetString("스테이션");
             obj.m_labelviewflag = true;
 
             mapViewer.m_StationObjects.add(obj);
-
+            
             mapViewer.m_RoiCurIndex = -1;
             mapViewer.m_RoiCurObject = null;
-
+            
             Log.d(TAG, "Read Json Success");
             return true;
         } catch (FileNotFoundException fe) {
@@ -1754,15 +1844,16 @@ public class MapEditorActivity extends Activity {
 
     // 로봇 좌표를 현재 이미지 좌표로 변환
     // 스테이션(충전소)의 경우, (0, 0)은 무조건 있어야 함.
-    public int[] getStationPos(double x, double y, int image_height) {
-        Log.d(TAG, "getStationPos( " + x + ", " + y + ", " + image_height + " )");
+    public int[] getStationPos(double x, double y,int image_height)
+    {
+        Log.d(TAG, "getStationPos( "+x+", "+y+", "+image_height+" )");
 
         int stage_x = 0;
         int stage_y = 0;
 
         // 원본 이미지의 좌표를 구한다.
-        int img_x = (int) ((x - origin_x) / nResolution);
-        int img_y = (int) ((y - origin_y) / nResolution);
+        int img_x = (int)((x - origin_x)/nResolution);
+        int img_y = (int)(original_image_height - (y- origin_y)/nResolution);
 
         // 영상처리 되어 이미지 크기나 회전이 있으면 적용한다.
         if (lib_flag) {
@@ -1777,16 +1868,16 @@ public class MapEditorActivity extends Activity {
             Core.gemm(transformationMatrix, pointMat, 1, new Mat(), 0, inverseTransformedPointMat);
 
             stage_x = (int) Math.round(inverseTransformedPointMat.get(0, 0)[0]);
-            stage_y = original_image_height - (int) Math.round(inverseTransformedPointMat.get(1, 0)[0]);
+            stage_y = (int) Math.round(inverseTransformedPointMat.get(1, 0)[0]);
 
         } else {
             stage_x = img_x;
-            stage_y = image_height - img_y;
+            stage_y = img_y;
         }
 
-        Log.d(TAG, "station_position( : " + stage_x + ", " + stage_y + " )");
+        Log.d(TAG, "station_position( : " + stage_x + ", " + stage_y+ " )");
 
         return new int[]{stage_x, stage_y};
     }
-}
+ }
 
