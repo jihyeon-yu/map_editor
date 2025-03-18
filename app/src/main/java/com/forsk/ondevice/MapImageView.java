@@ -28,7 +28,7 @@ public class MapImageView extends View {
     private static final String TAG = "OnDeviceMapEditor:MapImageView";
 
     String strMode = "맵 탐색";
-    String strMenu = "Zoom";
+    String strMenu = "선택";
 
     private Bitmap bitmap; // 표시할 비트맵
     private Bitmap bitmapRotate;
@@ -196,6 +196,7 @@ public class MapImageView extends View {
                     if (m_RoiCurIndex > -1) {
                         m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
                         roiChangedListener.onRoiChanged(m_RoiCurIndex);
+
                     }
 
                     return true;
@@ -493,8 +494,8 @@ public class MapImageView extends View {
         int px, py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
 
         int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
-        int iconWidth = 92;    // 아이콘 가로크기
-        int iconHeight = 92;   // 아이콘 높이
+        int iconWidth = 102;    // 아이콘 가로크기
+        int iconHeight = 105;   // 아이콘 높이
         double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
 
         // 두 점 간의 각도 계산
@@ -509,17 +510,18 @@ public class MapImageView extends View {
         iconX = (int) ((px + pt2.x) / 2.0 - iconWidth / 2.0);
         iconY = (int) ((py + pt2.y) / 2.0 - iconHeight / 2.0);
 
-        canvas.drawCircle((int) ((px + pt2.x) / 2.0), (int) ((py + pt2.y) / 2.0), (int) (iconWidth / 2), iconPaint);
+
+        //canvas.drawCircle((int) ((px + pt2.x) / 2.0), (int) ((py + pt2.y) / 2.0), (int) (iconWidth / 2), iconPaint);
         roiButtonRect.left = iconX;
         roiButtonRect.top = iconY;
         roiButtonRect.right = iconX + iconWidth;
         roiButtonRect.bottom = iconY + iconHeight;
 
 
-        Drawable iconDrawable = getResources().getDrawable(R.drawable.icon_nw_resize, null);
+        Drawable iconDrawable = getResources().getDrawable(R.drawable.ic_map_area_scale, null);
 
         int iconPadding = 20;
-        iconDrawable.setBounds(iconX + iconPadding, iconY + iconPadding, iconX + iconWidth - iconPadding, iconY + iconHeight - iconPadding);
+        iconDrawable.setBounds(iconX, iconY, iconX + iconWidth, iconY + iconHeight);
         iconDrawable.draw(canvas);
     }
 
@@ -563,6 +565,13 @@ public class MapImageView extends View {
 
         matrix.postTranslate(translateX, translateY);
 
+        // zoom이 변경되어 모든 traker를 다시 생성해준다.
+        int i;
+        for(i=0;i<m_RoiObjects.size();i++)
+        {
+            m_RoiObjects.get(i).SetZoom(zoom_rate);
+            m_RoiObjects.get(i).MakeTracker(StartPos_x, StartPos_y);
+        }
         invalidate(); // 화면을 다시 그리도록 요청
     }
 
@@ -682,10 +691,13 @@ public class MapImageView extends View {
     }
 
     public void MouseDown(float x, float y) {
-        Log.d(TAG, "mouseDown(" + x + "," + y + ")");
+        //Log.d(TAG, "mouseDown(" + x + "," + y + ")");
 
         nTouchUpPosX = nTouchDownPosX = (int) (x * zoom_rate);
         nTouchUpPosY = nTouchDownPosY = (int) (y * zoom_rate);
+
+        //Log.d(TAG, "strMode : " + strMode);
+        //Log.d(TAG, "strMenu : " + strMenu);
 
         //241218 성웅 strMode 맵탐색에서 strMenu 이동으로 변경
         // TODO 추후 정리 필요
@@ -707,6 +719,7 @@ public class MapImageView extends View {
 
             if (m_RoiCurIndex > -1)  // roi가 선택된 경우에만 해당한다.
             {
+
                 if (m_RoiCurObject != null) {
                     if (((m_DnPoint.x > m_RoiCurObject.m_DashPoints.get(0).x) && (m_DnPoint.x < m_RoiCurObject.m_DashPoints.get(2).x))
                             && ((m_DnPoint.y > m_RoiCurObject.m_DashPoints.get(0).y) && (m_DnPoint.y < m_RoiCurObject.m_DashPoints.get(2).y))) {
@@ -722,6 +735,10 @@ public class MapImageView extends View {
                         m_isCapture = true;
                     }
                 }
+
+                m_RoiObjects.get(m_RoiCurIndex).SetZoom(zoom_rate);
+                m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                roiSelectedListener.onRoiSelected(m_RoiCurIndex);
             }
 
         } else {
@@ -730,13 +747,13 @@ public class MapImageView extends View {
 
             Point point = new Point(pt_x, pt_y);
 
-            Log.d(TAG, "----------------------------------");
-            Log.d(TAG, "m_isCapture : " + m_isCapture);
-            Log.d(TAG, "m_drawing : " + m_drawing);
-            Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
-            Log.d(TAG, "m_CurType : " + m_CurType);
-            Log.d(TAG, "m_objSelect : " + m_objSelect);
-            Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
+            //Log.d(TAG, "----------------------------------");
+            //Log.d(TAG, "m_isCapture : " + m_isCapture);
+            //Log.d(TAG, "m_drawing : " + m_drawing);
+            //Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
+            //Log.d(TAG, "m_CurType : " + m_CurType);
+            //Log.d(TAG, "m_objSelect : " + m_objSelect);
+            //Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
 
             // 그리기 상태
             if (m_drawstart) {
@@ -787,6 +804,7 @@ public class MapImageView extends View {
                 m_objSelect = CObject_FindObject(pt, true);
 
                 //Log.d(TAG, "m_objSelect : " + m_objSelect);
+                //Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
 
                 SetCursorType();
 
@@ -806,7 +824,6 @@ public class MapImageView extends View {
                         strMenu = "수정";
                     }
 
-
                 } else    // ROI 외부이면 DrawTracker 없앰.
                 {
                     m_isselected = false;
@@ -816,10 +833,18 @@ public class MapImageView extends View {
                     m_isCapture = false;
                     m_drawstart = m_drawing = false;
                 }
-                if (this.m_RoiCurIndex > -1) {
+                if (m_RoiCurIndex > -1) {
+                    m_RoiObjects.get(m_RoiCurIndex).SetZoom(zoom_rate);
                     // 해당 rio에 대해서 Tracker pointer를 생성해준다.
                     m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
                 }
+                if(m_RoiCurObject != null) {
+                    m_RoiCurObject.SetZoom(zoom_rate);
+                    // 해당 rio에 대해서 Tracker pointer를 생성해준다.
+                    m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
+                }
+                roiSelectedListener.onRoiSelected(m_RoiCurIndex);
+
                 if (!strMenu.equals("핀 회전")) {
                     roiSelectedListener.onRoiSelected(-1);
                 }
@@ -831,10 +856,11 @@ public class MapImageView extends View {
             }
         }
         m_bIsMouseDown = true;
+
     }
 
     public void MouseMove(float x, float y) {
-        Log.d(TAG, "MouseMove("+x+","+y+")");
+        //Log.d(TAG, "MouseMove("+x+","+y+")");
 
         if (strMenu.equals("핀 회전")) {
             if (m_RoiCurIndex != -1) {
@@ -858,14 +884,14 @@ public class MapImageView extends View {
 
             Point point = new Point(pt_x, pt_y);
 
-            Log.d(TAG, "----------------------------------");
-            Log.d(TAG, "m_isCapture : " + m_isCapture);
-            Log.d(TAG, "m_drawing : " + m_drawing);
-            Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
-            Log.d(TAG, "m_CurType : " + m_CurType);
-            Log.d(TAG, "m_objSelect : " + m_objSelect);
-            Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
-            Log.d(TAG, "zoom_rate : " + zoom_rate);
+            //Log.d(TAG, "----------------------------------");
+            //Log.d(TAG, "m_isCapture : " + m_isCapture);
+            //Log.d(TAG, "m_drawing : " + m_drawing);
+            //Log.d(TAG, "m_roiviewflag : " + m_roiviewflag);
+            //Log.d(TAG, "m_CurType : " + m_CurType);
+            //Log.d(TAG, "m_objSelect : " + m_objSelect);
+            //Log.d(TAG, "m_RoiCurIndex : " + m_RoiCurIndex);
+            //Log.d(TAG, "zoom_rate : " + zoom_rate);
 
             if (m_isCapture == true) // 마우스 누른 상태에서 이동중이면
             {
@@ -901,6 +927,12 @@ public class MapImageView extends View {
 
                         if(bIsMoved) {
                             CObject_MoveTo(m_DnPoint, point);
+                            if(m_RoiCurIndex > -1) {
+                                m_RoiObjects.get(m_RoiCurIndex).SetZoom(zoom_rate);
+                                m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                                roiChangedListener.onRoiChanged(m_RoiCurIndex);
+                            }
+
                         }
                         else {
                             return;
@@ -956,12 +988,18 @@ public class MapImageView extends View {
                                 }
                             } else {
                                 CObject_MoveHandleTo(point, m_DnPoint, m_objSelect);
+                                if(m_RoiCurIndex > -1) {
+                                    m_RoiObjects.get(m_RoiCurIndex).SetZoom(zoom_rate);
+                                    m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
+                                    roiChangedListener.onRoiChanged(m_RoiCurIndex);
+                                }
                             }
                         } else if (!m_RoiObjects.get(m_RoiCurIndex).roi_type.equals("roi_polygon")) {
 
 
                             CObject_MoveToRect(m_DnPoint, point);
 
+                            m_RoiObjects.get(m_RoiCurIndex).SetZoom(zoom_rate);
                             // 해당 rio에 대해서 Tracker pointer를 생성해준다.
                             m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
                             // 변경된 것을 Activity에 전달해준다.
@@ -1011,6 +1049,7 @@ public class MapImageView extends View {
                         //Log.d(TAG,"check mouse move: ");
 
                         if (this.m_RoiCurIndex > -1) {
+                            m_RoiObjects.get(m_RoiCurIndex).SetZoom(zoom_rate);
                             // 해당 rio에 대해서 Tracker pointer를 생성해준다.
                             m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
                             // 변경된 것을 Activity에 전달해준다.
@@ -1033,12 +1072,14 @@ public class MapImageView extends View {
                         //CObject_MoveToRect(m_DnPoint, point);
                         m_DnPoint = point;
                         if (m_RoiCurIndex > -1) {
+                            m_RoiObjects.get(m_RoiCurIndex).SetZoom(zoom_rate);
                             // 해당 rio에 대해서 Tracker pointer를 생성해준다.
                             m_RoiObjects.get(m_RoiCurIndex).MakeTracker(StartPos_x, StartPos_y);
                             // 변경된 것을 Activity에 전달해준다.
                             roiChangedListener.onRoiChanged(m_RoiCurIndex);
                         }
                         if (m_RoiCurObject != null) {
+                            m_RoiCurObject.SetZoom(zoom_rate);
                             // 해당 rio에 대해서 Tracker pointer를 생성해준다.
                             m_RoiCurObject.MakeTracker(StartPos_x, StartPos_y);
                             // 변경된 것을 Activity에 전달해준다.

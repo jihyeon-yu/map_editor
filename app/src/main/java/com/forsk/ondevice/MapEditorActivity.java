@@ -140,12 +140,24 @@ public class MapEditorActivity extends Activity {
         setTheme(R.style.Theme_OnDevice);
         activityMapeditorBinding = ActivityMapeditorBinding.inflate(getLayoutInflater());
         setContentView(activityMapeditorBinding.getRoot());
+
+
     }
 
     @Override
     public void onResume() {
         super.onResume();
         setUI();
+
+
+        // roi 최초 선택시 getWidth() 가 0으로 나와서 보이지 않는 곳에 그려준다.
+        activityMapeditorBinding.roiDeleteLayout.setX(-1000);
+        activityMapeditorBinding.roiDeleteLayout.setY(-1000);
+        activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
+
+        activityMapeditorBinding.roiCompleteLayout.setX(-1000);
+        activityMapeditorBinding.roiCompleteLayout.setY(-1000);
+        activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
         srcMapPgmFilePath = getIntent().getStringExtra("srcMapPgmFilePath");
         if (srcMapPgmFilePath == null) {
@@ -165,11 +177,11 @@ public class MapEditorActivity extends Activity {
         }
     }
 
-    public interface DialogCallback_OK {
+    public interface DialogCallback_OkCancel {
         void onConfirm(String strResult); // 선택된 텍스트를 반환
     }
 
-    private void showCustomDialog_OK(DialogCallback_OK callback) {
+    private void showCustomDialog_OK(DialogCallback_OkCancel callback) {
         // Inflate the custom layout
         LayoutInflater inflater = getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.dialog_okcancel_with_buttons, null);
@@ -185,10 +197,60 @@ public class MapEditorActivity extends Activity {
         Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
 
         TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
-        textViewTitle.setText("종료");
+        textViewTitle.setText("종 료");
 
         TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
         textViewMessage.setText("저장하시겠습니까?");
+
+        // Set button listeners
+        cancelButton.setOnClickListener(v -> {
+            callback.onConfirm("cancel");
+            dialog.dismiss();
+        });
+
+        confirmButton.setOnClickListener(v -> {
+            callback.onConfirm("ok");
+            dialog.dismiss();
+
+        });
+
+        // Show the dialog
+        dialog.show();
+
+        // Adjust dialog size
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = WindowManager.LayoutParams.MATCH_PARENT; // 너비
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT; // 높이
+            params.horizontalMargin = 0.05f; // 좌우 마진 (화면 비율로 계산)
+            params.verticalMargin = 0.1f; // 상하 마진
+            window.setAttributes(params);
+        }
+
+
+    }
+    private void showCustomDialog_Cancel(DialogCallback_OkCancel callback) {
+        // Inflate the custom layout
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_okcancel_with_buttons, null);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomDialogTheme);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+
+        // Find views
+        RadioGroup radioGroup = dialogView.findViewById(R.id.radio_group);
+        Button cancelButton = dialogView.findViewById(R.id.rename_pin_cancel_button);
+        Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
+
+        TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
+        textViewTitle.setText("취 소");
+
+        TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
+        textViewMessage.setText("취소하시겠습니까?");
 
         // Set button listeners
         cancelButton.setOnClickListener(v -> {
@@ -373,43 +435,48 @@ public class MapEditorActivity extends Activity {
 
         activityMapeditorBinding.gobackButton.setOnClickListener(v -> {
             //Log.d(TAG, "canclebutton.setOnClickListener(...)");
-            try {
-                String strFileName = "map_meta_sample.json";
-                String strPath = "/sdcard/Download";
-                File destFile = new File(strPath, strFileName);
+            showCustomDialog_Cancel(strResult -> {
+                if(strResult.equals("ok")) {
 
-                if (!destFile.isFile()) {
-                    if (roi_saveToEmptyFile(strPath, strFileName))
-                        Log.d(TAG, "Success create empty Json File");
-                    else Log.d(TAG, "Fail create empty File");
-                } else {
-                    Log.d(TAG, "Already Exist Json FIle");
+                    try {
+                        String strFileName = "map_meta_sample.json";
+                        String strPath = "/sdcard/Download";
+                        File destFile = new File(strPath, strFileName);
+
+//                        if (!destFile.isFile()) {
+//                            if (roi_saveToEmptyFile(strPath, strFileName))
+//                                Log.d(TAG, "Success create empty Json File");
+//                            else Log.d(TAG, "Fail create empty File");
+//                        } else {
+//                            Log.d(TAG, "Already Exist Json FIle");
+//                        }
+
+                        Log.d(TAG, "send broadcast... ");
+                        Intent intent = new Intent("sk.action.airbot.map.responseMapping");
+                        intent.setPackage("com.sk.airbot.iotagent");
+                        intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
+                        intent.putExtra("resultCode", "MRC_000");
+
+                        sendBroadcast(intent);
+                        Log.d(TAG, "sent broadcast. ");
+
+                        Thread.sleep(1000);
+                        Log.d(TAG, "finish activity ");
+
+                        finish();
+                    } catch (InterruptedException ie) {
+                        Log.e(TAG, "goBack Button InterruptedExtception: " + ie.getMessage());
+                    }
+
                 }
-
-                Log.d(TAG, "send broadcast... ");
-                Intent intent = new Intent("sk.action.airbot.map.responseMapping");
-                intent.setPackage("com.sk.airbot.iotagent");
-                intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
-                intent.putExtra("resultCode", "MRC_000");
-
-                sendBroadcast(intent);
-                Log.d(TAG, "sent broadcast. ");
-
-                Thread.sleep(1000);
-                Log.d(TAG, "finish activity ");
-
-                finish();
-            } catch (InterruptedException ie) {
-                Log.e(TAG, "goBack Button InterruptedExtception: " + ie.getMessage());
-            }
-
+            });
         });
 
         activityMapeditorBinding.finishButton.setOnClickListener(v -> {
             Log.d(TAG, "finshButton.setOnClickListener(...)");
 
             showCustomDialog_OK(strResult -> {
-                Toast.makeText(getApplicationContext(),strResult, Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getApplicationContext(),strResult, Toast.LENGTH_SHORT).show();
                 if (strResult.equals("ok")) {
                     try {
                         String strFileName = "map_meta_sample.json";
@@ -604,6 +671,7 @@ public class MapEditorActivity extends Activity {
                     Log.d(TAG, "con not read " + destMappingFilePath);
                 }
 
+
                 hideRoiCompleteToggleBar();
             }
         });
@@ -638,6 +706,7 @@ public class MapEditorActivity extends Activity {
                 Point pt2 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2);
                 Point pt3 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3);
 
+                activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
                 activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
                 // 선택된 객체 위치에 토글바 배치
@@ -664,8 +733,16 @@ public class MapEditorActivity extends Activity {
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
                 //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                //Log.d(TAG, "px : " + px);
+                //Log.d(TAG, "py : " + py);
+                //Log.d(TAG, "pt0 : ( " + pt0.x + ", " + pt0.y + " )");
+
+                //Log.d(TAG, "activityMapeditorBinding.roiDeleteLayout.getWidth() : " + activityMapeditorBinding.roiDeleteLayout.getWidth());
+
                 iconX = (int) ((px + pt0.x) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getWidth() / 2.0);
                 iconY = (int) ((py + pt0.y) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getHeight() / 2.0);
+                //Log.d(TAG, "iconX : " + iconX);
+                //Log.d(TAG, "iconY : " + iconY);
                 //Log.d(TAG, "activityMapeditorBinding.roiDeleteLayout.getWidth() : " + activityMapeditorBinding.roiDeleteLayout.getWidth());
 
                 // view의 시작 좌표에 맞추어 보정해준다.
@@ -688,6 +765,8 @@ public class MapEditorActivity extends Activity {
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
+                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
+
             } else {
                 // 선택된 것이 없음.
                 hideRoiCompleteToggleBar();
@@ -723,7 +802,6 @@ public class MapEditorActivity extends Activity {
                 Point pt2 = mapViewer.m_RoiCurObject.m_DashPoints.get(2);
                 Point pt3 = mapViewer.m_RoiCurObject.m_DashPoints.get(3);
 
-                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
                 // 선택된 객체 위치에 토글바 배치
                 // 위치를 모서리 바깥에 위치하게 수정
@@ -769,10 +847,11 @@ public class MapEditorActivity extends Activity {
                 iconX = (int) ((px + pt1.x) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getWidth() / 2.0);
                 iconY = (int) ((py + pt1.y) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getHeight() / 2.0);
 
-
                 // view의 시작 좌표에 맞추어 보정해준다.
                 activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
                 activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
+                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
+
 
             } else {
                 // 선택된 것이 없음.
@@ -809,7 +888,7 @@ public class MapEditorActivity extends Activity {
                 Point pt2 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2);
                 Point pt3 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3);
 
-                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
+
                 // 선택된 객체 위치에 토글바 배치
                 // 위치를 모서리 바깥에 위치하게 수정
 
@@ -1848,8 +1927,8 @@ public class MapEditorActivity extends Activity {
     {
         Log.d(TAG, "getStationPos( "+x+", "+y+", "+image_height+" )");
 
-        int stage_x = 0;
-        int stage_y = 0;
+        int station_x = 0;
+        int station_y = 0;
 
         // 원본 이미지의 좌표를 구한다.
         int img_x = (int)((x - origin_x)/nResolution);
@@ -1859,25 +1938,25 @@ public class MapEditorActivity extends Activity {
         if (lib_flag) {
             // 1. 이미지 좌표를 3x1 행렬로 변환
             Mat pointMat = new Mat(3, 1, CvType.CV_64F);
-            pointMat.put(0, 0, img_x); // transformed_pixel_x
-            pointMat.put(1, 0, img_y); // transformed_pixel_y
+            pointMat.put(0, 0, img_x); // origin_pixel_x
+            pointMat.put(1, 0, img_y); // origin_pixel_y
             pointMat.put(2, 0, 1.0);           // Homogeneous coordinate
 
             // 2. 이미지 좌표를 구한다.
             Mat inverseTransformedPointMat = new Mat();
             Core.gemm(transformationMatrix, pointMat, 1, new Mat(), 0, inverseTransformedPointMat);
 
-            stage_x = (int) Math.round(inverseTransformedPointMat.get(0, 0)[0]);
-            stage_y = (int) Math.round(inverseTransformedPointMat.get(1, 0)[0]);
+            station_x = (int) Math.round(inverseTransformedPointMat.get(0, 0)[0]); // transformed_pixel_x
+            station_y = (int) Math.round(inverseTransformedPointMat.get(1, 0)[0]); // transformed_pixel_y
 
         } else {
-            stage_x = img_x;
-            stage_y = img_y;
+            station_x = img_x;
+            station_y = img_y;
         }
 
-        Log.d(TAG, "station_position( : " + stage_x + ", " + stage_y+ " )");
+        Log.d(TAG, "station_position( : " + station_x + ", " + station_y+ " )");
 
-        return new int[]{stage_x, stage_y};
+        return new int[]{station_x, station_y};
     }
  }
 
