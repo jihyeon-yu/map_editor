@@ -23,6 +23,7 @@
             android:layout_height="@dimen/size_84"
             android:layout_margin="@dimen/size_18"
             android:contentDescription="@null"
+            android:rotation="180"
             android:src="@drawable/arrow_l" />
         <!-- 구분선 -->
         <View
@@ -32,14 +33,15 @@
             android:layout_marginHorizontal="@dimen/size_7"
             android:alpha="0.5"
             android:background="#ffffff"
-            android:visibility="visible" />
+            android:visibility="gone" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/buttonAddObjectBackground"
             android:layout_width="@dimen/size_120"
             android:layout_height="@dimen/size_120"
             android:background="@null"
-            android:padding="@dimen/size_7">
+            android:padding="@dimen/size_7"
+            android:visibility="gone">
 
             <ImageView
                 android:id="@+id/buttonAddObject"
@@ -61,14 +63,15 @@
             android:layout_marginHorizontal="@dimen/size_7"
             android:alpha="0.5"
             android:background="#ffffff"
-            android:visibility="visible" />
+            android:visibility="gone" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/buttonPinMoveBackground"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/size_120"
             android:background="@null"
-            android:padding="@dimen/size_7">
+            android:padding="@dimen/size_7"
+            android:visibility="gone">
 
             <TextView
                 android:id="@+id/buttonPinMove"
@@ -96,14 +99,15 @@
             android:layout_marginHorizontal="@dimen/size_7"
             android:alpha="0.5"
             android:background="#ffffff"
-            android:visibility="visible" />
+            android:visibility="gone" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/buttonPinRotateBackground"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/size_120"
             android:background="@null"
-            android:padding="@dimen/size_7">
+            android:padding="@dimen/size_7"
+            android:visibility="gone">
 
             <TextView
                 android:id="@+id/buttonPinRotate"
@@ -131,14 +135,15 @@
             android:layout_marginHorizontal="@dimen/size_7"
             android:alpha="0.5"
             android:background="#ffffff"
-            android:visibility="visible" />
+            android:visibility="gone" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/buttonRenameBackground"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/size_120"
             android:background="@null"
-            android:padding="@dimen/size_7">
+            android:padding="@dimen/size_7"
+            android:visibility="gone">
 
             <TextView
                 android:id="@+id/buttonRename"
