@@ -5,7 +5,7 @@
 
     <!-- 테두리 설정 (선택 사항) -->
     <stroke
-        android:width="9px"
+        android:width="3px"
         android:color="#5ADAC6" />
 
     <!-- 모서리 반경 설정 -->

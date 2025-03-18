@@ -225,8 +225,6 @@ public class MapEditorActivity extends Activity {
             params.height = WindowManager.LayoutParams.WRAP_CONTENT; // 높이
             window.setAttributes(params);
         }
-
-
     }
     private void showCustomDialog_Cancel(DialogCallback_OkCancel callback) {
         // Inflate the custom layout
@@ -239,15 +237,14 @@ public class MapEditorActivity extends Activity {
         AlertDialog dialog = builder.create();
 
         // Find views
-        RadioGroup radioGroup = dialogView.findViewById(R.id.radio_group);
         Button cancelButton = dialogView.findViewById(R.id.rename_pin_cancel_button);
         Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
 
         TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
-        textViewTitle.setText("취 소");
+        textViewTitle.setText("맵 편집을 취소하시겠습니까?");
 
         TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
-        textViewMessage.setText("취소하시겠습니까?");
+        textViewMessage.setText("현재까지 진행한 맵 편집 정보가 저장되지 않습니다.");
 
         // Set button listeners
         cancelButton.setOnClickListener(v -> {
@@ -267,17 +264,14 @@ public class MapEditorActivity extends Activity {
         // Adjust dialog size
         Window window = dialog.getWindow();
         if (window != null) {
-            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            window.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             WindowManager.LayoutParams params = window.getAttributes();
-            params.width = WindowManager.LayoutParams.MATCH_PARENT; // 너비
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT; // 너비
             params.height = WindowManager.LayoutParams.WRAP_CONTENT; // 높이
-            params.horizontalMargin = 0.05f; // 좌우 마진 (화면 비율로 계산)
-            params.verticalMargin = 0.1f; // 상하 마진
             window.setAttributes(params);
         }
-
-
     }
+
     public interface DialogCallback {
         void onConfirm(String selectedText); // 선택된 텍스트를 반환
     }
