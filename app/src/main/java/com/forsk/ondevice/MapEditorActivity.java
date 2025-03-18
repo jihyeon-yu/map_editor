@@ -192,15 +192,14 @@ public class MapEditorActivity extends Activity {
         AlertDialog dialog = builder.create();
 
         // Find views
-        RadioGroup radioGroup = dialogView.findViewById(R.id.radio_group);
         Button cancelButton = dialogView.findViewById(R.id.rename_pin_cancel_button);
         Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
 
         TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
-        textViewTitle.setText("종 료");
+        textViewTitle.setText("저장하시겠습니까?");
 
         TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
-        textViewMessage.setText("저장하시겠습니까?");
+        textViewMessage.setText("작업하신 맵 편집 내용으로 저장합니다.");
 
         // Set button listeners
         cancelButton.setOnClickListener(v -> {
@@ -220,12 +219,10 @@ public class MapEditorActivity extends Activity {
         // Adjust dialog size
         Window window = dialog.getWindow();
         if (window != null) {
-            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            window.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             WindowManager.LayoutParams params = window.getAttributes();
-            params.width = WindowManager.LayoutParams.MATCH_PARENT; // 너비
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT; // 너비
             params.height = WindowManager.LayoutParams.WRAP_CONTENT; // 높이
-            params.horizontalMargin = 0.05f; // 좌우 마진 (화면 비율로 계산)
-            params.verticalMargin = 0.1f; // 상하 마진
             window.setAttributes(params);
         }
 
