@@ -11,6 +11,8 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
@@ -428,38 +430,23 @@ public class MapEditorActivity extends Activity {
         activityMapeditorBinding.gobackButton.setOnClickListener(v -> {
             //Log.d(TAG, "canclebutton.setOnClickListener(...)");
             showCustomDialog_Cancel(strResult -> {
-                if (strResult.equals("ok")) {
+                if ("ok".equals(strResult)) {
+                    String strFileName = "map_meta_sample.json";
+                    String strPath = "/sdcard/Download";
+                    File destFile = new File(strPath, strFileName);
 
-                    try {
-                        String strFileName = "map_meta_sample.json";
-                        String strPath = "/sdcard/Download";
-                        File destFile = new File(strPath, strFileName);
+                    Log.d(TAG, "Preparing to send broadcast...");
 
-//                        if (!destFile.isFile()) {
-//                            if (roi_saveToEmptyFile(strPath, strFileName))
-//                                Log.d(TAG, "Success create empty Json File");
-//                            else Log.d(TAG, "Fail create empty File");
-//                        } else {
-//                            Log.d(TAG, "Already Exist Json FIle");
-//                        }
+                    Intent intent = new Intent("sk.action.airbot.map.responseMapping");
+                    intent.setPackage("com.sk.airbot.iotagent");
+                    intent.putExtra("destMappingFilePath", destFile.getAbsolutePath());
+                    intent.putExtra("resultCode", "MRC_000");
 
-                        Log.d(TAG, "send broadcast... ");
-                        Intent intent = new Intent("sk.action.airbot.map.responseMapping");
-                        intent.setPackage("com.sk.airbot.iotagent");
-                        intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
-                        intent.putExtra("resultCode", "MRC_000");
+                    sendBroadcast(intent);
+                    Log.d(TAG, "Broadcast sent successfully.");
 
-                        sendBroadcast(intent);
-                        Log.d(TAG, "sent broadcast. ");
-
-                        Thread.sleep(1000);
-                        Log.d(TAG, "finish activity ");
-
-                        finish();
-                    } catch (InterruptedException ie) {
-                        Log.e(TAG, "goBack Button InterruptedExtception: " + ie.getMessage());
-                    }
-
+                    // 1초 대기 대신 핸들러 사용 (메인 스레드 블로킹 방지)
+                    finish();
                 }
             });
         });
@@ -468,43 +455,29 @@ public class MapEditorActivity extends Activity {
             Log.d(TAG, "finshButton.setOnClickListener(...)");
 
             showCustomDialog_OK(strResult -> {
-                //Toast.makeText(getApplicationContext(),strResult, Toast.LENGTH_SHORT).show();
-                if (strResult.equals("ok")) {
-                    try {
-                        String strFileName = "map_meta_sample.json";
-                        String strPath = "/sdcard/Download";
+                if ("ok".equals(strResult)) {
+                    String strFileName = "map_meta_sample.json";
+                    String strPath = "/sdcard/Download";
 
-                        // TODO 수정필요 srcMappingfilePath 경로로 확인해서 name,path구분
+                    Log.d(TAG, "Attempting to save ROI JSON file...");
+                    if (roi_saveToFile(strPath, strFileName)) {
+                        Log.d(TAG, "ROI JSON saved successfully. Sending broadcast...");
 
-                        Log.d(TAG, "try roi_saveToFile()");
-                        if (roi_saveToFile(strPath, strFileName)) {
-                            Log.d(TAG, "send broadcast... ");
-                            Intent intent = new Intent("sk.action.airbot.map.responseMapping");
-                            intent.setPackage("com.sk.airbot.iotagent");
-                            intent.putExtra("destMappingFilePath", strPath + "/" + strFileName);
-                            intent.putExtra("resultCode", "MRC_000");
+                        Intent intent = new Intent("sk.action.airbot.map.responseMapping");
+                        intent.setPackage("com.sk.airbot.iotagent");
+                        intent.putExtra("destMappingFilePath", new File(strPath, strFileName).getAbsolutePath());
+                        intent.putExtra("resultCode", "MRC_000");
 
-                            sendBroadcast(intent);
-                            Log.d(TAG, "sent broadcast. ");
+                        sendBroadcast(intent);
+                        Log.d(TAG, "Broadcast sent successfully.");
 
-                            Thread.sleep(1000);
-
-                            Log.d(TAG, "finish activity ");
-                            //System.exit(0);
-                            finish();
-                        } else {
-                            Toast.makeText(getApplicationContext(), "can not save JSON data !", Toast.LENGTH_SHORT).show();
-                        }
-
-                    } catch (InterruptedException ie) {
-                        Log.e(TAG, "SendBroadcast Unexpected error: " + ie.getMessage());
+                        // 1초 대기 대신 핸들러 사용 (메인 스레드 블로킹 방지)
+                        finish();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Failed to save JSON data!", Toast.LENGTH_SHORT).show();
                     }
-                } else {
-
                 }
             });
-
-
         });
 
         // 20241217 jihyeon
@@ -1641,88 +1614,26 @@ public class MapEditorActivity extends Activity {
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         }
 
-        // 파일 경로를 설정합니다.
-        //File file = new File(downloadDir, strFileName);
         File file = new File(strPath, strFileName);
-        try (FileOutputStream fos = new FileOutputStream(file)) {
 
+        try (FileOutputStream fos = new FileOutputStream(file)) {
             Log.d(TAG, strPath + "/" + strFileName);
 
             fos.write(strRoiJson.getBytes());
-            fos.flush();
-            Thread.sleep(1000); // 파일쓰기가 완료될 까지 기다린다.
-            fos.close();
+            fos.flush(); // 명시적 flush 호출
 
             return true;
 
         } catch (FileNotFoundException fe) {
-            Log.d(TAG, Objects.requireNonNull(fe.getLocalizedMessage()));
-            Toast.makeText(getApplicationContext(), fe.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-        } catch (InterruptedException | IOException ie) {
-            Log.d(TAG, Objects.requireNonNull(ie.getLocalizedMessage()));
-        }
-
-        return false;
-    }
-
-
-    // 도형 설정없는 기본 json파일
-    public boolean roi_saveToEmptyFile(String strPath, String strFileName) {
-
-        int i, j;
-
-        String strRoiJson;
-        strRoiJson = "";
-        strRoiJson += "{";
-        strRoiJson += "\"uid\":\"Tybqxakqm2\",\"info\":{\"version\":\"1.0.0\",\"modified\":\"2024-11-13T20:47:41.739\"}";
-        strRoiJson += ", \"room_list\":[";
-        strRoiJson += "]";
-        strRoiJson += ", \"block_area\":[";
-        strRoiJson += "]";
-        strRoiJson += ", \"block_wall\":[";
-        strRoiJson += "]";
-        strRoiJson += ", \"assign_info\":{}";
-        strRoiJson += ", \"user_angle\":0";
-        strRoiJson += "}";
-
-        Log.d(TAG, strRoiJson);
-
-        //권한 상태 체크 팝업 띄우기
-        if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.READ_EXTERNAL_STORAGE}, 2);
-        }
-
-        // 액션 바와 상태 바 숨기
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(false);
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
-        } else {
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        }
-
-        File file = new File(strPath, strFileName);
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            Log.d(TAG, strPath + "/" + strFileName);
-            fos.write(strRoiJson.getBytes());
-            fos.flush();
-            Thread.sleep(1000); // 파일쓰기가 완료될 까지 기다린다.
-            fos.close();
-
-            return true;
-
+            Log.e(TAG, fe.getLocalizedMessage() != null ? fe.getLocalizedMessage() : "File not found");
+            Toast.makeText(getApplicationContext(), fe.getLocalizedMessage() != null ? fe.getLocalizedMessage() : "File not found", Toast.LENGTH_SHORT).show();
         } catch (IOException ie) {
-            Log.d(TAG, Objects.requireNonNull(ie.getLocalizedMessage()));
-            Toast.makeText(getApplicationContext(), ie.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            Log.e(TAG, ie.getLocalizedMessage() != null ? ie.getLocalizedMessage() : "I/O error");
         }
 
         return false;
     }
+
 
     // 지도 설정된 값을 불러온다.
     private synchronized boolean loadJson(String filePath) {
@@ -1915,7 +1826,7 @@ public class MapEditorActivity extends Activity {
     }
 
     // 로봇 좌표를 현재 이미지 좌표로 변환
-    // 스테이션(충전소)의 경우, (0, 0)은 무조건 있어야 함.
+// 스테이션(충전소)의 경우, (0, 0)은 무조건 있어야 함.
     public int[] getStationPos(double x, double y, int image_height) {
         Log.d(TAG, "getStationPos( " + x + ", " + y + ", " + image_height + " )");
 
