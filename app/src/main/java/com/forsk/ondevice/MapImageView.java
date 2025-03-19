@@ -169,7 +169,7 @@ public class MapImageView extends View {
             scaleGestureDetector.onTouchEvent(event);
             isDrag = true;
         } else {
-            zoom_rate_offset = zoom_rate;
+            //zoom_rate_offset = zoom_rate;
             StartPos_x_offset = StartPos_x;
             StartPos_y_offset = StartPos_y;
 

@@ -660,6 +660,8 @@ public class MapEditorActivity extends Activity {
 
 
                 hideRoiCompleteToggleBar();
+
+                addStationRoi();
             }
         });
 
@@ -928,6 +930,15 @@ public class MapEditorActivity extends Activity {
             }
 
         });
+    }
+
+    private void addStationRoi() {
+        int[] stationCoordinates = getStationPos(0, 0, original_image_height); // 원점 좌표에 스테이지가 있다.
+        CDrawObj obj = new CDrawObj("roi_point", stationCoordinates[0], stationCoordinates[1], stationCoordinates[0], stationCoordinates[1]);
+        obj.SetString("스테이션");
+        obj.m_labelviewflag = true;
+
+        mapViewer.m_StationObjects.add(obj);
     }
 
     // 토글바 숨김 함수
@@ -1718,6 +1729,7 @@ public class MapEditorActivity extends Activity {
         Log.d(TAG, "Exist Json File");
         StringBuilder jsonStringBuilder = new StringBuilder();
 
+
         // 내부 저장소에서 파일 스트림 열기
         // InputStream 데이터를 문자열로 변환
         try (InputStream inputStream = new FileInputStream(filePath); InputStreamReader inputStreamReader = new InputStreamReader(inputStream); BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
@@ -1837,14 +1849,6 @@ public class MapEditorActivity extends Activity {
                 mapViewer.CObject_LoadRect(pt1, pt2);
                 mapViewer.roi_AddObject();
             }
-
-            int[] stationCoordinates = getStationPos(0, 0, original_image_height); // 원점 좌표에 스테이지가 있다.
-            CDrawObj obj = new CDrawObj("roi_point", stationCoordinates[0], stationCoordinates[1], stationCoordinates[0], stationCoordinates[1]);
-            obj.SetString("스테이션");
-            obj.m_labelviewflag = true;
-
-            mapViewer.m_StationObjects.add(obj);
-
             mapViewer.m_RoiCurIndex = -1;
             mapViewer.m_RoiCurObject = null;
 
