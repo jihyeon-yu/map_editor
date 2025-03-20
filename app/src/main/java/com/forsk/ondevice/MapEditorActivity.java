@@ -433,8 +433,8 @@ public class MapEditorActivity extends Activity {
 
         // 닫기 버튼 클릭 시 toggle_bar 숨기기
         binding.toggleBar.fabMainBack.setOnClickListener(v -> {
+            this.extendToggleBar = !extendToggleBar;
             clickBackButton(extendToggleBar);
-            extendToggleBar = !extendToggleBar;
         });
 
         binding.icRotateMap.setOnClickListener(v -> {
@@ -951,7 +951,7 @@ public class MapEditorActivity extends Activity {
             return;
         }
 
-        if (extendToggleBar) {
+        if (!extendToggleBar) {
             binding.toggleBar.fabMainBack.setRotation(180f);
             binding.toggleBar.buttonAddObjectBackground.setVisibility(View.GONE);
             binding.toggleBar.buttonPinMoveBackground.setVisibility(View.GONE);
@@ -972,12 +972,12 @@ public class MapEditorActivity extends Activity {
             binding.toggleBar.divider3.setVisibility(View.VISIBLE);
             binding.toggleBar.divider4.setVisibility(View.VISIBLE);
         }
-        extendToggleBar = !extendToggleBar;
     }
 
     public void setToggleBarByMode(int mode) {
         //백버튼 초기화
-        clickBackButton(extendToggleBar);
+        clickBackButton(true);
+        extendToggleBar = true;
 
         switch (mode) {
             case MODE_SPACE_CREATION:
@@ -1050,7 +1050,7 @@ public class MapEditorActivity extends Activity {
             lib_flag = true;
             srcMapPgmFilePath = strPgmFile;
             srcMapYamlFilePath = path_opt + fileTitle + ".yaml";
-            srcMapPngFilePath =  path_opt + fileTitle + ".png";
+            srcMapPngFilePath = path_opt + fileTitle + ".png";
         } catch (UnsatisfiedLinkError e) {
             Log.e(TAG, "Native library not loaded or linked properly", e);
         } catch (ExceptionInInitializerError e) {
@@ -1151,7 +1151,6 @@ public class MapEditorActivity extends Activity {
                     // 검은색
                     newGray = 0;
                 } else {
-                    Log.w(">>>", "r: " + r);
                     // 회색
                     newGray = 51;
                 }
