@@ -163,103 +163,77 @@ public class MapEditorActivity extends Activity {
         }
     }
 
-    public interface DialogCallback_OkCancel {
-        void onConfirm(String strResult); // 선택된 텍스트를 반환
-    }
-
-    private void showCustomDialog_OK(DialogCallback_OkCancel callback) {
-        // Inflate the custom layout
-        LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_okcancel_with_buttons, null);
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomDialogTheme);
-        builder.setView(dialogView);
-
-        AlertDialog dialog = builder.create();
-
-        // Find views
-        Button cancelButton = dialogView.findViewById(R.id.rename_pin_cancel_button);
-        Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
-
-        TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
-        textViewTitle.setText(R.string.text_save_title);
-
-        TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
-        textViewMessage.setText(R.string.text_save_content);
-
-        // Set button listeners
-        cancelButton.setOnClickListener(v -> {
-            callback.onConfirm("cancel");
-            dialog.dismiss();
-        });
-
-        confirmButton.setOnClickListener(v -> {
-            callback.onConfirm("ok");
-            dialog.dismiss();
-        });
-
-        // Show the dialog
-        dialog.show();
-
-        // Adjust dialog size
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.width = WindowManager.LayoutParams.WRAP_CONTENT; // 너비
-            params.height = WindowManager.LayoutParams.WRAP_CONTENT; // 높이
-            window.setAttributes(params);
-        }
-    }
-
-    private void showCustomDialog_Cancel(DialogCallback_OkCancel callback) {
-        // Inflate the custom layout
-        LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_okcancel_with_buttons, null);
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomDialogTheme);
-        builder.setView(dialogView);
-
-        AlertDialog dialog = builder.create();
-
-        // Find views
-        Button cancelButton = dialogView.findViewById(R.id.rename_pin_cancel_button);
-        Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
-
-        TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
-        textViewTitle.setText(R.string.text_cancel_title);
-
-        TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
-        textViewMessage.setText(R.string.text_cancel_content);
-
-        // Set button listeners
-        cancelButton.setOnClickListener(v -> {
-            callback.onConfirm("cancel");
-            dialog.dismiss();
-        });
-
-        confirmButton.setOnClickListener(v -> {
-            callback.onConfirm("ok");
-            dialog.dismiss();
-
-        });
-
-        // Show the dialog
-        dialog.show();
-
-        // Adjust dialog size
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            WindowManager.LayoutParams params = window.getAttributes();
-            params.width = WindowManager.LayoutParams.WRAP_CONTENT; // 너비
-            params.height = WindowManager.LayoutParams.WRAP_CONTENT; // 높이
-            window.setAttributes(params);
-        }
-    }
-
     public interface DialogCallback {
         void onConfirm(String selectedText); // 선택된 텍스트를 반환
+    }
+
+    private void showCustomDialog(String title, String message, DialogCallback callback) {
+        // Inflate the custom layout
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_okcancel_with_buttons, null);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomDialogTheme);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+
+        // Find views
+        Button cancelButton = dialogView.findViewById(R.id.rename_pin_cancel_button);
+        Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
+
+        TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
+        textViewTitle.setText(title);
+
+        TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
+        textViewMessage.setText(message);
+
+        // Set button listeners
+        cancelButton.setOnClickListener(v -> {
+            callback.onConfirm("cancel");
+            dialog.dismiss();
+        });
+
+        confirmButton.setOnClickListener(v -> {
+            callback.onConfirm("ok");
+            dialog.dismiss();
+        });
+
+        // Show the dialog
+        dialog.show();
+
+        // Adjust dialog size
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT; // 너비
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT; // 높이
+            window.setAttributes(params);
+        }
+    }
+
+    private void handleOkAction(String basePath, String jsonFileName, boolean shouldSaveFile) {
+        if (shouldSaveFile) {
+            Log.d(TAG, "Attempting to save ROI JSON file...");
+            if (!roi_saveToFile(basePath, jsonFileName)) {
+                Toast.makeText(getApplicationContext(), "Failed to save JSON data!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Log.d(TAG, "ROI JSON saved successfully.");
+        }
+
+        File destFile = new File(basePath, jsonFileName);
+        Log.d(TAG, "Preparing to send broadcast...");
+
+        Intent intent = new Intent("sk.action.airbot.map.responseMapping");
+        intent.setPackage("com.sk.airbot.iotagent");
+        intent.putExtra("destMappingFilePath", destFile.getAbsolutePath());
+        intent.putExtra("resultCode", "MRC_000");
+
+        sendBroadcast(intent);
+        Log.d(TAG, "Broadcast sent successfully.");
+
+        finish();
     }
 
     private void showCustomDialog(DialogCallback callback) {
@@ -379,7 +353,16 @@ public class MapEditorActivity extends Activity {
         updateModeDescription();
 
         // 초기에는 안 보이는 것으로 설정
-        hideRoiCompleteToggleBar();
+
+
+        //보이지 않는 곳에 그려준다. 초기값 계산을 위함
+        binding.roiDeleteLayout.setX(-1000);
+        binding.roiDeleteLayout.setY(-1000);
+        binding.roiDeleteLayout.setVisibility(View.VISIBLE);
+
+        binding.roiCompleteLayout.setX(-1000);
+        binding.roiCompleteLayout.setY(-1000);
+        binding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
         binding.roiCompleteLayout.setOnClickListener(v -> {
             // 스테이션이 금지공간에 표함되면 안된다.
@@ -389,7 +372,7 @@ public class MapEditorActivity extends Activity {
             }
 
             // 완료 버튼이 클릭되면 roi 생성완료
-            hideRoiCompleteToggleBar();
+            hideRoiToggleBar();
 
             // roi가 선택 안된 것으로 설정
             mapViewer.CObject_UnSelect();
@@ -398,7 +381,7 @@ public class MapEditorActivity extends Activity {
 
         binding.roiDeleteLayout.setOnClickListener(v -> {
             // 완료 버튼이 클릭되면 roi 생성완료
-            hideRoiCompleteToggleBar();
+            hideRoiToggleBar();
 
             mapViewer.roi_RemoveObject();
 
@@ -407,48 +390,14 @@ public class MapEditorActivity extends Activity {
         });
 
         binding.gobackButton.setOnClickListener(v -> {
-            //Log.d(TAG, "canclebutton.setOnClickListener(...)");
-            showCustomDialog_Cancel(strResult -> {
-                if ("ok".equals(strResult)) {
-                    File destFile = new File(basePath, jsonFileName);
-                    Log.d(TAG, "Preparing to send broadcast...");
-
-                    Intent intent = new Intent("sk.action.airbot.map.responseMapping");
-                    intent.setPackage("com.sk.airbot.iotagent");
-                    intent.putExtra("destMappingFilePath", destFile.getAbsolutePath());
-                    intent.putExtra("resultCode", "MRC_000");
-
-                    sendBroadcast(intent);
-                    Log.d(TAG, "Broadcast sent successfully.");
-
-                    // 1초 대기 대신 핸들러 사용 (메인 스레드 블로킹 방지)
-                    finish();
-                }
-            });
+            showCustomDialog(getString(R.string.text_cancel_title),
+                    getString(R.string.text_cancel_content),
+                    strResult -> handleOkAction(basePath, jsonFileName, false));
         });
 
-        binding.finishButton.setOnClickListener(v -> {
-            Log.d(TAG, "finshButton.setOnClickListener(...)");
-            showCustomDialog_OK(strResult -> {
-                if ("ok".equals(strResult)) {
-                    Log.d(TAG, "Attempting to save ROI JSON file...");
-                    if (roi_saveToFile(basePath, jsonFileName)) {
-                        Log.d(TAG, "ROI JSON saved successfully. Sending broadcast...");
-
-                        Intent intent = new Intent("sk.action.airbot.map.responseMapping");
-                        intent.setPackage("com.sk.airbot.iotagent");
-                        intent.putExtra("destMappingFilePath", new File(basePath, jsonFileName).getAbsolutePath());
-                        intent.putExtra("resultCode", "MRC_000");
-
-                        sendBroadcast(intent);
-                        Log.d(TAG, "Broadcast sent successfully.");
-                        finish();
-                    } else {
-                        Toast.makeText(getApplicationContext(), "Failed to save JSON data!", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-        });
+        binding.finishButton.setOnClickListener(v -> showCustomDialog(getString(R.string.text_save_title),
+                getString(R.string.text_save_content),
+                strResult -> handleOkAction(basePath, jsonFileName, true)));
 
         // 20241217 jihyeon
         // 공간 생성, 가상벽, 금지공간 버튼 분리
@@ -522,7 +471,7 @@ public class MapEditorActivity extends Activity {
                 updateToggleButtonStatus(v.getId());
 
                 mapViewer.setMenu("핀 이동");
-                hideRoiCompleteToggleBar();
+                hideRoiToggleBar();
             }
 
         });
@@ -538,7 +487,7 @@ public class MapEditorActivity extends Activity {
             } else {
                 updateToggleButtonStatus(v.getId());
                 mapViewer.setMenu("핀 회전");
-                hideRoiCompleteToggleBar();
+                hideRoiToggleBar();
             }
 
         });
@@ -597,7 +546,7 @@ public class MapEditorActivity extends Activity {
                     Log.d(TAG, "con not read " + destMappingFilePath);
                 }
 
-                hideRoiCompleteToggleBar();
+                hideRoiToggleBar();
 
                 addStationRoi();
             }
@@ -686,19 +635,9 @@ public class MapEditorActivity extends Activity {
                 binding.roiCompleteLayout.setX(iconX + location[0]);
                 binding.roiCompleteLayout.setY(iconY + location[1]);
                 binding.roiCompleteLayout.setVisibility(View.VISIBLE);
-
-                //보이지 않는 곳에 그려준다
-                binding.roiDeleteLayout.setX(-1000);
-                binding.roiDeleteLayout.setY(-1000);
-                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
-
-                binding.roiCompleteLayout.setX(-1000);
-                binding.roiCompleteLayout.setY(-1000);
-                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
-
             } else {
                 // 선택된 것이 없음.
-                hideRoiCompleteToggleBar();
+                hideRoiToggleBar();
             }
         });
 
@@ -729,7 +668,6 @@ public class MapEditorActivity extends Activity {
                 Point pt2 = mapViewer.m_RoiCurObject.m_DashPoints.get(2);
                 Point pt3 = mapViewer.m_RoiCurObject.m_DashPoints.get(3);
 
-
                 // 선택된 객체 위치에 토글바 배치
                 // 위치를 모서리 바깥에 위치하게 수정
 
@@ -752,13 +690,14 @@ public class MapEditorActivity extends Activity {
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
                 //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
+
                 iconX = (int) ((px + pt0.x) / 2.0 - binding.roiDeleteLayout.getWidth() / 2.0);
                 iconY = (int) ((py + pt0.y) / 2.0 - binding.roiDeleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
                 binding.roiDeleteLayout.setX(iconX + location[0]);
                 binding.roiDeleteLayout.setY(iconY + location[1]);
-                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
                 //Log.d(TAG, "nAngle : " + nAngle);
@@ -769,18 +708,16 @@ public class MapEditorActivity extends Activity {
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
                 //iconY = (int) ((py + pt1.y) / 2.0 - iconHeight / 2.0);
+                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
                 iconX = (int) ((px + pt1.x) / 2.0 - binding.roiCompleteLayout.getWidth() / 2.0);
                 iconY = (int) ((py + pt1.y) / 2.0 - binding.roiCompleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
                 binding.roiCompleteLayout.setX(iconX + location[0]);
                 binding.roiCompleteLayout.setY(iconY + location[1]);
-                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
-
-
             } else {
                 // 선택된 것이 없음.
-                hideRoiCompleteToggleBar();
+                hideRoiToggleBar();
             }
         });
 
@@ -834,13 +771,14 @@ public class MapEditorActivity extends Activity {
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
                 //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
+                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
                 iconX = (int) ((px + pt0.x) / 2.0 - binding.roiDeleteLayout.getWidth() / 2.0);
                 iconY = (int) ((py + pt0.y) / 2.0 - binding.roiDeleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
+                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
                 binding.roiDeleteLayout.setX(iconX + location[0]);
                 binding.roiDeleteLayout.setY(iconY + location[1]);
-                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
                 //Log.d(TAG, "nAngle : " + nAngle);
@@ -857,14 +795,15 @@ public class MapEditorActivity extends Activity {
                 // view의 시작 좌표에 맞추어 보정해준다.
                 binding.roiCompleteLayout.setX(iconX + location[0]);
                 binding.roiCompleteLayout.setY(iconY + location[1]);
-                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
+
             } else {
                 // 선택된 것이 없음.
-                hideRoiCompleteToggleBar();
+                hideRoiToggleBar();
             }
 
         });
     }
+
 
     private void addStationRoi() {
         int[] stationCoordinates = getStationPos(0, 0, original_image_height); // 원점 좌표에 스테이지가 있다.
@@ -876,7 +815,7 @@ public class MapEditorActivity extends Activity {
     }
 
     // 토글바 숨김 함수
-    private void hideRoiCompleteToggleBar() {
+    private void hideRoiToggleBar() {
         binding.roiCompleteLayout.setVisibility(View.GONE);
         binding.roiDeleteLayout.setVisibility(View.GONE);
     }
@@ -1287,8 +1226,6 @@ public class MapEditorActivity extends Activity {
                 //rotated_angle = (float) (double) data.get("rotated_angle");
                 //Log.d(TAG,"rotated angle: " + rotated_angle);
             }
-
-
             return true;
         } catch (IOException | NullPointerException e) {
             Log.e(TAG, "loadYaml Exception: " + e.getMessage());
