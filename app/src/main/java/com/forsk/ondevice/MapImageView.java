@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
@@ -11,17 +12,13 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.widget.Toast;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Random;
-
-import android.graphics.Matrix;
-import android.widget.Toast;
 
 public class MapImageView extends View {
 
@@ -1398,7 +1395,7 @@ public class MapImageView extends View {
 
             m_RoiCurObject.m_endroiflag = true;    // 그리기가 끝났음을 나타냄
 
-            m_RoiCurObject.m_label = "Test" + labelIndex;
+            m_RoiCurObject.m_label = "공간" + labelIndex;
             labelIndex++;   // 라벨 index를 1증가한다.
 
             // 먼저 추가후에 삭제 선택시 삭제한다.
@@ -1407,7 +1404,6 @@ public class MapImageView extends View {
 
             // 로봇이 추가한 공간의 중심이 로봇이 이동 불가 지역이면 가장 가까운 곳으로 이동해준다.
             CObject_CheckMap(m_RoiCurIndex);
-
         }
         // line 생성
         else if (m_CurType.equals("roi_line")) {
@@ -1426,7 +1422,6 @@ public class MapImageView extends View {
         else if (m_CurType.equals("roi_rect")) {
             // 화면의 1/4 크기로 정사각형 rect로 금지 공간을 생성한다.
             // 도형의 무게 줌심은 가로,세로 가운데이다.
-
 
             m_RoiCurObject = new CDrawObj("roi_rect", nLeft, nTop, nRight, nBottom);
             m_RoiCurObject.SetZoom(zoom_rate);

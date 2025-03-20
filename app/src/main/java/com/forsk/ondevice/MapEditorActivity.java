@@ -11,8 +11,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
@@ -33,7 +31,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.content.res.AppCompatResources;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 
 import com.forsk.ondevice.databinding.ActivityMapeditorBinding;
@@ -48,7 +45,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Objects;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -68,9 +64,7 @@ public class MapEditorActivity extends Activity {
     private static final String TAG = "OnDeviceMapEditor:MapEditorActivity";
 
     // 맵 최적화 so 라이브러리 위치 및 로딩
-    private static final String NAME_LIBRARY_CASELAB_OPT =
-//                                                              "mapoptimizationV2";
-            "mapoptimization241217v11";
+    private static final String NAME_LIBRARY_CASELAB_OPT = "mapoptimization";
 
     static {
         try {
@@ -134,47 +128,32 @@ public class MapEditorActivity extends Activity {
     private float rotated_angle = 0f;
     int original_image_height = 0;
 
-    private ActivityMapeditorBinding activityMapeditorBinding;
+    private ActivityMapeditorBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(null);
         setTheme(R.style.Theme_OnDevice);
-        activityMapeditorBinding = ActivityMapeditorBinding.inflate(getLayoutInflater());
-        setContentView(activityMapeditorBinding.getRoot());
-
-
+        binding = ActivityMapeditorBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
     }
 
     @Override
     public void onResume() {
         super.onResume();
         setUI();
-
-
         // roi 최초 선택시 getWidth() 가 0으로 나와서 보이지 않는 곳에 그려준다.
-        activityMapeditorBinding.roiDeleteLayout.setX(-1000);
-        activityMapeditorBinding.roiDeleteLayout.setY(-1000);
-        activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
-
-        activityMapeditorBinding.roiCompleteLayout.setX(-1000);
-        activityMapeditorBinding.roiCompleteLayout.setY(-1000);
-        activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
         srcMapPgmFilePath = getIntent().getStringExtra("srcMapPgmFilePath");
         if (srcMapPgmFilePath == null) {
-            //srcMapPgmFilePath = "/storage/emulated/0/Download/caffe_map.pgm";   // for test
             srcMapPgmFilePath = "/sdcard/Download/office.pgm";    // for test
         }
         srcMapYamlFilePath = getIntent().getStringExtra("srcMapYamlFilePath");
         if (srcMapYamlFilePath == null) {
-            //srcMapYamlFilePath = "/storage/emulated/0/Download/caffe_map.yaml";   // for test
-            //srcMapYamlFilePath = "/storage/emulated/0/Download/office.yaml";   // for test
             srcMapYamlFilePath = "/sdcard/Download/office.yaml";
         }
         destMappingFilePath = getIntent().getStringExtra("destMappingFilePath");
         if (destMappingFilePath == null) {
-            //srcMappingFilePath = "/storage/emulated/0/Download/map_meta_sample.json";   // for test
             destMappingFilePath = "/sdcard/Download/map_meta_sample.json";    // for test
         }
     }
@@ -392,17 +371,13 @@ public class MapEditorActivity extends Activity {
         // 상태 바 제거
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        // Mode-specific TextView 초기화
-        //setToggleBarByMode(currentMode);
-
         // Description 초기 상태 설정
         updateModeDescription();
 
         // 초기에는 안 보이는 것으로 설정
         hideRoiCompleteToggleBar();
 
-        activityMapeditorBinding.roiCompleteLayout.setOnClickListener(v -> {
-
+        binding.roiCompleteLayout.setOnClickListener(v -> {
             // 스테이션이 금지공간에 표함되면 안된다.
             if (!mapViewer.CheckStation()) {
                 Toast.makeText(getApplicationContext(), "스테이션이 있는 위치에는 금지 공간 설정이 불가능합니다!", Toast.LENGTH_SHORT).show();
@@ -417,7 +392,7 @@ public class MapEditorActivity extends Activity {
 
         });
 
-        activityMapeditorBinding.roiDeleteLayout.setOnClickListener(v -> {
+        binding.roiDeleteLayout.setOnClickListener(v -> {
             // 완료 버튼이 클릭되면 roi 생성완료
             hideRoiCompleteToggleBar();
 
@@ -427,7 +402,7 @@ public class MapEditorActivity extends Activity {
             mapViewer.CObject_UnSelect();
         });
 
-        activityMapeditorBinding.gobackButton.setOnClickListener(v -> {
+        binding.gobackButton.setOnClickListener(v -> {
             //Log.d(TAG, "canclebutton.setOnClickListener(...)");
             showCustomDialog_Cancel(strResult -> {
                 if ("ok".equals(strResult)) {
@@ -451,7 +426,7 @@ public class MapEditorActivity extends Activity {
             });
         });
 
-        activityMapeditorBinding.finishButton.setOnClickListener(v -> {
+        binding.finishButton.setOnClickListener(v -> {
             Log.d(TAG, "finshButton.setOnClickListener(...)");
 
             showCustomDialog_OK(strResult -> {
@@ -483,7 +458,7 @@ public class MapEditorActivity extends Activity {
         // 20241217 jihyeon
         // 공간 생성, 가상벽, 금지공간 버튼 분리
 
-        activityMapeditorBinding.buttonSpaceCreation.setOnClickListener(v -> {
+        binding.buttonSpaceCreation.setOnClickListener(v -> {
             currentMode = MODE_SPACE_CREATION;
             mapViewer.setMode("공간 생성");
             Log.d(TAG, "공간 생성 모드 활성화");
@@ -492,7 +467,7 @@ public class MapEditorActivity extends Activity {
             updateModeDescription();
         });
 
-        activityMapeditorBinding.buttonBlockWall.setOnClickListener(v -> {
+        binding.buttonBlockWall.setOnClickListener(v -> {
             currentMode = MODE_BLOCK_WALL;
             mapViewer.setMode("가상벽");
             Log.d(TAG, "가상벽 모드 활성화");
@@ -501,7 +476,7 @@ public class MapEditorActivity extends Activity {
             updateModeDescription();
         });
 
-        activityMapeditorBinding.buttonBlockArea.setOnClickListener(v -> {
+        binding.buttonBlockArea.setOnClickListener(v -> {
             currentMode = MODE_BLOCK_AREA;
             mapViewer.setMode("금지공간");
             Log.d(TAG, "금지공간 모드 활성화");
@@ -511,20 +486,18 @@ public class MapEditorActivity extends Activity {
         });
 
         // 닫기 버튼 클릭 시 toggle_bar 숨기기
-        activityMapeditorBinding.toggleBar.fabMainBack.setOnClickListener(v -> {
+        binding.toggleBar.fabMainBack.setOnClickListener(v -> {
             clickBackButton(extendToggleBar);
             extendToggleBar = !extendToggleBar;
         });
 
-        activityMapeditorBinding.icRotateMap.setOnClickListener(v -> {
+        binding.icRotateMap.setOnClickListener(v -> {
             // 250104 skmg
             // Map 90도 회전 버튼
             this.mapViewer.setRotateMap90();
         });
 
-        activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setOnClickListener(v -> {
-            //Log.w(">>>", "123123213");
-
+        binding.toggleBar.buttonAddObjectBackground.setOnClickListener(v -> {
             // 공간을 최대 7개만 추가 가능하게 제한
             int i;
             int nCount = 0;
@@ -532,18 +505,16 @@ public class MapEditorActivity extends Activity {
                 if (mapViewer.m_RoiObjects.get(i).roi_type.equals("roi_polygon")) nCount++;
             }
             if (nCount >= 7) {
-                Toast.makeText(getApplicationContext(), "공간은 최대 7개까지 추가 가능합니다!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "공간은 최대 7개까지 추가 가능합니다.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             mapViewer.setMenu("추가");
             mapViewer.roi_CreateObject();
             updateToggleButtonStatus(v.getId());
-            //activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
-            //activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
         });
 
-        activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setOnClickListener(v -> {
+        binding.toggleBar.buttonPinMoveBackground.setOnClickListener(v -> {
             updateToggleButtonStatus(v.getId());
             //TODO : 핀 이동 구현
 
@@ -561,7 +532,7 @@ public class MapEditorActivity extends Activity {
 
         });
 
-        activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setOnClickListener(v -> {
+        binding.toggleBar.buttonPinRotateBackground.setOnClickListener(v -> {
 
             //TODO : 핀 회전 구현
             if (mapViewer.strMenu.equals("핀 회전")) {
@@ -577,7 +548,7 @@ public class MapEditorActivity extends Activity {
 
         });
 
-        activityMapeditorBinding.toggleBar.buttonRenameBackground.setOnClickListener(v -> {
+        binding.toggleBar.buttonRenameBackground.setOnClickListener(v -> {
             if (mapViewer.m_RoiCurIndex < 0) {
                 Toast.makeText(getApplicationContext(), "선택된 공간이 없습니다.", Toast.LENGTH_SHORT).show();
                 return;
@@ -595,7 +566,7 @@ public class MapEditorActivity extends Activity {
             updateToggleButtonStatus(v.getId());
         });
 
-        mapViewer = activityMapeditorBinding.mapViewer;
+        mapViewer = binding.mapViewer;
         // 방법 1: ViewTreeObserver를 사용
         mapViewer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
@@ -631,7 +602,6 @@ public class MapEditorActivity extends Activity {
                     Log.d(TAG, "con not read " + destMappingFilePath);
                 }
 
-
                 hideRoiCompleteToggleBar();
 
                 addStationRoi();
@@ -650,14 +620,9 @@ public class MapEditorActivity extends Activity {
                 //    ||      ||
                 //    [3]=====[2]
 
-
                 // MapViewer의 시작위치를 가져온다.
                 int[] location = new int[2];
                 mapViewer.getLocationOnScreen(location);
-                //int x0 = location[0]; // X 좌표
-                //int y0 = location[1]; // Y 좌표
-                //Log.d(TAG, "location : ("+x0+","+y0+")");
-
                 //Log.d(TAG, "m_DashPoints.get(0) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y);
                 //Log.d(TAG, "m_DashPoints.get(1) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(1).y);
                 //Log.d(TAG, "m_DashPoints.get(2) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2).y);
@@ -668,8 +633,8 @@ public class MapEditorActivity extends Activity {
                 Point pt2 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(2);
                 Point pt3 = mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(3);
 
-                activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
-                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
+                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
+                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
                 // 선택된 객체 위치에 토글바 배치
                 // 위치를 모서리 바깥에 위치하게 수정
@@ -701,16 +666,16 @@ public class MapEditorActivity extends Activity {
 
                 //Log.d(TAG, "activityMapeditorBinding.roiDeleteLayout.getWidth() : " + activityMapeditorBinding.roiDeleteLayout.getWidth());
 
-                iconX = (int) ((px + pt0.x) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getWidth() / 2.0);
-                iconY = (int) ((py + pt0.y) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getHeight() / 2.0);
+                iconX = (int) ((px + pt0.x) / 2.0 - binding.roiDeleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt0.y) / 2.0 - binding.roiDeleteLayout.getHeight() / 2.0);
                 //Log.d(TAG, "iconX : " + iconX);
                 //Log.d(TAG, "iconY : " + iconY);
                 //Log.d(TAG, "activityMapeditorBinding.roiDeleteLayout.getWidth() : " + activityMapeditorBinding.roiDeleteLayout.getWidth());
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
-                activityMapeditorBinding.roiDeleteLayout.setY(iconY + location[1]);
-                activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
+                binding.roiDeleteLayout.setX(iconX + location[0]);
+                binding.roiDeleteLayout.setY(iconY + location[1]);
+                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
                 //Log.d(TAG, "nAngle : " + nAngle);
@@ -719,15 +684,22 @@ public class MapEditorActivity extends Activity {
                 //Log.d(TAG, "(px1,py1) : ( " + px + ", " + py + " )");
 
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
-                //iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
-                //iconY = (int) ((py + pt1.y) / 2.0 - iconHeight / 2.0);
-                iconX = (int) ((px + pt1.x) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getWidth() / 2.0);
-                iconY = (int) ((py + pt1.y) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getHeight() / 2.0);
+                iconX = (int) ((px + pt1.x) / 2.0 - binding.roiCompleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt1.y) / 2.0 - binding.roiCompleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
-                activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
-                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
+                binding.roiCompleteLayout.setX(iconX + location[0]);
+                binding.roiCompleteLayout.setY(iconY + location[1]);
+                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
+
+                //보이지 않는 곳에 그려준다
+                binding.roiDeleteLayout.setX(-1000);
+                binding.roiDeleteLayout.setY(-1000);
+                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
+
+                binding.roiCompleteLayout.setX(-1000);
+                binding.roiCompleteLayout.setY(-1000);
+                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
             } else {
                 // 선택된 것이 없음.
@@ -750,8 +722,6 @@ public class MapEditorActivity extends Activity {
                 // MapViewer의 시작위치를 가져온다.
                 int[] location = new int[2];
                 mapViewer.getLocationOnScreen(location);
-                //int x0 = location[0]; // X 좌표
-                //int y0 = location[1]; // Y 좌표
                 //Log.d(TAG, "location : ("+x0+","+y0+")");
 
                 //Log.d(TAG, "m_DashPoints.get(0) : " + mapViewer.m_RoiCurObject.m_DashPoints.get(0).x + ", " + mapViewer.m_RoiCurObject.m_DashPoints.get(0).y);
@@ -773,8 +743,6 @@ public class MapEditorActivity extends Activity {
                 int px, py;  // 45도 회전하여 nDistance 만큼 이동한 좌표
                 int nDistance = mapViewer.roiButtonDistance;    // 아이콘 모서리와의 거리
                 int iconX, iconY;   // 아이콘이 그려질 x,y 좌표
-                //int iconWidth = 100;    // 아이콘 가로크기
-                //int iconHeight = 100;   // 아이콘 높이
                 double nAngle;  // 해당 모서리에서 다음 모시리와의 기울기
 
                 // 두 점 간의 각도 계산
@@ -789,13 +757,13 @@ public class MapEditorActivity extends Activity {
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
                 //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
-                iconX = (int) ((px + pt0.x) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getWidth() / 2.0);
-                iconY = (int) ((py + pt0.y) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getHeight() / 2.0);
+                iconX = (int) ((px + pt0.x) / 2.0 - binding.roiDeleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt0.y) / 2.0 - binding.roiDeleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
-                activityMapeditorBinding.roiDeleteLayout.setY(iconY + location[1]);
-                activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
+                binding.roiDeleteLayout.setX(iconX + location[0]);
+                binding.roiDeleteLayout.setY(iconY + location[1]);
+                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
                 //Log.d(TAG, "nAngle : " + nAngle);
@@ -806,13 +774,13 @@ public class MapEditorActivity extends Activity {
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt1.x) / 2.0 - iconWidth / 2.0);
                 //iconY = (int) ((py + pt1.y) / 2.0 - iconHeight / 2.0);
-                iconX = (int) ((px + pt1.x) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getWidth() / 2.0);
-                iconY = (int) ((py + pt1.y) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getHeight() / 2.0);
+                iconX = (int) ((px + pt1.x) / 2.0 - binding.roiCompleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt1.y) / 2.0 - binding.roiCompleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
-                activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
-                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
+                binding.roiCompleteLayout.setX(iconX + location[0]);
+                binding.roiCompleteLayout.setY(iconY + location[1]);
+                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
 
 
             } else {
@@ -836,8 +804,6 @@ public class MapEditorActivity extends Activity {
                 // MapViewer의 시작위치를 가져온다.
                 int[] location = new int[2];
                 mapViewer.getLocationOnScreen(location);
-                //int x0 = location[0]; // X 좌표
-                //int y0 = location[1]; // Y 좌표
                 //Log.d(TAG, "location : ("+x0+","+y0+")");
 
                 //Log.d(TAG, "m_DashPoints.get(0) : " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).x + ", " + mapViewer.m_RoiObjects.get(indexSelected).m_DashPoints.get(0).y);
@@ -873,13 +839,13 @@ public class MapEditorActivity extends Activity {
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
                 //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
-                iconX = (int) ((px + pt0.x) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getWidth() / 2.0);
-                iconY = (int) ((py + pt0.y) / 2.0 - activityMapeditorBinding.roiDeleteLayout.getHeight() / 2.0);
+                iconX = (int) ((px + pt0.x) / 2.0 - binding.roiDeleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt0.y) / 2.0 - binding.roiDeleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                activityMapeditorBinding.roiDeleteLayout.setX(iconX + location[0]);
-                activityMapeditorBinding.roiDeleteLayout.setY(iconY + location[1]);
-                activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
+                binding.roiDeleteLayout.setX(iconX + location[0]);
+                binding.roiDeleteLayout.setY(iconY + location[1]);
+                binding.roiDeleteLayout.setVisibility(View.VISIBLE);
 
                 nAngle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x);    // 다음 DashPoint의 각도을 얻어서 45도 회전한 각도를 구한다.
                 //Log.d(TAG, "nAngle : " + nAngle);
@@ -890,13 +856,13 @@ public class MapEditorActivity extends Activity {
                 // 그려줄 위치를 nDistance 거리의 좌표와 해당 모서리의 사각형의 중심 좌표를 일치시켜준다.
                 //iconX = (int) ((px + pt0.x) / 2.0 - iconWidth / 2.0);
                 //iconY = (int) ((py + pt0.y) / 2.0 - iconHeight / 2.0);
-                iconX = (int) ((px + pt1.x) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getWidth() / 2.0);
-                iconY = (int) ((py + pt1.y) / 2.0 - activityMapeditorBinding.roiCompleteLayout.getHeight() / 2.0);
+                iconX = (int) ((px + pt1.x) / 2.0 - binding.roiCompleteLayout.getWidth() / 2.0);
+                iconY = (int) ((py + pt1.y) / 2.0 - binding.roiCompleteLayout.getHeight() / 2.0);
 
                 // view의 시작 좌표에 맞추어 보정해준다.
-                activityMapeditorBinding.roiCompleteLayout.setX(iconX + location[0]);
-                activityMapeditorBinding.roiCompleteLayout.setY(iconY + location[1]);
-                activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
+                binding.roiCompleteLayout.setX(iconX + location[0]);
+                binding.roiCompleteLayout.setY(iconY + location[1]);
+                binding.roiCompleteLayout.setVisibility(View.VISIBLE);
             } else {
                 // 선택된 것이 없음.
                 hideRoiCompleteToggleBar();
@@ -916,82 +882,82 @@ public class MapEditorActivity extends Activity {
 
     // 토글바 숨김 함수
     private void hideRoiCompleteToggleBar() {
-        activityMapeditorBinding.roiCompleteLayout.setVisibility(View.GONE);
-        activityMapeditorBinding.roiDeleteLayout.setVisibility(View.GONE);
+        binding.roiCompleteLayout.setVisibility(View.GONE);
+        binding.roiDeleteLayout.setVisibility(View.GONE);
     }
 
     // 토글바 숨김 함수
     private void showRoiCompleteToggleBar() {
-        activityMapeditorBinding.roiCompleteLayout.setVisibility(View.VISIBLE);
-        activityMapeditorBinding.roiDeleteLayout.setVisibility(View.VISIBLE);
+        binding.roiCompleteLayout.setVisibility(View.VISIBLE);
+        binding.roiDeleteLayout.setVisibility(View.VISIBLE);
     }
 
     private void updateToggleButtonStatus(int viewId) {
         Drawable selectedBackground = AppCompatResources.getDrawable(this, R.drawable.rounded_button_white);
 
-        if (viewId == activityMapeditorBinding.toggleBar.buttonAddObjectBackground.getId()) {
-            activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setBackground(selectedBackground);
-            activityMapeditorBinding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_black));
+        if (viewId == binding.toggleBar.buttonAddObjectBackground.getId()) {
+            binding.toggleBar.buttonAddObjectBackground.setBackground(selectedBackground);
+            binding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_black));
 
-            activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonPinRotateBackground.setBackground(null);
+            binding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.white));
 
-            activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonPinMoveBackground.setBackground(null);
+            binding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.white));
 
-            activityMapeditorBinding.toggleBar.buttonRenameBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonRename.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonRenameBackground.setBackground(null);
+            binding.toggleBar.buttonRename.setTextColor(getColor(R.color.white));
 
-        } else if (viewId == activityMapeditorBinding.toggleBar.buttonPinRotateBackground.getId()) {
-            activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
+        } else if (viewId == binding.toggleBar.buttonPinRotateBackground.getId()) {
+            binding.toggleBar.buttonAddObjectBackground.setBackground(null);
+            binding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
 
-            activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setBackground(selectedBackground);
-            activityMapeditorBinding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.black));
+            binding.toggleBar.buttonPinRotateBackground.setBackground(selectedBackground);
+            binding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.black));
 
-            activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonPinMoveBackground.setBackground(null);
+            binding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.white));
 
-            activityMapeditorBinding.toggleBar.buttonRenameBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonRename.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonRenameBackground.setBackground(null);
+            binding.toggleBar.buttonRename.setTextColor(getColor(R.color.white));
 
-        } else if (viewId == activityMapeditorBinding.toggleBar.buttonPinMoveBackground.getId()) {
-            activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
+        } else if (viewId == binding.toggleBar.buttonPinMoveBackground.getId()) {
+            binding.toggleBar.buttonAddObjectBackground.setBackground(null);
+            binding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
 
-            activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonPinRotateBackground.setBackground(null);
+            binding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.white));
 
-            activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setBackground(selectedBackground);
-            activityMapeditorBinding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.black));
+            binding.toggleBar.buttonPinMoveBackground.setBackground(selectedBackground);
+            binding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.black));
 
-            activityMapeditorBinding.toggleBar.buttonRenameBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonRename.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonRenameBackground.setBackground(null);
+            binding.toggleBar.buttonRename.setTextColor(getColor(R.color.white));
 
-        } else if (viewId == activityMapeditorBinding.toggleBar.buttonRenameBackground.getId()) {
-            activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
+        } else if (viewId == binding.toggleBar.buttonRenameBackground.getId()) {
+            binding.toggleBar.buttonAddObjectBackground.setBackground(null);
+            binding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
 
-            activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonPinRotateBackground.setBackground(null);
+            binding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.white));
 
-            activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonPinMoveBackground.setBackground(null);
+            binding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.white));
 
-            activityMapeditorBinding.toggleBar.buttonRenameBackground.setBackground(selectedBackground);
-            activityMapeditorBinding.toggleBar.buttonRename.setTextColor(getColor(R.color.black));
+            binding.toggleBar.buttonRenameBackground.setBackground(selectedBackground);
+            binding.toggleBar.buttonRename.setTextColor(getColor(R.color.black));
         } else {
-            activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
+            binding.toggleBar.buttonAddObjectBackground.setBackground(null);
+            binding.toggleBar.buttonAddObject.setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.add_white));
 
-            activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonPinRotateBackground.setBackground(null);
+            binding.toggleBar.buttonPinRotate.setTextColor(getColor(R.color.white));
 
-            activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonPinMoveBackground.setBackground(null);
+            binding.toggleBar.buttonPinMove.setTextColor(getColor(R.color.white));
 
-            activityMapeditorBinding.toggleBar.buttonRenameBackground.setBackground(null);
-            activityMapeditorBinding.toggleBar.buttonRename.setTextColor(getColor(R.color.white));
+            binding.toggleBar.buttonRenameBackground.setBackground(null);
+            binding.toggleBar.buttonRename.setTextColor(getColor(R.color.white));
         }
     }
 
@@ -999,42 +965,42 @@ public class MapEditorActivity extends Activity {
     private void updateModeDescription() {
         switch (currentMode) {
             case MODE_SPACE_CREATION:
-                activityMapeditorBinding.modeDescription.setText(R.string.text_press_button_create_space);
+                binding.modeDescription.setText(R.string.text_press_button_create_space);
                 break;
             case MODE_BLOCK_WALL:
-                activityMapeditorBinding.modeDescription.setText(R.string.text_press_plus_block_wall);
+                binding.modeDescription.setText(R.string.text_press_plus_block_wall);
                 break;
             case MODE_BLOCK_AREA:
-                activityMapeditorBinding.modeDescription.setText(R.string.text_press_plus_block_area);
+                binding.modeDescription.setText(R.string.text_press_plus_block_area);
                 break;
             default:
-                activityMapeditorBinding.modeDescription.setText(" "); // 다른 상태에서는 빈 문자열
+                binding.modeDescription.setText(" "); // 다른 상태에서는 빈 문자열
                 break;
         }
     }
 
     public void selectedFunc(int viewId) {
         if (viewId == R.id.button_space_creation) {
-            applyBottomButtonStyle(activityMapeditorBinding.buttonSpaceCreation, true);
-            applyBottomButtonStyle(activityMapeditorBinding.buttonBlockWall, false);
-            applyBottomButtonStyle(activityMapeditorBinding.buttonBlockArea, false);
+            applyBottomButtonStyle(binding.buttonSpaceCreation, true);
+            applyBottomButtonStyle(binding.buttonBlockWall, false);
+            applyBottomButtonStyle(binding.buttonBlockArea, false);
 
 
             mapViewer.setMenu("선택");
             mapViewer.CObject_UnSelect();
         }
         if (viewId == R.id.button_block_wall) {
-            applyBottomButtonStyle(activityMapeditorBinding.buttonSpaceCreation, false);
-            applyBottomButtonStyle(activityMapeditorBinding.buttonBlockWall, true);
-            applyBottomButtonStyle(activityMapeditorBinding.buttonBlockArea, false);
+            applyBottomButtonStyle(binding.buttonSpaceCreation, false);
+            applyBottomButtonStyle(binding.buttonBlockWall, true);
+            applyBottomButtonStyle(binding.buttonBlockArea, false);
 
             mapViewer.setMenu("선택");
             mapViewer.CObject_UnSelect();
         }
         if (viewId == R.id.button_block_area) {
-            applyBottomButtonStyle(activityMapeditorBinding.buttonSpaceCreation, false);
-            applyBottomButtonStyle(activityMapeditorBinding.buttonBlockWall, false);
-            applyBottomButtonStyle(activityMapeditorBinding.buttonBlockArea, true);
+            applyBottomButtonStyle(binding.buttonSpaceCreation, false);
+            applyBottomButtonStyle(binding.buttonBlockWall, false);
+            applyBottomButtonStyle(binding.buttonBlockArea, true);
 
             mapViewer.setMenu("선택");
             mapViewer.CObject_UnSelect();
@@ -1050,25 +1016,25 @@ public class MapEditorActivity extends Activity {
         }
 
         if (extendToggleBar) {
-            activityMapeditorBinding.toggleBar.fabMainBack.setRotation(180f);
-            activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setVisibility(View.GONE);
-            activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setVisibility(View.GONE);
-            activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setVisibility(View.GONE);
-            activityMapeditorBinding.toggleBar.buttonRenameBackground.setVisibility(View.GONE);
-            activityMapeditorBinding.toggleBar.divider1.setVisibility(View.GONE);
-            activityMapeditorBinding.toggleBar.divider2.setVisibility(View.GONE);
-            activityMapeditorBinding.toggleBar.divider3.setVisibility(View.GONE);
-            activityMapeditorBinding.toggleBar.divider4.setVisibility(View.GONE);
+            binding.toggleBar.fabMainBack.setRotation(180f);
+            binding.toggleBar.buttonAddObjectBackground.setVisibility(View.GONE);
+            binding.toggleBar.buttonPinMoveBackground.setVisibility(View.GONE);
+            binding.toggleBar.buttonPinRotateBackground.setVisibility(View.GONE);
+            binding.toggleBar.buttonRenameBackground.setVisibility(View.GONE);
+            binding.toggleBar.divider1.setVisibility(View.GONE);
+            binding.toggleBar.divider2.setVisibility(View.GONE);
+            binding.toggleBar.divider3.setVisibility(View.GONE);
+            binding.toggleBar.divider4.setVisibility(View.GONE);
         } else {
-            activityMapeditorBinding.toggleBar.fabMainBack.setRotation(0f);
-            activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setVisibility(View.VISIBLE);
-            activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setVisibility(View.VISIBLE);
-            activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setVisibility(View.VISIBLE);
-            activityMapeditorBinding.toggleBar.buttonRenameBackground.setVisibility(View.VISIBLE);
-            activityMapeditorBinding.toggleBar.divider1.setVisibility(View.VISIBLE);
-            activityMapeditorBinding.toggleBar.divider2.setVisibility(View.VISIBLE);
-            activityMapeditorBinding.toggleBar.divider3.setVisibility(View.VISIBLE);
-            activityMapeditorBinding.toggleBar.divider4.setVisibility(View.VISIBLE);
+            binding.toggleBar.fabMainBack.setRotation(0f);
+            binding.toggleBar.buttonAddObjectBackground.setVisibility(View.VISIBLE);
+            binding.toggleBar.buttonPinMoveBackground.setVisibility(View.VISIBLE);
+            binding.toggleBar.buttonPinRotateBackground.setVisibility(View.VISIBLE);
+            binding.toggleBar.buttonRenameBackground.setVisibility(View.VISIBLE);
+            binding.toggleBar.divider1.setVisibility(View.VISIBLE);
+            binding.toggleBar.divider2.setVisibility(View.VISIBLE);
+            binding.toggleBar.divider3.setVisibility(View.VISIBLE);
+            binding.toggleBar.divider4.setVisibility(View.VISIBLE);
         }
         extendToggleBar = !extendToggleBar;
     }
@@ -1079,24 +1045,24 @@ public class MapEditorActivity extends Activity {
 
         switch (mode) {
             case MODE_SPACE_CREATION:
-                activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setVisibility(View.VISIBLE);
-                activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setVisibility(View.VISIBLE);
-                activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setVisibility(View.VISIBLE);
-                activityMapeditorBinding.toggleBar.buttonRenameBackground.setVisibility(View.VISIBLE);
-                activityMapeditorBinding.toggleBar.divider1.setVisibility(View.VISIBLE);
-                activityMapeditorBinding.toggleBar.divider2.setVisibility(View.VISIBLE);
-                activityMapeditorBinding.toggleBar.divider3.setVisibility(View.VISIBLE);
-                activityMapeditorBinding.toggleBar.divider4.setVisibility(View.VISIBLE);
+                binding.toggleBar.buttonAddObjectBackground.setVisibility(View.VISIBLE);
+                binding.toggleBar.buttonPinMoveBackground.setVisibility(View.VISIBLE);
+                binding.toggleBar.buttonPinRotateBackground.setVisibility(View.VISIBLE);
+                binding.toggleBar.buttonRenameBackground.setVisibility(View.VISIBLE);
+                binding.toggleBar.divider1.setVisibility(View.VISIBLE);
+                binding.toggleBar.divider2.setVisibility(View.VISIBLE);
+                binding.toggleBar.divider3.setVisibility(View.VISIBLE);
+                binding.toggleBar.divider4.setVisibility(View.VISIBLE);
                 break;
             case MODE_BLOCK_WALL:
             case MODE_BLOCK_AREA:
-                activityMapeditorBinding.toggleBar.buttonAddObjectBackground.setVisibility(View.VISIBLE);
-                activityMapeditorBinding.toggleBar.buttonPinMoveBackground.setVisibility(View.GONE);
-                activityMapeditorBinding.toggleBar.buttonPinRotateBackground.setVisibility(View.GONE);
-                activityMapeditorBinding.toggleBar.buttonRenameBackground.setVisibility(View.GONE);
-                activityMapeditorBinding.toggleBar.divider2.setVisibility(View.GONE);
-                activityMapeditorBinding.toggleBar.divider3.setVisibility(View.GONE);
-                activityMapeditorBinding.toggleBar.divider4.setVisibility(View.GONE);
+                binding.toggleBar.buttonAddObjectBackground.setVisibility(View.VISIBLE);
+                binding.toggleBar.buttonPinMoveBackground.setVisibility(View.GONE);
+                binding.toggleBar.buttonPinRotateBackground.setVisibility(View.GONE);
+                binding.toggleBar.buttonRenameBackground.setVisibility(View.GONE);
+                binding.toggleBar.divider2.setVisibility(View.GONE);
+                binding.toggleBar.divider3.setVisibility(View.GONE);
+                binding.toggleBar.divider4.setVisibility(View.GONE);
                 break;
         }
     }
@@ -1377,13 +1343,11 @@ public class MapEditorActivity extends Activity {
 
                 count_id++; // 고유 id
 
-
                 strRoiJson += "{";
                 strRoiJson += "\"id\": \"" + (count_id) + "\"";
                 strRoiJson += ", \"name\": \"" + mapViewer.m_RoiObjects.get(i).m_label + "\"";
                 strRoiJson += ", \"color\":\"#47910f\", \"desc\":\"\"";
                 strRoiJson += ", \"robot_path\":[";
-                //strRoiJson += "{\"x\":-2.97,\"y\":7.15},{\"x\":-3.02,\"y\":7.1000004},{\"x\":-3.17,\"y\":7.1000004},{\"x\":-3.22,\"y\":7.05},{\"x\":-3.22,\"y\":6.9},{\"x\":-3.27,\"y\":6.8500004},{\"x\":-3.27,\"y\":4},{\"x\":-3.22,\"y\":3.95},{\"x\":-2.47,\"y\":3.95},{\"x\":-2.42,\"y\":4},{\"x\":-2.22,\"y\":4},{\"x\":-2.17,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.05},{\"x\":-1.7199999,\"y\":4.1},{\"x\":-1.67,\"y\":4.15},{\"x\":-1.67,\"y\":4.25},{\"x\":-1.62,\"y\":4.3},{\"x\":-1.62,\"y\":4.35},{\"x\":-1.5699999,\"y\":4.4},{\"x\":-1.5699999,\"y\":4.4500003},{\"x\":-1.52,\"y\":4.5},{\"x\":-1.52,\"y\":4.6},{\"x\":-1.4699999,\"y\":4.65},{\"x\":-1.4699999,\"y\":4.7000003},{\"x\":-1.42,\"y\":4.75},{\"x\":-1.42,\"y\":4.8500004},{\"x\":-1.37,\"y\":4.9},{\"x\":-1.37,\"y\":4.9500003},{\"x\":-1.3199999,\"y\":5},{\"x\":-1.3199999,\"y\":5.05},{\"x\":-1.27,\"y\":5.1000004},{\"x\":-1.27,\"y\":5.2000003},{\"x\":-1.2199999,\"y\":5.25},{\"x\":-1.2199999,\"y\":5.3},{\"x\":-1.17,\"y\":5.3500004},{\"x\":-1.17,\"y\":5.4500003},{\"x\":-1.12,\"y\":5.5},{\"x\":-1.12,\"y\":5.55},{\"x\":-1.0699999,\"y\":5.6000004},{\"x\":-1.0699999,\"y\":5.65},{\"x\":-1.02,\"y\":5.7000003},{\"x\":-1.02,\"y\":5.8},{\"x\":-0.96999997,\"y\":5.8500004},{\"x\":-0.96999997,\"y\":5.9},{\"x\":-0.91999996,\"y\":5.9500003},{\"x\":-0.91999996,\"y\":6.05},{\"x\":-0.86999995,\"y\":6.1000004},{\"x\":-0.86999995,\"y\":6.15},{\"x\":-0.81999993,\"y\":6.2000003},{\"x\":-0.81999993,\"y\":6.3},{\"x\":-0.77,\"y\":6.3500004},{\"x\":-0.77,\"y\":6.4},{\"x\":-1.27,\"y\":6.4},{\"x\":-1.37,\"y\":6.5},{\"x\":-1.37,\"y\":6.8},{\"x\":-1.42,\"y\":6.8500004},{\"x\":-1.42,\"y\":7},{\"x\":-1.5699999,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15},{\"x\":-2.97,\"y\":7.15}";
 
                 for (j = 0; j < mapViewer.m_RoiObjects.get(i).m_Points.size(); j++) {
 
@@ -1439,17 +1403,13 @@ public class MapEditorActivity extends Activity {
                 strRoiJson += "}";
 
                 strRoiJson += ", \"image_position\":{";
-                int xvw_image = 0; // polygon의 무게중심 x
 
+                int xvw_image = 0; // polygon의 무게중심 x
                 int yvh_image = 0; // polygon의 무게중심 x
 
                 // Log.d(TAG, "xvw before : "+ xvw);
                 xvw_image = mapViewer.m_RoiObjects.get(i).m_MBR_center.x;
                 yvh_image = mapViewer.m_RoiObjects.get(i).m_MBR_center.y;
-
-                // MapViewer.m_RoiObjects.get(i).m_MBR;
-                //Log.d(TAG,"height: " + image_height +", origin_y: "+ origin_y + ", imagey: " + MapViewer.m_RoiObjects.get(i).m_Points.get(j).y + ", real_y: "+ (float)((image_height-MapViewer.m_RoiObjects.get(i).m_Points.get(j).y)*nResolution + origin_y));
-                //Toast.makeText(getApplicationContext(), "X: " + (float)(xvw * nResolution + origin_x) +", Y: " + ((image_height - yvh) * nResolution + origin_y), Toast.LENGTH_SHORT).show();
 
                 strRoiJson += "\"x\":" + (int) xvw_image;
                 strRoiJson += ", \"y\":" + (int) yvh_image;
@@ -1564,10 +1524,10 @@ public class MapEditorActivity extends Activity {
                 strRoiJson += "{\"image_path\":[";
 
                 // Add start point
-                strRoiJson += "{\"x\":" + (int) roi.m_MBR.left + ", \"y\":" + (int) (roi.m_MBR.top) + "}, ";
+                strRoiJson += "{\"x\":" + roi.m_MBR.left + ", \"y\":" + roi.m_MBR.top + "}, ";
 
                 // Add end point
-                strRoiJson += "{\"x\":" + (int) roi.m_MBR.right + ", \"y\":" + (int) (roi.m_MBR.bottom) + "}], ";
+                strRoiJson += "{\"x\":" + roi.m_MBR.right + ", \"y\":" + roi.m_MBR.bottom + "}], ";
 
                 strRoiJson += "\"robot_path\":[";
 
@@ -1595,25 +1555,6 @@ public class MapEditorActivity extends Activity {
         strRoiJson += "}";
         Log.d(TAG, strRoiJson);
 
-        //권한 상태 체크 팝업 띄우기
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.READ_EXTERNAL_STORAGE}, 2);
-            }
-        }
-
-        // 액션 바와 상태 바 숨기
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(false);
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
-        } else {
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        }
-
         File file = new File(strPath, strFileName);
 
         try (FileOutputStream fos = new FileOutputStream(file)) {
@@ -1639,7 +1580,6 @@ public class MapEditorActivity extends Activity {
     private synchronized boolean loadJson(String filePath) {
         Log.d(TAG, "Exist Json File");
         StringBuilder jsonStringBuilder = new StringBuilder();
-
 
         // 내부 저장소에서 파일 스트림 열기
         // InputStream 데이터를 문자열로 변환
@@ -1691,8 +1631,8 @@ public class MapEditorActivity extends Activity {
                     if (right < x) right = x;
                     if (top > y) top = y;
                     if (bottom < y) bottom = y;
-
                 }
+
                 mapViewer.m_drawing = true;
                 mapViewer.roi_AddObject();
                 mapViewer.m_RoiCurObject.isSetTheta = isSetTheta;
@@ -1706,7 +1646,6 @@ public class MapEditorActivity extends Activity {
                     mapViewer.m_RoiCurObject.setAngle(theta);
                 }
             }
-
 
             // 2. block_area 데이터 읽기
             Log.d(TAG, "\nBlock Area:");
@@ -1800,17 +1739,11 @@ public class MapEditorActivity extends Activity {
         int original_pixel_x = (int) Math.round(inverseTransformedPointMat.get(0, 0)[0]);
         int original_pixel_y = (int) Math.round(inverseTransformedPointMat.get(1, 0)[0]);
 
-        //Log.d(TAG, "check dobule to int inversion. dobule: " + inverseTransformedPointMat.get(0, 0)[0] + ",int:  " + original_pixel_x);
-        // 5. 로봇 좌표로 변환
-        //double robot_x = (original_pixel_x * nResolution) + origin_x;
-        //double robot_y = (original_image_height - original_pixel_y) * nResolution + origin_y;
-
         return new Point(original_pixel_x, original_pixel_y);
     }
 
     // 지도 좌표를 로봇 좌표로 변환
     public double[] calculateCoordinate(int x, int y, int image_height) {
-        // 계산 공식: (x * resolution + origin_x)
         double robot_x = 0.0;
         double robot_y = 0.0;
 
