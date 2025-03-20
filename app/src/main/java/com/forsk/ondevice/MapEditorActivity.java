@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
@@ -100,6 +101,7 @@ public class MapEditorActivity extends Activity {
 
     // 설정파일
     String srcMapPgmFilePath = "";
+    String srcMapPngFilePath = "";
     String srcMapYamlFilePath = "";
     String destMappingFilePath = "";
 
@@ -530,7 +532,7 @@ public class MapEditorActivity extends Activity {
                 loadFile();
 
                 try {
-                    Bitmap bitmap = loadPGM(srcMapPgmFilePath);
+                    Bitmap bitmap = loadPNG(srcMapPngFilePath);
                     if (bitmap != null) {
                         mapViewer.setBitmap(bitmap);
                     }
@@ -1048,6 +1050,7 @@ public class MapEditorActivity extends Activity {
             lib_flag = true;
             srcMapPgmFilePath = strPgmFile;
             srcMapYamlFilePath = path_opt + fileTitle + ".yaml";
+            srcMapPngFilePath =  path_opt + fileTitle + ".png";
         } catch (UnsatisfiedLinkError e) {
             Log.e(TAG, "Native library not loaded or linked properly", e);
         } catch (ExceptionInInitializerError e) {
@@ -1104,6 +1107,62 @@ public class MapEditorActivity extends Activity {
         }
         return null;
 
+    }
+
+    private Bitmap loadPNG(String filePath) throws IOException {
+        Log.d(TAG, "loadPNG(\"" + filePath + "\")");
+
+        // 파일 이름 로깅(필수는 아님)
+        String[] paths = filePath.split("/");
+        String fileName = paths[paths.length - 1];
+        Log.d(TAG, "fileName : " + fileName);
+
+        File file = new File(filePath);
+        if (!file.exists()) {
+            throw new IOException("File not found: " + filePath);
+        }
+
+        // PNG 디코딩
+        Bitmap originalBitmap = BitmapFactory.decodeFile(filePath);
+        if (originalBitmap == null) {
+            throw new IOException("Failed to decode PNG file: " + filePath);
+        }
+
+        int width = originalBitmap.getWidth();
+        int height = originalBitmap.getHeight();
+
+        // 결과를 담을 Bitmap
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+
+        // 각 픽셀을 순회하며 R 값만 확인
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int pixel = originalBitmap.getPixel(x, y);
+
+                // R 값 추출
+                int r = Color.red(pixel);
+                // r 값 기준으로 흰색/검은색/회색 매핑
+                int newGray;
+
+                if (r == 255) {
+                    // 흰색
+                    newGray = 150;
+                } else if (r == 0) {
+                    // 검은색
+                    newGray = 0;
+                } else {
+                    Log.w(">>>", "r: " + r);
+                    // 회색
+                    newGray = 51;
+                }
+
+                // 새 픽셀 값
+                int newPixel = Color.rgb(newGray, newGray, newGray);
+                bitmap.setPixel(x, y, newPixel);
+            }
+        }
+
+        return bitmap;
     }
 
     private static String readToken(InputStream is) throws IOException {
