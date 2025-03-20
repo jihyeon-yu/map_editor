@@ -1,5 +1,8 @@
 package com.forsk.ondevice;
 
+import static com.caselab.forsk.MapOptimization.lineOptimization;
+import static com.caselab.forsk.MapOptimization.mapRotation;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
@@ -11,6 +14,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
@@ -19,8 +23,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -35,6 +37,15 @@ import androidx.core.app.ActivityCompat;
 
 import com.forsk.ondevice.databinding.ActivityMapeditorBinding;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.yaml.snakeyaml.Yaml;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,22 +54,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Map;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.opencv.android.OpenCVLoader;
-import org.yaml.snakeyaml.Yaml;
-import org.json.JSONObject;
-
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
-
-// opencv 추가
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.Core;
+import java.util.Map;
 
 public class MapEditorActivity extends Activity {
     private static final String TAG = "OnDeviceMapEditor:MapEditorActivity";
@@ -71,15 +70,15 @@ public class MapEditorActivity extends Activity {
             System.loadLibrary(NAME_LIBRARY_CASELAB_OPT);
             Log.d("SKOnDeviceService", "SO library load success!");
         } catch (UnsatisfiedLinkError e) {
-            Log.e("SKOnDeviceService", "SO library load error (UnsatisfiedLinkError): " + e.toString());
+            Log.e("SKOnDeviceService", "SO library load error (UnsatisfiedLinkError): " + e);
         } catch (SecurityException e) {
-            Log.e("SKOnDeviceService", "SO library load error (SecurityException): " + e.toString());
+            Log.e("SKOnDeviceService", "SO library load error (SecurityException): " + e);
         }
     }
 
     // 파일 입축력 권한
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
-    private static String[] PERMISSIONS_STORAGE = {android.Manifest.permission.READ_EXTERNAL_STORAGE, android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    private static final String[] PERMISSIONS_STORAGE = {android.Manifest.permission.READ_EXTERNAL_STORAGE, android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
     // 접근 권한이 없을 때는 권한 변경창 띄우기
     public static void verifyStoragePermissions(Activity activity) {
@@ -129,6 +128,12 @@ public class MapEditorActivity extends Activity {
     int original_image_height = 0;
 
     private ActivityMapeditorBinding binding;
+    String basePath = Environment.getExternalStorageDirectory().getPath() + "/Download/";
+    String fileNameBase = "office";
+    String jsonFileName = "map_meta_sample.json";
+
+    String pgmFileName = fileNameBase + ".pgm";
+    String yamlFileName = fileNameBase + ".yaml";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,15 +151,15 @@ public class MapEditorActivity extends Activity {
 
         srcMapPgmFilePath = getIntent().getStringExtra("srcMapPgmFilePath");
         if (srcMapPgmFilePath == null) {
-            srcMapPgmFilePath = "/sdcard/Download/office.pgm";    // for test
+            srcMapPgmFilePath = basePath + pgmFileName;    // for test
         }
         srcMapYamlFilePath = getIntent().getStringExtra("srcMapYamlFilePath");
         if (srcMapYamlFilePath == null) {
-            srcMapYamlFilePath = "/sdcard/Download/office.yaml";
+            srcMapYamlFilePath = basePath + yamlFileName;
         }
         destMappingFilePath = getIntent().getStringExtra("destMappingFilePath");
         if (destMappingFilePath == null) {
-            destMappingFilePath = "/sdcard/Download/map_meta_sample.json";    // for test
+            destMappingFilePath = basePath + jsonFileName;    // for test
         }
     }
 
@@ -177,10 +182,10 @@ public class MapEditorActivity extends Activity {
         Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
 
         TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
-        textViewTitle.setText("저장하시겠습니까?");
+        textViewTitle.setText(R.string.text_save_title);
 
         TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
-        textViewMessage.setText("작업하신 맵 편집 내용으로 저장합니다.");
+        textViewMessage.setText(R.string.text_save_content);
 
         // Set button listeners
         cancelButton.setOnClickListener(v -> {
@@ -191,7 +196,6 @@ public class MapEditorActivity extends Activity {
         confirmButton.setOnClickListener(v -> {
             callback.onConfirm("ok");
             dialog.dismiss();
-
         });
 
         // Show the dialog
@@ -223,10 +227,10 @@ public class MapEditorActivity extends Activity {
         Button confirmButton = dialogView.findViewById(R.id.rename_pin_confirm_button);
 
         TextView textViewTitle = dialogView.findViewById(R.id.dialog_title);
-        textViewTitle.setText("맵 편집을 취소하시겠습니까?");
+        textViewTitle.setText(R.string.text_cancel_title);
 
         TextView textViewMessage = dialogView.findViewById(R.id.dialog_message);
-        textViewMessage.setText("현재까지 진행한 맵 편집 정보가 저장되지 않습니다.");
+        textViewMessage.setText(R.string.text_cancel_content);
 
         // Set button listeners
         cancelButton.setOnClickListener(v -> {
@@ -406,10 +410,7 @@ public class MapEditorActivity extends Activity {
             //Log.d(TAG, "canclebutton.setOnClickListener(...)");
             showCustomDialog_Cancel(strResult -> {
                 if ("ok".equals(strResult)) {
-                    String strFileName = "map_meta_sample.json";
-                    String strPath = "/sdcard/Download";
-                    File destFile = new File(strPath, strFileName);
-
+                    File destFile = new File(basePath, jsonFileName);
                     Log.d(TAG, "Preparing to send broadcast...");
 
                     Intent intent = new Intent("sk.action.airbot.map.responseMapping");
@@ -428,25 +429,19 @@ public class MapEditorActivity extends Activity {
 
         binding.finishButton.setOnClickListener(v -> {
             Log.d(TAG, "finshButton.setOnClickListener(...)");
-
             showCustomDialog_OK(strResult -> {
                 if ("ok".equals(strResult)) {
-                    String strFileName = "map_meta_sample.json";
-                    String strPath = "/sdcard/Download";
-
                     Log.d(TAG, "Attempting to save ROI JSON file...");
-                    if (roi_saveToFile(strPath, strFileName)) {
+                    if (roi_saveToFile(basePath, jsonFileName)) {
                         Log.d(TAG, "ROI JSON saved successfully. Sending broadcast...");
 
                         Intent intent = new Intent("sk.action.airbot.map.responseMapping");
                         intent.setPackage("com.sk.airbot.iotagent");
-                        intent.putExtra("destMappingFilePath", new File(strPath, strFileName).getAbsolutePath());
+                        intent.putExtra("destMappingFilePath", new File(basePath, jsonFileName).getAbsolutePath());
                         intent.putExtra("resultCode", "MRC_000");
 
                         sendBroadcast(intent);
                         Log.d(TAG, "Broadcast sent successfully.");
-
-                        // 1초 대기 대신 핸들러 사용 (메인 스레드 블로킹 방지)
                         finish();
                     } else {
                         Toast.makeText(getApplicationContext(), "Failed to save JSON data!", Toast.LENGTH_SHORT).show();
@@ -1092,25 +1087,21 @@ public class MapEditorActivity extends Activity {
             File file_rot = new File(path_rot);
             // 폴더가 제대로 만들어졌는지 체크 ======
             if (!file_rot.mkdirs()) {
-
                 Log.e("FILE", "Directory not created : " + path_rot);
-
             }
             Log.d("SKOnDeviceService", "Run library-rotate!");
             //com.caselab.forsk.MapOptimization.mapRotation(PATH_FILE_MAP_ORG, PATH_FILE_MAP_ROT, NAME_FILE_MAP_ORG);
-            com.caselab.forsk.MapOptimization.mapRotation(path, path_rot, fileTitle);
+            mapRotation(path, path_rot, fileTitle);
             Log.d("SKOnDeviceService", "Library-rotate Finish!");
 
             String path_opt = path + "opt/";
             File file_opt = new File(path_opt);
             // 폴더가 제대로 만들어졌는지 체크 ======
             if (!file_opt.mkdirs()) {
-
                 Log.e("FILE", "Directory not created : " + path_opt);
-
             }
             Log.d("SKOnDeviceService", "Run library-line opt!");
-            com.caselab.forsk.MapOptimization.lineOptimization(path_rot, path_opt, fileTitle);
+            lineOptimization(path_rot, path_opt, fileTitle);
             Log.d("SKOnDeviceService", "Library-line Finish!");
 
             String strPgmFile = path_opt + fileTitle + ".pgm";
@@ -1118,7 +1109,6 @@ public class MapEditorActivity extends Activity {
             lib_flag = true;
             srcMapPgmFilePath = strPgmFile;
             srcMapYamlFilePath = path_opt + fileTitle + ".yaml";
-
         } catch (UnsatisfiedLinkError e) {
             Log.e(TAG, "Native library not loaded or linked properly", e);
         } catch (ExceptionInInitializerError e) {

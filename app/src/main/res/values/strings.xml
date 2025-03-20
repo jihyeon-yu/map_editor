@@ -5,4 +5,8 @@
     <string name="text_press_plus_block_area">+ 버튼을 탭하여 진입 금지 영역을 지정해주세요.</string>
     <string name="text_press_plus_block_wall">+ 버튼을 탭하여 진입 금지벽을 지정해주세요.</string>
     <string name="text_press_button_create_space">한 공간으로 묶고 싶은 영역을 지정해주세요.</string>
+    <string name="text_save_title">저장하시겠습니까?</string>
+    <string name="text_save_content">작업하신 맵 편집 내용으로 저장합니다.</string>
+    <string name="text_cancel_title">맵 편집을 취소하시겠습니까?</string>
+    <string name="text_cancel_content">현재까지 진행한 맵 편집 정보가 저장되지 않습니다.</string>
 </resources>
